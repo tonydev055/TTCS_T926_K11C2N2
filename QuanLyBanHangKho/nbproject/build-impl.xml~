@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="QuanLyBanHangKho-impl" default="default" basedir="..">
+    <property file="nbproject/project.properties"/>
+    <target name="init">
+        <mkdir dir="${build.classes.dir}"/>
+        <mkdir dir="${dist.dir}"/>
+    </target>
+    <target name="compile" depends="init">
+        <javac srcdir="${src.dir}" destdir="${build.classes.dir}" source="${javac.source}" target="${javac.target}"
+               encoding="${source.encoding}" includeantruntime="false">
+            <classpath>
+                <fileset dir="web/WEB-INF/lib" erroronmissingdir="false"><include name="*.jar"/></fileset>
+            </classpath>
+        </javac>
+    </target>
+    <target name="war" depends="compile">
+        <war destfile="${dist.war}" webxml="web/WEB-INF/web.xml">
+            <fileset dir="web"/>
+            <classes dir="${build.classes.dir}"/>
+        </war>
+    </target>
+    <target name="default" depends="war"/>
+    <target name="clean"><delete dir="${build.dir}"/><delete dir="${dist.dir}"/></target>
+</project>

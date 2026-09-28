@@ -1,0 +1,37 @@
+{
+  "runId": "quan-ly-ban-hang-kho-figma-v1",
+  "fileKey": "t6oujvpPxHKSxkqQiNdI8g",
+  "fileUrl": "https://www.figma.com/design/t6oujvpPxHKSxkqQiNdI8g",
+  "phase": "phase4_blocked_by_starter_mcp_limit",
+  "pages": {
+    "coverFoundations": "0:1",
+    "components": "6:2",
+    "screens": "6:3"
+  },
+  "frames": {
+    "cover": "9:2",
+    "foundations": "9:8",
+    "componentLibrary": "11:2"
+  },
+  "components": {
+    "button": "11:16",
+    "input": "11:32",
+    "navItem": "11:42",
+    "badge": "11:54",
+    "metricCard": "11:58"
+  },
+  "completedSteps": [
+    "phase0",
+    "phase1",
+    "phase2",
+    "phase3"
+  ],
+  "pendingSteps": [
+    "P4.a compose Login Desktop",
+    "P4.a compose Warehouse Dashboard",
+    "P4.b accessibility audit",
+    "P4.c naming audit",
+    "P4.d binding audit",
+    "P4.e visual review"
+  ]
+}

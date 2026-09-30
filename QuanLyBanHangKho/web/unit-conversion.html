@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SCRUM-48 – Quy đổi đơn vị tính</title>
+  <meta name="description" content="Giao diện khai báo và quy đổi đơn vị tính – SCRUM-48" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-base: #f5f2ed;
+      --bg-card: #ffffff;
+      --bg-surface: #f8fafc;
+      --bg-hover: #f1f5f9;
+      --border: #e2e8f0;
+      --border-focus: #f26522;
+      --accent: #f26522;
+      --accent-glow: rgba(242, 101, 34, 0.25);
+      --accent-light: #ff8547;
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.2);
+      --danger: #ef4444;
+      --warn: #f59e0b;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --text-muted: #94a3b8;
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+      --shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
+      --shadow-btn: 0 4px 16px rgba(242, 101, 34, 0.35);
+      --transition: .22s cubic-bezier(.4, 0, .2, 1);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 24px;
+      background-image: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(242, 101, 34, 0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 90% 80%, rgba(242, 101, 34, 0.05) 0%, transparent 60%)
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+      width: 100%;
+      max-width: 800px;
+      overflow: hidden;
+      margin-bottom: 40px;
+    }
+
+    .card-header {
+      padding: 28px 32px 20px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(242, 101, 34, 0.05) 0%, transparent 60%)
+    }
+
+    .ticket-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(242, 101, 34, 0.1);
+      border: 1px solid rgba(242, 101, 34, 0.25);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      margin-bottom: 12px
+    }
+
+    .ticket-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 6px var(--accent)
+    }
+
+    .card-header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.3
+    }
+
+    .card-header p {
+      margin-top: 4px;
+      font-size: 13px;
+      color: var(--text-secondary)
+    }
+
+    .card-body {
+      padding: 28px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px
+    }
+
+    .section-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-label::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+    }
+
+    .form-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .form-group {
+      flex: 1;
+      min-width: 200px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .form-control {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text-primary);
+      background: var(--bg-surface);
+      transition: all var(--transition);
+      outline: none;
+    }
+
+    .form-control:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+      background: #fff;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      transition: all var(--transition);
+      white-space: nowrap
+    }
+
+    .btn:disabled {
+      opacity: .45;
+      cursor: not-allowed
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, #e05310 100%);
+      color: #fff;
+      box-shadow: var(--shadow-btn)
+    }
+
+    .btn-primary:not(:disabled):hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px var(--accent-glow)
+    }
+
+    .btn-primary:not(:disabled):active {
+      transform: translateY(0)
+    }
+
+    .btn-secondary {
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      border: 1px solid var(--border)
+    }
+
+    .btn-secondary:not(:disabled):hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+      border-color: var(--border-focus)
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+    th, td {
+        padding: 12px 16px;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+    }
+    th {
+        font-weight: 600;
+        color: var(--text-secondary);
+        background: var(--bg-surface);
+    }
+    td {
+        color: var(--text-primary);
+    }
+    
+    .badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .badge.base {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success);
+    }
+    .badge.conv {
+        background: rgba(242, 101, 34, 0.1);
+        color: var(--accent);
+    }
+
+    .alert {
+        padding: 12px 16px;
+        border-radius: var(--radius-sm);
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        color: #059669;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+        display: none;
+    }
+    .alert.visible {
+        display: flex;
+    }
+
+    .transaction-card {
+        background: var(--bg-surface);
+        border: 1px dashed var(--border);
+        border-radius: var(--radius-md);
+        padding: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card" role="main">
+    <div class="card-header">
+      <div class="ticket-badge">SCRUM-48</div>
+      <h1>Quản lý Đơn vị tính quy đổi</h1>
+      <p>Khai báo đơn vị và mô phỏng tự động quy đổi về đơn vị cơ sở khi nhập/xuất kho.</p>
+    </div>
+    <div class="card-body">
+      
+      <!-- Section 1: Khai báo SKU -->
+      <div>
+        <div class="section-label">1. Khai báo Đơn vị cho SKU</div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Tên Hàng Hóa (SKU)</label>
+                <input type="text" class="form-control" id="skuName" value="Nước tăng lực Redbull" readonly>
+            </div>
+            <div class="form-group">
+                <label>Đơn vị cơ sở (Base Unit)</label>
+                <input type="text" class="form-control" id="baseUnit" value="Lon" readonly>
+            </div>
+        </div>
+
+        <form id="addUnitForm" style="background: #fff; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 20px;">
+            <p style="font-size: 13px; font-weight: 600; margin-bottom: 12px;">Thêm Đơn Vị Quy Đổi Mới</p>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Tên đơn vị</label>
+                    <input type="text" class="form-control" id="newUnitName" placeholder="VD: Thùng, Lốc..." required>
+                </div>
+                <div class="form-group">
+                    <label>Hệ số quy đổi (So với ĐV cơ sở)</label>
+                    <input type="number" class="form-control" id="newUnitFactor" min="1" step="0.01" placeholder="VD: 24" required>
+                </div>
+                <div class="form-group" style="justify-content: flex-end;">
+                    <button type="submit" class="btn btn-primary">Thêm Đơn vị</button>
+                </div>
+            </div>
+        </form>
+
+        <div style="border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Đơn vị tính</th>
+                        <th>Hệ số quy đổi</th>
+                        <th>Loại đơn vị</th>
+                    </tr>
+                </thead>
+                <tbody id="unitTableBody">
+                    <tr>
+                        <td>Lon</td>
+                        <td>1</td>
+                        <td><span class="badge base">Cơ sở</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+      </div>
+
+      <!-- Section 2: Mô phỏng Giao dịch -->
+      <div style="margin-top: 10px;">
+        <div class="section-label">2. Mô phỏng Nhập/Xuất kho</div>
+        <div class="transaction-card">
+            <form id="transactionForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Loại giao dịch</label>
+                        <select class="form-control" id="transType">
+                            <option value="Nhập kho">Nhập kho</option>
+                            <option value="Xuất kho">Xuất kho</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Đơn vị tính gọi hàng</label>
+                        <select class="form-control" id="transUnit">
+                            <option value="Lon" data-factor="1">Lon</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Số lượng</label>
+                        <input type="number" class="form-control" id="transQty" value="1" min="1" required>
+                    </div>
+                </div>
+                <div class="btn-row">
+                    <button type="submit" class="btn btn-primary">Ghi sổ (Tạo giao dịch)</button>
+                </div>
+            </form>
+            
+            <div id="simResult" class="alert" style="margin-top: 16px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span id="simResultText"></span>
+            </div>
+        </div>
+      </div>
+
+      <!-- Section 3: Sổ kho -->
+      <div style="margin-top: 10px;">
+        <div class="section-label">3. Sổ kho ghi nhận (Lưu vết snapshot hệ số)</div>
+        <div style="border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Thời gian</th>
+                        <th>Loại GD</th>
+                        <th>Giao dịch gốc</th>
+                        <th>Hệ số lúc GD</th>
+                        <th>Ghi sổ (ĐV Cơ sở)</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                    <!-- Data here -->
+                </tbody>
+            </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // State management
+    const units = [
+        { name: 'Lon', factor: 1, isBase: true },
+        { name: 'Lốc', factor: 6, isBase: false },
+        { name: 'Thùng', factor: 24, isBase: false }
+    ];
+
+    const history = [];
+
+    // DOM Elements
+    const unitTableBody = document.getElementById('unitTableBody');
+    const transUnitSelect = document.getElementById('transUnit');
+    const addUnitForm = document.getElementById('addUnitForm');
+    const transactionForm = document.getElementById('transactionForm');
+    const historyTableBody = document.getElementById('historyTableBody');
+    const simResult = document.getElementById('simResult');
+    const simResultText = document.getElementById('simResultText');
+
+    // Functions
+    function renderUnits() {
+        unitTableBody.innerHTML = units.map(u => `
+            <tr>
+                <td>${u.name}</td>
+                <td>${u.factor}</td>
+                <td><span class="badge ${u.isBase ? 'base' : 'conv'}">${u.isBase ? 'Cơ sở' : 'Quy đổi'}</span></td>
+            </tr>
+        `).join('');
+
+        transUnitSelect.innerHTML = units.map(u => `
+            <option value="${u.name}" data-factor="${u.factor}">${u.name}</option>
+        `).join('');
+    }
+
+    function renderHistory() {
+        if(history.length === 0) {
+            historyTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--text-muted)">Chưa có giao dịch nào</td></tr>';
+            return;
+        }
+
+        historyTableBody.innerHTML = history.map(h => `
+            <tr>
+                <td style="color: var(--text-muted); font-size: 12px;">${h.time}</td>
+                <td><span style="font-weight:600; color: ${h.type === 'Nhập kho' ? 'var(--success)' : 'var(--danger)'}">${h.type}</span></td>
+                <td>${h.qty} ${h.unit}</td>
+                <td>1 ${h.unit} = ${h.factor} Lon</td>
+                <td style="font-weight: 600;">${h.baseQty} Lon</td>
+            </tr>
+        `).join('');
+    }
+
+    // Events
+    addUnitForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('newUnitName').value.trim();
+        const factor = parseFloat(document.getElementById('newUnitFactor').value);
+        
+        // Cập nhật nếu đã có, hoặc thêm mới
+        const existingUnit = units.find(u => u.name.toLowerCase() === name.toLowerCase());
+        if(existingUnit) {
+            existingUnit.factor = factor;
+        } else {
+            units.push({ name, factor, isBase: false });
+        }
+        
+        renderUnits();
+        addUnitForm.reset();
+        
+        simResult.classList.add('visible');
+        simResult.style.background = 'rgba(245, 158, 11, 0.1)';
+        simResult.style.borderColor = 'rgba(245, 158, 11, 0.2)';
+        simResult.style.color = '#d97706';
+        simResultText.textContent = `Đã cập nhật hệ số quy đổi cho đơn vị "${name}". Các giao dịch cũ không bị ảnh hưởng.`;
+    });
+
+    transactionForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const type = document.getElementById('transType').value;
+        const qty = parseFloat(document.getElementById('transQty').value);
+        const unitOption = transUnitSelect.options[transUnitSelect.selectedIndex];
+        const unitName = unitOption.value;
+        const factor = parseFloat(unitOption.getAttribute('data-factor'));
+        
+        const baseQty = qty * factor;
+        
+        const record = {
+            time: new Date().toLocaleTimeString('vi-VN'),
+            type: type,
+            qty: qty,
+            unit: unitName,
+            factor: factor,
+            baseQty: baseQty
+        };
+        
+        // Thêm vào đầu mảng lịch sử
+        history.unshift(record);
+        renderHistory();
+
+        simResult.classList.add('visible');
+        simResult.style.background = 'rgba(16, 185, 129, 0.1)';
+        simResult.style.borderColor = 'rgba(16, 185, 129, 0.2)';
+        simResult.style.color = '#059669';
+        simResultText.innerHTML = `<strong>Thành công!</strong> Giao dịch ${qty} ${unitName} đã tự động quy đổi thành <strong>${baseQty} Lon</strong> khi ghi sổ.`;
+    });
+
+    // Init
+    renderUnits();
+    renderHistory();
+  </script>
+</body>
+</html>

@@ -1,6 +1,170 @@
-<!doctype html><html lang="vi"><head><meta charset="UTF-8"><title>Quản Lý Bán Hàng Kho</title>
-<style>body{font-family:Arial;margin:40px;background:#f5f7fb}.box{max-width:900px;margin:auto;background:white;padding:30px;border-radius:12px}code{background:#eee;padding:2px 6px}</style></head>
-<body><div class="box"><h1>QuanLyBanHangKho Backend</h1>
-<p>Java 17 • Ant • Jakarta Servlet • JDBC • PostgreSQL</p>
-<p>API gốc: <code>/api</code>. Kiểm tra: <code>/api/health</code></p>
-<p>Đăng nhập: <code>POST /api/auth/login</code></p></div></body></html>
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KhoFlow — Quản lý bán hàng & kho</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css?v=sprint1-reset-ui">
+</head>
+<body>
+  <section id="loginView" class="login-view">
+    <header class="login-header">
+      <a class="brand" href="#"><span class="brand-mark">KF</span><span>KhoFlow</span></a>
+      <div class="login-header-copy"><strong>Hệ thống bán hàng & kho</strong><span>Vận hành đồng bộ, số liệu tức thời</span></div>
+    </header>
+    <main class="login-main">
+      <div class="login-intro">
+        <span class="eyebrow">QUẢN TRỊ KHO THÔNG MINH</span>
+        <h1>Mọi chuyển động hàng hóa<br>trong một màn hình.</h1>
+        <p>Theo dõi tồn khả dụng, lô hàng, hạn sử dụng và tiến độ xuất nhập kho theo thời gian thực.</p>
+        </div>
+      <div class="login-card">
+        <div class="login-card-heading"><span class="mini-logo">KF</span><div><h2>Đăng nhập</h2><p>Chào mừng bạn quay lại hệ thống</p></div></div>
+        <form id="loginForm" novalidate>
+          <label for="email">Email</label>
+          <div class="input-wrap"><span>@</span><input id="email" type="email" autocomplete="username" placeholder="tenban@kho.vn" required></div>
+          <div class="field-row"><label for="password">Mật khẩu</label><button id="forgotPasswordButton" class="text-button" type="button">Quên mật khẩu?</button></div>
+          <div class="input-wrap"><span>●</span><input id="password" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu" required><button id="togglePassword" class="icon-button" type="button" aria-label="Hiện mật khẩu">◉</button></div>
+          <label class="remember-row"><input type="checkbox" checked> Ghi nhớ đăng nhập</label>
+          <p id="loginError" class="form-error" role="alert"></p>
+          <button class="primary-button" type="submit">Đăng nhập <span>→</span></button>
+          <button id="openRegister" class="text-button register-link" type="button">Chưa có tài khoản? <strong>Đăng ký</strong></button>
+        </form>
+        
+        <p class="support-copy">Cần hỗ trợ? Liên hệ quản trị viên hệ thống</p>
+        <p class="support-copy"> <a href="https://www.facebook.com/duchieuu05">Facebook</a> </p>
+      </div>
+    </main>
+  </section>
+
+  <section id="forgotPasswordView" class="login-view recovery-view is-hidden">
+    <header class="login-header">
+      <a class="brand" href="#"><span class="brand-mark">KF</span><span>KhoFlow</span></a>
+      <div class="login-header-copy"><strong>Khôi phục tài khoản</strong><span>Bảo mật, nhanh chóng và an toàn</span></div>
+    </header>
+    <main class="login-main">
+      <div class="login-intro recovery-intro">
+        <span class="eyebrow">KHÔI PHỤC QUYỀN TRUY CẬP</span>
+        <h1>Lấy lại mật khẩu<br>chỉ trong vài bước.</h1>
+        <p>Nhập email đã đăng ký. KhoFlow sẽ tạo một liên kết an toàn để bạn thiết lập mật khẩu mới.</p>
+        <div class="recovery-points"><div><span>✓</span><p><strong>Liên kết dùng một lần</strong><small>Tự động hết hạn sau 30 phút</small></p></div><div><span>⌁</span><p><strong>Bảo vệ phiên đăng nhập</strong><small>Thu hồi các phiên cũ sau khi đổi mật khẩu</small></p></div></div>
+      </div>
+      <div class="login-card recovery-card">
+        <div id="forgotRequestPanel">
+          <div class="recovery-icon">↗</div>
+          <div class="recovery-heading"><span>KHÔI PHỤC TÀI KHOẢN</span><h2>Quên mật khẩu?</h2><p>Nhập email liên kết với tài khoản của bạn.</p></div>
+          <form id="forgotPasswordForm" novalidate>
+            <label for="forgotEmail">Email tài khoản</label>
+            <div class="input-wrap"><span>@</span><input id="forgotEmail" type="email" autocomplete="email" placeholder="tenban@khoflow.local" required></div>
+            <div class="recovery-note"><span>i</span><p>Vì lý do bảo mật, chúng tôi luôn hiển thị cùng một kết quả dù email có tồn tại hay không.</p></div>
+            <p id="forgotPasswordError" class="form-error" role="alert"></p>
+            <button id="forgotSubmitButton" class="primary-button" type="submit">Gửi liên kết đặt lại <span>→</span></button>
+            <button id="backFromForgot" class="text-button back-login" type="button"><span>←</span> Quay lại đăng nhập</button>
+          </form>
+        </div>
+        <div id="forgotSuccessPanel" class="recovery-success is-hidden">
+          <div class="success-mark">✓</div><span class="success-kicker">YÊU CẦU ĐÃ ĐƯỢC GỬI</span><h2>Kiểm tra email của bạn</h2>
+          <p>Nếu tài khoản tồn tại, hướng dẫn đặt lại mật khẩu đã được gửi tới:</p><strong id="forgotSentEmail"></strong>
+          <div class="recovery-note"><span>⌛</span><p>Liên kết có hiệu lực trong 30 phút. Hãy kiểm tra cả thư mục Spam hoặc Thư rác.</p></div>
+          <button id="resendForgotPassword" class="demo-button" type="button">Gửi lại liên kết</button>
+          <button id="openDevMailbox" class="mailbox-button" type="button">✉ Mở hộp thư thử nghiệm</button>
+          <button id="backAfterForgot" class="text-button back-login" type="button"><span>←</span> Quay lại đăng nhập</button>
+        </div>
+        <p class="support-copy">Cần hỗ trợ? Liên hệ quản trị viên hệ thống</p>
+      </div>
+    </main>
+  </section>
+
+  <section id="resetPasswordView" class="login-view recovery-view reset-view is-hidden">
+    <header class="login-header"><a class="brand" href="/"><span class="brand-mark">KF</span><span>KhoFlow</span></a><div class="login-header-copy"><strong>Thiết lập mật khẩu mới</strong><span>Liên kết bảo mật dùng một lần</span></div></header>
+    <main class="login-main">
+      <div class="login-intro recovery-intro"><span class="eyebrow">BẢO MẬT TÀI KHOẢN</span><h1>Tạo mật khẩu mới<br>an toàn hơn.</h1><p>Mật khẩu mới sẽ thay thế mật khẩu cũ và đăng xuất các phiên đang hoạt động trên thiết bị khác.</p><div class="recovery-points"><div><span>✓</span><p><strong>Tối thiểu 8 ký tự</strong><small>Kết hợp chữ cái và chữ số</small></p></div><div><span>⌁</span><p><strong>Liên kết dùng một lần</strong><small>Không thể sử dụng lại sau khi hoàn tất</small></p></div></div></div>
+      <div class="login-card reset-card">
+        <div id="resetRequestPanel">
+          <div class="recovery-icon">⌁</div><div class="recovery-heading"><span>ĐẶT LẠI MẬT KHẨU</span><h2>Mật khẩu mới</h2><p>Hãy chọn mật khẩu dễ nhớ với bạn nhưng khó đoán với người khác.</p></div>
+          <form id="resetPasswordForm" novalidate>
+            <label for="resetPassword">Mật khẩu mới</label><div class="input-wrap"><span>●</span><input id="resetPassword" type="password" autocomplete="new-password" placeholder="Nhập mật khẩu mới" required><button class="icon-button reset-toggle" type="button" data-password-target="resetPassword" aria-label="Hiện mật khẩu">◉</button></div>
+            <div class="strength-meter"><i></i><i></i><i></i><i></i></div><div class="password-rules"><span id="ruleLength">○ Ít nhất 8 ký tự</span><span id="ruleLetter">○ Có chữ cái</span><span id="ruleNumber">○ Có chữ số</span></div>
+            <label for="resetPasswordConfirm">Xác nhận mật khẩu</label><div class="input-wrap"><span>●</span><input id="resetPasswordConfirm" type="password" autocomplete="new-password" placeholder="Nhập lại mật khẩu mới" required><button class="icon-button reset-toggle" type="button" data-password-target="resetPasswordConfirm" aria-label="Hiện mật khẩu">◉</button></div>
+            <p id="resetPasswordError" class="form-error" role="alert"></p><button id="resetSubmitButton" class="primary-button" type="submit">Cập nhật mật khẩu <span>→</span></button><a class="text-button back-login reset-cancel" href="/">← Hủy và quay lại đăng nhập</a>
+          </form>
+        </div>
+        <div id="resetSuccessPanel" class="recovery-success is-hidden"><div class="success-mark">✓</div><span class="success-kicker">HOÀN TẤT</span><h2>Đổi mật khẩu thành công</h2><p>Mật khẩu của bạn đã được cập nhật. Các lần đăng nhập sai và trạng thái khóa tạm thời cũng đã được xóa.</p><div class="recovery-note"><span>✓</span><p>Bạn có thể sử dụng mật khẩu mới để đăng nhập ngay bây giờ.</p></div><button id="loginAfterReset" class="primary-button" type="button">Đi đến đăng nhập <span>→</span></button></div>
+        <p class="support-copy">Không chia sẻ mật khẩu hoặc liên kết đặt lại cho người khác</p>
+      </div>
+    </main>
+  </section>
+
+  <section id="registerView" class="login-view register-view is-hidden">
+    <header class="login-header"><a class="brand" href="#"><span class="brand-mark">KF</span><span>KhoFlow</span></a><div class="login-header-copy"><strong>Hệ thống bán hàng & kho</strong><span>Tài khoản đăng ký mới có vai trò Đại lý</span></div></header>
+    <main class="login-main">
+      <div class="login-intro"><span class="eyebrow">QUẢN TRỊ KHO THÔNG MINH</span><h1>Mọi chuyển động hàng hóa<br>trong một màn hình.</h1><p>Theo dõi đơn hàng, giao hàng, hạn mức và công nợ của đại lý theo thời gian thực.</p></div>
+      <div class="login-card register-card">
+        <div class="login-card-heading"><span class="mini-logo">KF</span><div><h2>Tạo tài khoản</h2><p>Bắt đầu quản lý kho của bạn</p></div></div>
+        <form id="registerForm" novalidate>
+          <label for="registerFullName">Họ và tên</label><div class="input-wrap"><span>♙</span><input id="registerFullName" autocomplete="name" placeholder="Nguyễn Văn A" required></div>
+          <label for="registerUsername">Tên đăng nhập</label><div class="input-wrap"><span>@</span><input id="registerUsername" autocomplete="username" placeholder="nguyenvana" required></div>
+          <label for="registerEmail">Email</label><div class="input-wrap"><span>✉</span><input id="registerEmail" type="email" autocomplete="email" placeholder="ban@congty.com" required></div>
+          <label for="registerPhone">Số điện thoại</label><div class="input-wrap"><span>☎</span><input id="registerPhone" type="tel" autocomplete="tel" placeholder="09xxxxxxxx"></div>
+          <div class="register-password-grid"><div><label for="registerPassword">Mật khẩu</label><div class="input-wrap"><span>●</span><input id="registerPassword" type="password" autocomplete="new-password" required></div></div><div><label for="registerConfirm">Xác nhận mật khẩu</label><div class="input-wrap"><span>●</span><input id="registerConfirm" type="password" autocomplete="new-password" required></div></div></div>
+          <label class="remember-row"><input id="registerTerms" type="checkbox" required> Tôi đồng ý với điều khoản sử dụng</label><p id="registerError" class="form-error" role="alert"></p>
+          <button class="primary-button" type="submit">Tạo tài khoản <span>→</span></button><button id="backToLogin" class="text-button register-link" type="button">Đã có tài khoản? <strong>Đăng nhập</strong></button>
+        </form>
+      </div>
+    </main>
+  </section>
+
+  <section id="appView" class="app-view is-hidden">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand"><span class="brand-mark">KF</span><div><strong>KhoFlow</strong><span>Warehouse ERP</span></div><button id="closeSidebar" class="sidebar-close">×</button></div>
+      <nav class="nav-list">
+        <p class="nav-label">ĐIỀU HÀNH</p>
+        <button class="nav-item active" data-view="Tổng quan"><span>▦</span>Tổng quan</button>
+        <button class="nav-item" data-view="Tồn kho"><span>▤</span>Tồn kho</button>
+        <button class="nav-item" data-view="Nhập kho"><span>↙</span>Nhập kho</button>
+        <button class="nav-item" data-view="Xuất kho"><span>↗</span>Xuất kho</button>
+        <button class="nav-item" data-view="Chuyển kho"><span>⇄</span>Chuyển kho</button>
+        <p class="nav-label">KIỂM SOÁT</p>
+        <button class="nav-item" data-view="Lô & hạn dùng"><span>◷</span>Lô & hạn dùng</button>
+        <button class="nav-item" data-view="Kiểm kê"><span>✓</span>Kiểm kê</button>
+        <button class="nav-item" data-view="Nhà cung cấp"><span>◇</span>Nhà cung cấp</button>
+        <button class="nav-item" data-view="Báo cáo kho"><span>▥</span>Báo cáo kho</button>
+      </nav>
+      <div class="sidebar-help"><span>?</span><div><strong>Cần hỗ trợ?</strong><small>Xem hướng dẫn vận hành</small></div></div>
+    </aside>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+    <main class="workspace">
+      <header class="topbar">
+        <button id="openSidebar" class="mobile-menu">☰</button>
+        <div><p>KhoFlow / <span id="breadcrumb">Tổng quan</span></p><h1 id="pageTitle">Tổng quan kho</h1></div>
+        <div class="topbar-actions">
+
+          <div class="user-chip"><span class="avatar"></span><div><strong></strong><small></small></div></div>
+          <button id="logoutButton" class="logout-button">Đăng xuất</button>
+        </div>
+      </header>
+
+      <div class="content is-hidden" id="dashboardContent"></div>
+      <div id="moduleContent" class="content module-content is-hidden"></div>
+    </main>
+  </section>
+  <div id="drawerOverlay" class="drawer-overlay"></div>
+  <aside id="stockDrawer" class="stock-drawer" aria-hidden="true">
+    <button id="closeDrawer" class="drawer-close">×</button>
+    <div id="drawerBody"></div>
+  </aside>
+  <div id="formModal" class="form-modal" aria-hidden="true">
+    <div class="form-dialog" role="dialog" aria-modal="true" aria-labelledby="formModalTitle">
+      <header><div><span id="formModalEyebrow">BIỂU MẪU NGHIỆP VỤ</span><h2 id="formModalTitle">Tạo mới</h2><p id="formModalDescription"></p></div><button id="closeFormModal" type="button">×</button></header>
+      <form id="entityForm"><div id="formFields" class="form-fields"></div><footer><button id="cancelEntityForm" class="outline-button" type="button">Hủy</button><button class="orange-button" type="submit">Lưu thông tin</button></footer></form>
+    </div>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="assets/app.js?v=sprint2-1"></script>
+  <script src="assets/sprint2.js?v=sprint2-1"></script>
+</body>
+</html>

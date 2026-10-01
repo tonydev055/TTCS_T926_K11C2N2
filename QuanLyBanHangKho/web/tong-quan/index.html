@@ -1,12 +1,17 @@
 <!-- Loaded by the application shell: ../index.html -->
 <style>
-/* Common layout and controls use assets/shared/styles.css. */
+  /* Common layout and controls use assets/shared/styles.css. */
 </style>
 <script>
-function renderRealHome() {
-  const menu = (typeof sprint2Menu === 'function' ? sprint2Menu() : roleConfigs[activeRole].menu).filter(view => view !== 'Tổng quan');
-  moduleContent.innerHTML = `<section class="role-hero"><div><span class="eyebrow">KHÔNG GIAN LÀM VIỆC</span><h2>Chào ${escapeHtml(currentUser.fullName || currentUser.email || 'bạn')}</h2><p>${escapeHtml(roleConfigs[activeRole].label)} · Chọn một mục để xem dữ liệu được lưu trong hệ thống.</p></div></section><section class="panel"><div class="panel-heading"><div><h3>Truy cập nhanh</h3><p>Danh mục và thông tin làm việc của bạn.</p></div></div><div class="role-shortcuts">${menu.map(view => `<button data-open-view="${escapeHtml(view)}"><span>◇</span><strong>${escapeHtml(view)}</strong></button>`).join('')}</div></section>`;
-  moduleContent.querySelectorAll('[data-open-view]').forEach(button => button.addEventListener('click', () => openView(button.dataset.openView)));
-}
-
+  function renderRealHome() {
+    const menu = (
+      typeof getAvailableMenu === 'function' ? getAvailableMenu() : roleConfigs[activeRole].menu
+    ).filter((view) => view !== 'Tổng quan');
+    moduleContent.innerHTML = `<section class="role-hero"><div><span class="eyebrow">KHÔNG GIAN LÀM VIỆC</span><h2>Chào ${escapeHtml(currentUser.fullName || currentUser.email || 'bạn')}</h2><p>${escapeHtml(roleConfigs[activeRole].label)} · Chọn một mục để xem dữ liệu được lưu trong hệ thống.</p></div></section><section class="panel"><div class="panel-heading"><div><h3>Truy cập nhanh</h3><p>Danh mục và thông tin làm việc của bạn.</p></div></div><div class="role-shortcuts">${menu.map((view) => `<button data-open-view="${escapeHtml(view)}"><span>◇</span><strong>${escapeHtml(view)}</strong></button>`).join('')}</div></section>`;
+    moduleContent
+      .querySelectorAll('[data-open-view]')
+      .forEach((button) =>
+        button.addEventListener('click', () => openView(button.dataset.openView))
+      );
+  }
 </script>

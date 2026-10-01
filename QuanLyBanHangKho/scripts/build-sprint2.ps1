@@ -17,7 +17,7 @@ if($Test){
   if($LASTEXITCODE -ne 0){throw 'Test compilation failed'}
   & "$JavaHome/bin/java.exe" -cp "$classes;$testClasses;$(Join-Path $projectRoot 'web/WEB-INF/lib/*')" service.Sprint2SelfTest
   if($LASTEXITCODE -ne 0){throw 'Sprint 2 tests failed'}
-  & "$JavaHome/bin/java.exe" -cp "$classes;$testClasses" security.PermissionMatrixSelfTest
+  & "$JavaHome/bin/java.exe" -cp "$classes;$testClasses" security.PhanQuyenSelfTest
   if($LASTEXITCODE -ne 0){throw 'Permission tests failed'}
   & node --test (Join-Path $projectRoot 'test/frontend/real-data.test.cjs')
   if($LASTEXITCODE -ne 0){throw 'Frontend tests failed'}

@@ -1,103 +1,433 @@
 <!-- Loaded by the application shell: ../index.html -->
 <style>
-
-
-/* Sprint 2 catalog, profile and imports */
-.s2-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
-.s2-tabs button{padding:10px 16px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--muted)}
-.s2-tabs .selected{background:var(--orange);border-color:var(--orange);color:white}
-.s2-product-thumb{width:34px;height:34px;object-fit:cover;border-radius:6px;margin-right:8px;vertical-align:middle}
-.s2-price-line{display:grid;grid-template-columns:2fr 1fr 1fr 30px;gap:8px;margin:10px 0;align-items:end}
-.s2-price-line label{font-size:11px}
-.s2-price-line button{height:38px;border:0;border-radius:8px}
-
+  /* Sprint 2 catalog, profile and imports */
+  .s2-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 0 0 18px;
+  }
+  .s2-tabs button {
+    padding: 10px 16px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: white;
+    color: var(--muted);
+  }
+  .s2-tabs .selected {
+    background: var(--orange);
+    border-color: var(--orange);
+    color: white;
+  }
+  .s2-product-thumb {
+    width: 34px;
+    height: 34px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  .s2-price-line {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 30px;
+    gap: 8px;
+    margin: 10px 0;
+    align-items: end;
+  }
+  .s2-price-line label {
+    font-size: 11px;
+  }
+  .s2-price-line button {
+    height: 38px;
+    border: 0;
+    border-radius: 8px;
+  }
 </style>
 <script>
-const s2 = {
-  endpoint:'products', rows:[], page:1, request:0,
-  labels:{products:'Sản phẩm',categories:'Nhóm hàng','product-units':'Quy đổi đơn vị','customer-groups':'Nhóm khách hàng','price-lists':'Bảng giá',suppliers:'Nhà cung cấp'},
-  permissions:{products:'products.write',categories:'products.write','product-units':'units.write','customer-groups':'prices.write','price-lists':'prices.write',suppliers:'suppliers.write'},
-  columns:{products:[['sku','SKU'],['name','Sản phẩm'],['category_name','Nhóm hàng'],['base_unit','Đơn vị cơ sở'],['packaging','Đóng gói'],['cost_price','Giá vốn'],['active','Trạng thái']],categories:[['code','Mã nhóm'],['name','Tên nhóm'],['parent_id','Nhóm cha']], 'product-units':[['sku','SKU'],['product_name','Sản phẩm'],['name','Đơn vị'],['factor','Hệ số quy đổi']],suppliers:[['code','Mã NCC'],['name','Nhà cung cấp'],['tax_code','Mã số thuế'],['contact_name','Liên hệ'],['phone','Điện thoại'],['payment_terms','Thanh toán'],['active','Trạng thái']], 'customer-groups':[['code','Mã nhóm'],['name','Nhóm khách hàng']], 'price-lists':[['name','Bảng giá'],['group_name','Nhóm khách hàng'],['valid_from','Từ ngày'],['valid_to','Đến ngày'],['version','Phiên bản'],['active','Áp dụng'],['locked','Đã có đơn']]}
-};
-async function s2Catalog(endpoint) {
-  const revision=viewRevision,request=++s2.request;s2.endpoint=endpoint;s2.page=1;
-  const writable=s2Can(s2.permissions[endpoint]);
-  const tabs=endpoint==='suppliers'?['suppliers']:['products','categories','product-units','customer-groups','price-lists'];
-  moduleContent.innerHTML=`<section class="module-head"><div><span class="eyebrow">DANH MỤC</span><h2>${s2.labels[endpoint]}</h2><p>Thông tin được lưu trong hệ thống và áp dụng theo quyền của bạn.</p></div><div class="module-actions">${endpoint==='products'&&writable?'<button class="outline-button" id="s2Import">Nhập Excel</button>':''}${writable?'<button class="orange-button" id="s2Create">+ Thêm mới</button>':''}</div></section><div class="s2-tabs">${tabs.map(key=>`<button data-catalog="${key}" class="${key===endpoint?'selected':''}">${s2.labels[key]}</button>`).join('')}</div><section class="inventory-panel"><div class="inventory-toolbar"><label class="search-control"><span>⌕</span><input type="search" id="s2Search" placeholder="Tìm mã, tên hoặc thông tin..."></label><select id="s2Status" class="filter-select"><option value="">Tất cả trạng thái</option><option value="true">Đang hoạt động</option><option value="false">Ngừng hoạt động</option></select><button class="outline-button" id="s2Reload">Tải lại</button><span id="s2Count" class="filter-result"></span></div><div id="s2Table" class="table-scroll" aria-live="polite"><p class="s2-empty">Đang tải dữ liệu...</p></div><div class="inventory-footer"><span id="s2Footer"></span><div id="s2Pages" class="pagination"></div></div></section>`;
-  const host=document.getElementById('s2Table');
-  moduleContent.querySelectorAll('[data-catalog]').forEach(button=>button.onclick=()=>s2Catalog(button.dataset.catalog));
-  document.getElementById('s2Reload').onclick=()=>s2Catalog(endpoint);
-  document.getElementById('s2Create')?.addEventListener('click',()=>s2Edit(endpoint));
-  document.getElementById('s2Import')?.addEventListener('click',()=>s2Import('products'));
-  try{
-    const rows=await s2Api(`${endpoint}/`);if(revision!==viewRevision||request!==s2.request||!host.isConnected)return;
-    s2.rows=rows;
-    const columns=s2.columns[endpoint].filter(([key])=>key!=='cost_price'||s2Can('products.cost'));
-    const display=(row,key)=>{
-      const value=row[key];if(key==='active')return value?'Đang hoạt động':'Ngừng hoạt động';if(key==='locked')return value?'Đã khóa nội dung':'Chưa phát sinh đơn';if(key==='cost_price')return s2Money(value);
-      if(key==='parent_id')return rows.find(item=>item.id===value)?.name || 'Nhóm gốc';
-      if(key==='factor')return `× ${number(value)}`;
-      return value==null?'—':String(value);
-    };
-    const draw=()=>{
-      const query=document.getElementById('s2Search').value.trim().toLocaleLowerCase('vi'),status=document.getElementById('s2Status').value;
-      const filtered=rows.filter(row=>(!status||row.active==null||String(row.active)===status)&&columns.some(([key])=>display(row,key).toLocaleLowerCase('vi').includes(query)));
-      const pageCount=Math.max(1,Math.ceil(filtered.length/20));s2.page=Math.min(s2.page,pageCount);
-      document.getElementById('s2Count').textContent=`${number(filtered.length)} bản ghi`;
-      document.getElementById('s2Footer').textContent=`Trang ${s2.page} / ${pageCount}`;
-      host.innerHTML=filtered.length?`<table class="feature-table s2-table"><thead><tr>${columns.map(([,label])=>`<th>${label}</th>`).join('')}<th>Thao tác</th></tr></thead><tbody>${filtered.slice((s2.page-1)*20,s2.page*20).map(row=>`<tr>${columns.map(([key])=>`<td>${key==='name'&&row.has_image?`<img class="s2-product-thumb" src="api/products/${row.id}/thumbnail" alt="">`:''}${escapeHtml(display(row,key))}</td>`).join('')}<td><div class="s2-row-actions">${endpoint==='price-lists'?`<button class="row-action" data-details="${row.id}">Chi tiết</button>`:''}${writable?`${endpoint==='price-lists'?`<button class="row-action" data-version="${row.id}">Phiên bản mới</button>`:''}${!row.locked?`<button class="row-action" data-edit="${row.id}">Sửa</button><button class="row-action" data-delete="${row.id}">Xóa</button>`:''}`:''}</div></td></tr>`).join('')}</tbody></table>`:`<div class="s2-empty"><strong>${rows.length?'Không có kết quả phù hợp':'Chưa có dữ liệu'}</strong><p>${writable?'Thêm bản ghi đầu tiên hoặc điều chỉnh bộ lọc.':'Dữ liệu sẽ xuất hiện sau khi được khai báo.'}</p></div>`;
-      document.getElementById('s2Pages').innerHTML=`<button id="s2Prev" ${s2.page===1?'disabled':''}>‹</button><button disabled>${s2.page}</button><button id="s2Next" ${s2.page===pageCount?'disabled':''}>›</button>`;
-      document.getElementById('s2Prev').onclick=()=>{s2.page--;draw();};document.getElementById('s2Next').onclick=()=>{s2.page++;draw();};
-      host.querySelectorAll('[data-edit]').forEach(button=>button.onclick=()=>s2Edit(endpoint,rows.find(row=>row.id===Number(button.dataset.edit))));
-      host.querySelectorAll('[data-version]').forEach(button=>button.onclick=()=>s2Edit(endpoint,rows.find(row=>row.id===Number(button.dataset.version)),true));
-      host.querySelectorAll('[data-details]').forEach(button=>button.onclick=()=>s2PriceDetails(rows.find(row=>row.id===Number(button.dataset.details))));
-      host.querySelectorAll('[data-delete]').forEach(button=>button.onclick=async()=>{if(!confirm('Xóa bản ghi này? Dữ liệu đã sử dụng sẽ được giữ lại.'))return;button.disabled=true;try{await s2Api(`${endpoint}/${button.dataset.delete}`,{method:'DELETE'});showToast('Đã xóa dữ liệu');s2Catalog(endpoint);}catch(e){s2Error(e);button.disabled=false;}});
-    };
-    document.getElementById('s2Search').oninput=()=>{s2.page=1;draw();};document.getElementById('s2Status').onchange=()=>{s2.page=1;draw();};draw();
-  }catch(e){if(host.isConnected&&revision===viewRevision)host.innerHTML=`<p class="s2-empty" role="alert">${escapeHtml(e.message)}</p>`;}
-}
-
-function s2CategoryLabel(category,categories) {const names=[category.name],seen=new Set([category.id]);let parent=categories.find(c=>c.id===category.parent_id);while(parent&&!seen.has(parent.id)){names.unshift(parent.name);seen.add(parent.id);parent=categories.find(c=>c.id===parent.parent_id);}return names.join(' › ');}
-
-async function s2Edit(endpoint,record={},version=false) {
-  const revision=viewRevision;try{
-    let fields='',products=[],groups=[];
-    const activeField=()=>s2Field('active','Trạng thái',record.active??true,'text',true,[[true,'Đang hoạt động'],[false,'Ngừng hoạt động']]);
-    if(endpoint==='products'){
-      const categories=await s2Api('categories/');
-      fields=s2Field('sku','Mã SKU',record.sku)+s2Field('name','Tên sản phẩm',record.name)+s2Field('category_id','Nhóm hàng',record.category_id,'text',true,categories.map(c=>[c.id,`${c.code} · ${s2CategoryLabel(c,categories)}`]))+s2Field('base_unit','Đơn vị cơ sở',record.base_unit,'text',true,null,!!record.id)+s2Field('packaging','Quy cách đóng gói',record.packaging,'text',false)+(s2Can('products.cost')?s2Field('cost_price','Giá vốn (VND)',record.cost_price??0,'number'):'')+activeField()+s2Field('image','Ảnh JPG/PNG, tối đa 2 MB','','file',false);
-    }else if(endpoint==='categories'){
-      const categories=await s2Api('categories/');fields=s2Field('code','Mã nhóm',record.code)+s2Field('name','Tên nhóm',record.name)+s2Field('parent_id','Nhóm cha (bỏ trống để tạo nhóm gốc)',record.parent_id,'text',false,categories.filter(c=>c.id!==record.id).map(c=>[c.id,s2CategoryLabel(c,categories)]));
-    }else if(endpoint==='product-units'){
-      products=await s2Api('products/');fields=s2Field('product_id','Sản phẩm',record.product_id,'text',true,products.map(p=>[p.id,`${p.sku} · ${p.name}`]),!!record.id)+s2Field('name','Tên đơn vị',record.name)+s2Field('factor','Số đơn vị cơ sở tương ứng',record.factor??1,'number')+'<p class="s2-hint">Ví dụ: 1 thùng = 24 lon thì hệ số là 24. Lịch sử giao dịch giữ nguyên khi bạn đổi hệ số.</p>';
-    }else if(endpoint==='suppliers'){
-      fields=s2Field('code','Mã nhà cung cấp',record.code)+s2Field('name','Tên nhà cung cấp',record.name)+s2Field('tax_code','Mã số thuế',record.tax_code)+s2Field('contact_name','Người liên hệ',record.contact_name)+s2Field('phone','Số điện thoại',record.phone,'tel',false)+activeField()+s2Field('payment_terms','Điều khoản thanh toán',record.payment_terms,'textarea');
-    }else if(endpoint==='customer-groups')fields=s2Field('code','Mã nhóm',record.code)+s2Field('name','Tên nhóm khách hàng',record.name);
-    else if(endpoint==='price-lists'){
-      [products,groups]=await Promise.all([s2Api('products/'),s2Api('customer-groups/')]);
-      fields=s2Field('name','Tên bảng giá',record.name)+s2Field('customer_group_id','Nhóm khách hàng',record.customer_group_id,'text',true,groups.map(g=>[g.id,g.name]))+s2Field('valid_from','Ngày bắt đầu',version?'':record.valid_from,'date')+s2Field('valid_to','Ngày kết thúc',version?'':record.valid_to,'date')+activeField()+'<div class="form-group full"><label>Giá theo đơn vị cơ sở</label><div id="s2PriceLines"></div><button type="button" class="outline-button" id="s2AddLine">+ Thêm dòng giá</button></div>';
+  const catalogState = {
+    endpoint: 'products',
+    rows: [],
+    page: 1,
+    request: 0,
+    labels: {
+      products: 'Sản phẩm',
+      categories: 'Nhóm hàng',
+      'product-units': 'Quy đổi đơn vị',
+      'customer-groups': 'Nhóm khách hàng',
+      'price-lists': 'Bảng giá',
+      suppliers: 'Nhà cung cấp'
+    },
+    permissions: {
+      products: 'products.write',
+      categories: 'products.write',
+      'product-units': 'units.write',
+      'customer-groups': 'prices.write',
+      'price-lists': 'prices.write',
+      suppliers: 'suppliers.write'
+    },
+    columns: {
+      products: [
+        ['sku', 'SKU'],
+        ['name', 'Sản phẩm'],
+        ['category_name', 'Nhóm hàng'],
+        ['base_unit', 'Đơn vị cơ sở'],
+        ['packaging', 'Đóng gói'],
+        ['cost_price', 'Giá vốn'],
+        ['active', 'Trạng thái']
+      ],
+      categories: [
+        ['code', 'Mã nhóm'],
+        ['name', 'Tên nhóm'],
+        ['parent_id', 'Nhóm cha']
+      ],
+      'product-units': [
+        ['sku', 'SKU'],
+        ['product_name', 'Sản phẩm'],
+        ['name', 'Đơn vị'],
+        ['factor', 'Hệ số quy đổi']
+      ],
+      suppliers: [
+        ['code', 'Mã NCC'],
+        ['name', 'Nhà cung cấp'],
+        ['tax_code', 'Mã số thuế'],
+        ['contact_name', 'Liên hệ'],
+        ['phone', 'Điện thoại'],
+        ['payment_terms', 'Thanh toán'],
+        ['active', 'Trạng thái']
+      ],
+      'customer-groups': [
+        ['code', 'Mã nhóm'],
+        ['name', 'Nhóm khách hàng']
+      ],
+      'price-lists': [
+        ['name', 'Bảng giá'],
+        ['group_name', 'Nhóm khách hàng'],
+        ['valid_from', 'Từ ngày'],
+        ['valid_to', 'Đến ngày'],
+        ['version', 'Phiên bản'],
+        ['active', 'Áp dụng'],
+        ['locked', 'Đã có đơn']
+      ]
     }
-    if(revision!==viewRevision)return;
-    const dialog=s2Dialog(`${version?'Tạo phiên bản mới':record.id?'Chỉnh sửa':'Thêm'} · ${s2.labels[endpoint]}`,fields);
-    const addLine=(line={})=>{const div=document.createElement('div');div.className='s2-price-line';div.innerHTML=`<label>Sản phẩm<select name="line_product" required><option value="">Chọn sản phẩm</option>${products.map(p=>`<option value="${p.id}" ${p.id===line.product_id?'selected':''}>${escapeHtml(p.sku+' · '+p.name+' / '+p.base_unit)}</option>`).join('')}</select></label><label>Giá bán<input name="line_price" type="number" min="0" step="0.01" required value="${escapeHtml(line.price??'')}"></label><label>Giá sàn<input name="line_floor" type="number" min="0" step="0.01" required value="${escapeHtml(line.floor_price??'')}"></label><button type="button" aria-label="Xóa dòng giá">×</button>`;div.querySelector('button').onclick=()=>div.remove();document.getElementById('s2PriceLines').append(div);};
-    if(endpoint==='price-lists'){(record.lines?.length?record.lines:[{}]).forEach(addLine);document.getElementById('s2AddLine').onclick=()=>addLine();}
-    dialog.form.onsubmit=async event=>{
-      event.preventDefault();const button=dialog.form.querySelector('[type="submit"]');button.disabled=true;const error=document.getElementById('s2FormError');error.textContent='';
-      try{
-        const data=Object.fromEntries(new FormData(dialog.form).entries());const file=data.image;delete data.image;
-        if('active' in data)data.active=data.active==='true';for(const key of ['category_id','parent_id','product_id','customer_group_id'])if(key in data)data[key]=data[key]?Number(data[key]):null;
-        if(endpoint==='product-units'&&record.id)data.product_id=record.product_id;
-        if(endpoint==='price-lists'){data.lines=[...dialog.form.querySelectorAll('.s2-price-line')].map(line=>({product_id:Number(line.querySelector('[name="line_product"]').value),price:line.querySelector('[name="line_price"]').value,floor_price:line.querySelector('[name="line_floor"]').value}));delete data.line_product;delete data.line_price;delete data.line_floor;if(version)data.previous_id=record.id;}
-        if(file?.size>2*1024*1024)throw new Error('Ảnh phải nhỏ hơn hoặc bằng 2 MB');
-        const id=version?null:record.id;const result=await s2Api(`${endpoint}/${id||''}`,s2Json(id?'PUT':'POST',data));
-        if(file?.size){try{const upload=new FormData();upload.append('file',file);await s2Api(`products/${result.id}/image`,{method:'POST',body:upload});}catch(imageError){dialog.close();s2Catalog(endpoint);showToast(`Đã lưu sản phẩm; ảnh chưa lưu: ${imageError.message}`);return;}}
-        dialog.close();showToast(result.message);s2Catalog(endpoint);
-      }catch(e){error.textContent=e.message;}finally{button.disabled=false;}
-    };
-  }catch(e){s2Error(e);}
-}
-function s2PriceDetails(row) {
-  s2Dialog(row.name,`<div class="form-group full"><p>${escapeHtml(row.group_name)} · ${escapeHtml(row.valid_from)} → ${escapeHtml(row.valid_to)}</p><div class="table-scroll"><table class="feature-table"><thead><tr><th>SKU</th><th>Sản phẩm</th><th>Đơn vị</th><th>Giá bán</th>${row.lines.some(l=>'floor_price' in l)?'<th>Giá sàn</th>':''}</tr></thead><tbody>${row.lines.map(line=>`<tr><td>${escapeHtml(line.sku)}</td><td>${escapeHtml(line.product_name)}</td><td>${escapeHtml(line.base_unit)}</td><td>${s2Money(line.price)}</td>${'floor_price' in line?`<td>${s2Money(line.floor_price)}</td>`:''}</tr>`).join('')}</tbody></table></div></div>`,null);
-}
+  };
+  async function renderCatalog(endpoint) {
+    const revision = viewRevision,
+      request = ++catalogState.request;
+    catalogState.endpoint = endpoint;
+    catalogState.page = 1;
+    const writable = hasPermission(catalogState.permissions[endpoint]);
+    const tabs =
+      endpoint === 'suppliers'
+        ? ['suppliers']
+        : ['products', 'categories', 'product-units', 'customer-groups', 'price-lists'];
+    moduleContent.innerHTML = `<section class="module-head"><div><span class="eyebrow">DANH MỤC</span><h2>${catalogState.labels[endpoint]}</h2></div><div class="module-actions">${endpoint === 'products' && writable ? '<button class="outline-button" id="s2Import">Nhập Excel</button>' : ''}${writable ? '<button class="orange-button" id="s2Create">+ Thêm mới</button>' : ''}</div></section><div class="s2-tabs">${tabs.map((key) => `<button data-catalog="${key}" class="${key === endpoint ? 'selected' : ''}">${catalogState.labels[key]}</button>`).join('')}</div><section class="inventory-panel"><div class="inventory-toolbar"><label class="search-control"><span>⌕</span><input type="search" id="s2Search" placeholder="Tìm mã, tên hoặc thông tin..."></label><select id="s2Status" class="filter-select"><option value="">Tất cả trạng thái</option><option value="true">Đang hoạt động</option><option value="false">Ngừng hoạt động</option></select><button class="outline-button" id="s2Reload">Tải lại</button><span id="s2Count" class="filter-result"></span></div><div id="s2Table" class="table-scroll" aria-live="polite"><p class="s2-empty">Đang tải dữ liệu...</p></div><div class="inventory-footer"><span id="s2Footer"></span><div id="s2Pages" class="pagination"></div></div></section>`;
+    const host = document.getElementById('s2Table');
+    moduleContent
+      .querySelectorAll('[data-catalog]')
+      .forEach((button) => (button.onclick = () => renderCatalog(button.dataset.catalog)));
+    document.getElementById('s2Reload').onclick = () => renderCatalog(endpoint);
+    document.getElementById('s2Create')?.addEventListener('click', () => openCatalogForm(endpoint));
+    document
+      .getElementById('s2Import')
+      ?.addEventListener('click', () => renderExcelImport('products'));
+    try {
+      const rows = await apiRequest(`${endpoint}/`);
+      if (revision !== viewRevision || request !== catalogState.request || !host.isConnected) return;
+      catalogState.rows = rows;
+      const columns = catalogState.columns[endpoint].filter(
+        ([key]) => key !== 'cost_price' || hasPermission('products.cost')
+      );
+      const display = (row, key) => {
+        const value = row[key];
+        if (key === 'active') return value ? 'Đang hoạt động' : 'Ngừng hoạt động';
+        if (key === 'locked') return value ? 'Đã khóa nội dung' : 'Chưa phát sinh đơn';
+        if (key === 'cost_price') return formatMoney(value);
+        if (key === 'parent_id') return rows.find((item) => item.id === value)?.name || 'Nhóm gốc';
+        if (key === 'factor') return `× ${number(value)}`;
+        return value == null ? '—' : String(value);
+      };
+      const renderCatalogRows = () => {
+        const query = document.getElementById('s2Search').value.trim().toLocaleLowerCase('vi'),
+          status = document.getElementById('s2Status').value;
+        const filtered = rows.filter(
+          (row) =>
+            (!status || row.active == null || String(row.active) === status) &&
+            columns.some(([key]) => display(row, key).toLocaleLowerCase('vi').includes(query))
+        );
+        const pageCount = Math.max(1, Math.ceil(filtered.length / 20));
+        catalogState.page = Math.min(catalogState.page, pageCount);
+        document.getElementById('s2Count').textContent = `${number(filtered.length)} bản ghi`;
+        document.getElementById('s2Footer').textContent = `Trang ${catalogState.page} / ${pageCount}`;
+        host.innerHTML = filtered.length
+          ? `<table class="feature-table s2-table"><thead><tr>${columns.map(([, label]) => `<th>${label}</th>`).join('')}<th>Thao tác</th></tr></thead><tbody>${filtered
+              .slice((catalogState.page - 1) * 20, catalogState.page * 20)
+              .map(
+                (row) =>
+                  `<tr>${columns.map(([key]) => `<td>${key === 'name' && row.has_image ? `<img class="s2-product-thumb" src="api/products/${row.id}/thumbnail" alt="">` : ''}${escapeHtml(display(row, key))}</td>`).join('')}<td><div class="s2-row-actions">${endpoint === 'price-lists' ? `<button class="row-action" data-details="${row.id}">Chi tiết</button>` : ''}${writable ? `${endpoint === 'price-lists' ? `<button class="row-action" data-version="${row.id}">Phiên bản mới</button>` : ''}${!row.locked ? `<button class="row-action" data-edit="${row.id}">Sửa</button><button class="row-action" data-delete="${row.id}">Xóa</button>` : ''}` : ''}</div></td></tr>`
+              )
+              .join('')}</tbody></table>`
+          : `<div class="s2-empty"><strong>${rows.length ? 'Không có kết quả phù hợp' : 'Chưa có dữ liệu'}</strong><p>${writable ? 'Thêm bản ghi đầu tiên hoặc điều chỉnh bộ lọc.' : 'Dữ liệu sẽ xuất hiện sau khi được khai báo.'}</p></div>`;
+        document.getElementById('s2Pages').innerHTML =
+          `<button id="s2Prev" ${catalogState.page === 1 ? 'disabled' : ''}>‹</button><button disabled>${catalogState.page}</button><button id="s2Next" ${catalogState.page === pageCount ? 'disabled' : ''}>›</button>`;
+        document.getElementById('s2Prev').onclick = () => {
+          catalogState.page--;
+          renderCatalogRows();
+        };
+        document.getElementById('s2Next').onclick = () => {
+          catalogState.page++;
+          renderCatalogRows();
+        };
+        host.querySelectorAll('[data-edit]').forEach(
+          (button) =>
+            (button.onclick = () =>
+              openCatalogForm(
+                endpoint,
+                rows.find((row) => row.id === Number(button.dataset.edit))
+              ))
+        );
+        host.querySelectorAll('[data-version]').forEach(
+          (button) =>
+            (button.onclick = () =>
+              openCatalogForm(
+                endpoint,
+                rows.find((row) => row.id === Number(button.dataset.version)),
+                true
+              ))
+        );
+        host
+          .querySelectorAll('[data-details]')
+          .forEach(
+            (button) =>
+              (button.onclick = () =>
+                showPriceListDetails(rows.find((row) => row.id === Number(button.dataset.details))))
+          );
+        host.querySelectorAll('[data-delete]').forEach(
+          (button) =>
+            (button.onclick = async () => {
+              if (!confirm('Xóa bản ghi này? Dữ liệu đã sử dụng sẽ được giữ lại.')) return;
+              button.disabled = true;
+              try {
+                await apiRequest(`${endpoint}/${button.dataset.delete}`, { method: 'DELETE' });
+                showToast('Đã xóa dữ liệu');
+                renderCatalog(endpoint);
+              } catch (e) {
+                showRequestError(e);
+                button.disabled = false;
+              }
+            })
+        );
+      };
+      document.getElementById('s2Search').oninput = () => {
+        catalogState.page = 1;
+        renderCatalogRows();
+      };
+      document.getElementById('s2Status').onchange = () => {
+        catalogState.page = 1;
+        renderCatalogRows();
+      };
+      renderCatalogRows();
+    } catch (e) {
+      if (host.isConnected && revision === viewRevision)
+        host.innerHTML = `<p class="s2-empty" role="alert">${escapeHtml(e.message)}</p>`;
+    }
+  }
 
+  function formatCategoryPath(category, categories) {
+    const names = [category.name],
+      seen = new Set([category.id]);
+    let parent = categories.find((c) => c.id === category.parent_id);
+    while (parent && !seen.has(parent.id)) {
+      names.unshift(parent.name);
+      seen.add(parent.id);
+      parent = categories.find((c) => c.id === parent.parent_id);
+    }
+    return names.join(' › ');
+  }
+
+  async function openCatalogForm(endpoint, record = {}, version = false) {
+    const revision = viewRevision;
+    try {
+      let fields = '',
+        products = [],
+        groups = [];
+      const activeField = () =>
+        renderInputField('active', 'Trạng thái', record.active ?? true, 'text', true, [
+          [true, 'Đang hoạt động'],
+          [false, 'Ngừng hoạt động']
+        ]);
+      if (endpoint === 'products') {
+        const categories = await apiRequest('categories/');
+        fields =
+          renderInputField('sku', 'Mã SKU', record.sku) +
+          renderInputField('name', 'Tên sản phẩm', record.name) +
+          renderInputField(
+            'category_id',
+            'Nhóm hàng',
+            record.category_id,
+            'text',
+            true,
+            categories.map((c) => [c.id, `${c.code} · ${formatCategoryPath(c, categories)}`])
+          ) +
+          renderInputField(
+            'base_unit',
+            'Đơn vị cơ sở',
+            record.base_unit,
+            'text',
+            true,
+            null,
+            !!record.id
+          ) +
+          renderInputField('packaging', 'Quy cách đóng gói', record.packaging, 'text', false) +
+          (hasPermission('products.cost')
+            ? renderInputField('cost_price', 'Giá vốn (VND)', record.cost_price ?? 0, 'number')
+            : '') +
+          activeField() +
+          renderInputField('image', 'Ảnh JPG/PNG, tối đa 2 MB', '', 'file', false);
+      } else if (endpoint === 'categories') {
+        const categories = await apiRequest('categories/');
+        fields =
+          renderInputField('code', 'Mã nhóm', record.code) +
+          renderInputField('name', 'Tên nhóm', record.name) +
+          renderInputField(
+            'parent_id',
+            'Nhóm cha (bỏ trống để tạo nhóm gốc)',
+            record.parent_id,
+            'text',
+            false,
+            categories
+              .filter((c) => c.id !== record.id)
+              .map((c) => [c.id, formatCategoryPath(c, categories)])
+          );
+      } else if (endpoint === 'product-units') {
+        products = await apiRequest('products/');
+        fields =
+          renderInputField(
+            'product_id',
+            'Sản phẩm',
+            record.product_id,
+            'text',
+            true,
+            products.map((p) => [p.id, `${p.sku} · ${p.name}`]),
+            !!record.id
+          ) +
+          renderInputField('name', 'Tên đơn vị', record.name) +
+          renderInputField('factor', 'Số đơn vị cơ sở tương ứng', record.factor ?? 1, 'number') +
+          '<p class="s2-hint">Ví dụ: 1 thùng = 24 lon thì hệ số là 24. Lịch sử giao dịch giữ nguyên khi bạn đổi hệ số.</p>';
+      } else if (endpoint === 'suppliers') {
+        fields =
+          renderInputField('code', 'Mã nhà cung cấp', record.code) +
+          renderInputField('name', 'Tên nhà cung cấp', record.name) +
+          renderInputField('tax_code', 'Mã số thuế', record.tax_code) +
+          renderInputField('contact_name', 'Người liên hệ', record.contact_name) +
+          renderInputField('phone', 'Số điện thoại', record.phone, 'tel', false) +
+          activeField() +
+          renderInputField(
+            'payment_terms',
+            'Điều khoản thanh toán',
+            record.payment_terms,
+            'textarea'
+          );
+      } else if (endpoint === 'customer-groups')
+        fields =
+          renderInputField('code', 'Mã nhóm', record.code) +
+          renderInputField('name', 'Tên nhóm khách hàng', record.name);
+      else if (endpoint === 'price-lists') {
+        [products, groups] = await Promise.all([
+          apiRequest('products/'),
+          apiRequest('customer-groups/')
+        ]);
+        fields =
+          renderInputField('name', 'Tên bảng giá', record.name) +
+          renderInputField(
+            'customer_group_id',
+            'Nhóm khách hàng',
+            record.customer_group_id,
+            'text',
+            true,
+            groups.map((g) => [g.id, g.name])
+          ) +
+          renderInputField('valid_from', 'Ngày bắt đầu', version ? '' : record.valid_from, 'date') +
+          renderInputField('valid_to', 'Ngày kết thúc', version ? '' : record.valid_to, 'date') +
+          activeField() +
+          '<div class="form-group full"><label>Giá theo đơn vị cơ sở</label><div id="s2PriceLines"></div><button type="button" class="outline-button" id="s2AddLine">+ Thêm dòng giá</button></div>';
+      }
+      if (revision !== viewRevision) return;
+      const dialog = openFormDialog(
+        `${version ? 'Tạo phiên bản mới' : record.id ? 'Chỉnh sửa' : 'Thêm'} · ${catalogState.labels[endpoint]}`,
+        fields
+      );
+      const addLine = (line = {}) => {
+        const div = document.createElement('div');
+        div.className = 's2-price-line';
+        div.innerHTML = `<label>Sản phẩm<select name="line_product" required><option value="">Chọn sản phẩm</option>${products.map((p) => `<option value="${p.id}" ${p.id === line.product_id ? 'selected' : ''}>${escapeHtml(p.sku + ' · ' + p.name + ' / ' + p.base_unit)}</option>`).join('')}</select></label><label>Giá bán<input name="line_price" type="number" min="0" step="0.01" required value="${escapeHtml(line.price ?? '')}"></label><label>Giá sàn<input name="line_floor" type="number" min="0" step="0.01" required value="${escapeHtml(line.floor_price ?? '')}"></label><button type="button" aria-label="Xóa dòng giá">×</button>`;
+        div.querySelector('button').onclick = () => div.remove();
+        document.getElementById('s2PriceLines').append(div);
+      };
+      if (endpoint === 'price-lists') {
+        (record.lines?.length ? record.lines : [{}]).forEach(addLine);
+        document.getElementById('s2AddLine').onclick = () => addLine();
+      }
+      dialog.form.onsubmit = async (event) => {
+        event.preventDefault();
+        const button = dialog.form.querySelector('[type="submit"]');
+        button.disabled = true;
+        const error = document.getElementById('s2FormError');
+        error.textContent = '';
+        try {
+          const data = Object.fromEntries(new FormData(dialog.form).entries());
+          const file = data.image;
+          delete data.image;
+          if ('active' in data) data.active = data.active === 'true';
+          for (const key of ['category_id', 'parent_id', 'product_id', 'customer_group_id'])
+            if (key in data) data[key] = data[key] ? Number(data[key]) : null;
+          if (endpoint === 'product-units' && record.id) data.product_id = record.product_id;
+          if (endpoint === 'price-lists') {
+            data.lines = [...dialog.form.querySelectorAll('.s2-price-line')].map((line) => ({
+              product_id: Number(line.querySelector('[name="line_product"]').value),
+              price: line.querySelector('[name="line_price"]').value,
+              floor_price: line.querySelector('[name="line_floor"]').value
+            }));
+            delete data.line_product;
+            delete data.line_price;
+            delete data.line_floor;
+            if (version) data.previous_id = record.id;
+          }
+          if (file?.size > 2 * 1024 * 1024) throw new Error('Ảnh phải nhỏ hơn hoặc bằng 2 MB');
+          const id = version ? null : record.id;
+          const result = await apiRequest(
+            `${endpoint}/${id || ''}`,
+            jsonRequestOptions(id ? 'PUT' : 'POST', data)
+          );
+          if (file?.size) {
+            try {
+              const upload = new FormData();
+              upload.append('file', file);
+              await apiRequest(`products/${result.id}/image`, { method: 'POST', body: upload });
+            } catch (imageError) {
+              dialog.close();
+              renderCatalog(endpoint);
+              showToast(`Đã lưu sản phẩm; ảnh chưa lưu: ${imageError.message}`);
+              return;
+            }
+          }
+          dialog.close();
+          showToast(result.message);
+          renderCatalog(endpoint);
+        } catch (e) {
+          error.textContent = e.message;
+        } finally {
+          button.disabled = false;
+        }
+      };
+    } catch (e) {
+      showRequestError(e);
+    }
+  }
+  function showPriceListDetails(row) {
+    openFormDialog(
+      row.name,
+      `<div class="form-group full"><p>${escapeHtml(row.group_name)} · ${escapeHtml(row.valid_from)} → ${escapeHtml(row.valid_to)}</p><div class="table-scroll"><table class="feature-table"><thead><tr><th>SKU</th><th>Sản phẩm</th><th>Đơn vị</th><th>Giá bán</th>${row.lines.some((l) => 'floor_price' in l) ? '<th>Giá sàn</th>' : ''}</tr></thead><tbody>${row.lines.map((line) => `<tr><td>${escapeHtml(line.sku)}</td><td>${escapeHtml(line.product_name)}</td><td>${escapeHtml(line.base_unit)}</td><td>${formatMoney(line.price)}</td>${'floor_price' in line ? `<td>${formatMoney(line.floor_price)}</td>` : ''}</tr>`).join('')}</tbody></table></div></div>`,
+      null
+    );
+  }
 </script>

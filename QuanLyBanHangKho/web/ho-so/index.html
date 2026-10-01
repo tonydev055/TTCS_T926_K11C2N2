@@ -1,21 +1,142 @@
 <!-- Loaded by the application shell: ../index.html -->
 <style>
-.s2-profile{max-width:850px}
-.s2-profile .form-fields{padding-left:0;padding-right:0}
-.s2-profile-head{display:flex;gap:22px;align-items:center}
-.s2-avatar,.s2-avatar-placeholder{width:96px;height:96px;border-radius:24px;object-fit:cover}
-.s2-avatar-placeholder{display:grid;place-items:center;background:var(--orange-soft);color:var(--orange);font-size:38px}
-.s2-profile hr{margin:28px 0;border:0;border-top:1px solid var(--line)}
-
+  .s2-profile {
+    max-width: 850px;
+  }
+  .s2-profile .form-fields {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .s2-profile-head {
+    display: flex;
+    gap: 22px;
+    align-items: center;
+  }
+  .s2-avatar,
+  .s2-avatar-placeholder {
+    width: 96px;
+    height: 96px;
+    border-radius: 24px;
+    object-fit: cover;
+  }
+  .s2-avatar-placeholder {
+    display: grid;
+    place-items: center;
+    background: var(--orange-soft);
+    color: var(--orange);
+    font-size: 38px;
+  }
+  .s2-profile hr {
+    margin: 28px 0;
+    border: 0;
+    border-top: 1px solid var(--line);
+  }
 </style>
 <script>
-async function s2Profile() {
-  const revision=viewRevision;moduleContent.innerHTML='<p class="s2-empty">Đang tải hồ sơ...</p>';
-  try{const user=await s2Api('profile/');if(revision!==viewRevision)return;
-    moduleContent.innerHTML=`<section class="module-head"><div><h2>Hồ sơ cá nhân</h2><p>Cập nhật thông tin liên lạc và ảnh đại diện của bạn.</p></div></section><section class="inventory-panel s2-profile"><div class="s2-profile-head">${user.has_avatar?'<img src="api/profile/avatar" class="s2-avatar" alt="Ảnh đại diện">':'<div class="s2-avatar-placeholder">'+escapeHtml(user.full_name.slice(0,1))+'</div>'}<div><h3>${escapeHtml(user.full_name)}</h3><p>${escapeHtml(user.email)}</p><p>${escapeHtml(user.roles.map(role=>roleConfigs[role]?.label||role).join(', '))}</p></div></div><form id="s2ProfileForm"><div class="form-fields">${s2Field('full_name','Họ và tên',user.full_name)+s2Field('phone','Số điện thoại',user.phone,'tel')}${s2Field('username','Tài khoản',user.username,'text',false,null,true)}${s2Field('scope','Kho / địa bàn',user.warehouses.join(', ')||user.territory||'Chưa gán','text',false,null,true)}</div><p class="s2-form-error" id="s2ProfileError" role="alert"></p><button class="orange-button" type="submit">Lưu hồ sơ</button></form><hr><form id="s2AvatarForm"><label>Ảnh JPG/PNG, tối đa 2 MB <input type="file" name="file" accept="image/png,image/jpeg" required></label><p>Ảnh tự cắt vuông ở giữa và tạo bản thu nhỏ.</p><button class="outline-button" type="submit">Cập nhật ảnh</button></form></section>`;
-    document.getElementById('s2ProfileForm').onsubmit=async event=>{event.preventDefault();const button=event.currentTarget.querySelector('button');button.disabled=true;const form=new FormData(event.currentTarget);try{await s2Api('profile/',s2Json('PUT',{full_name:form.get('full_name'),phone:form.get('phone')}));currentUser.fullName=form.get('full_name');document.querySelector('.user-chip strong').textContent=currentUser.fullName;showToast('Đã cập nhật hồ sơ');s2Profile();}catch(e){document.getElementById('s2ProfileError').textContent=e.message;}finally{button.disabled=false;}};
-    document.getElementById('s2AvatarForm').onsubmit=async event=>{event.preventDefault();const form=new FormData(event.currentTarget),button=event.currentTarget.querySelector('button');button.disabled=true;try{if(form.get('file').size>2097152)throw new Error('Ảnh vượt quá 2 MB');await s2Api('profile/avatar',{method:'POST',body:form});showToast('Đã cập nhật ảnh đại diện');s2Profile();}catch(e){s2Error(e);}finally{button.disabled=false;}};
-  }catch(e){if(revision===viewRevision)moduleContent.innerHTML=`<p class="s2-empty">${escapeHtml(e.message)}</p>`;}
-}
+  async function renderProfile() {
+    const revision = viewRevision;
+    moduleContent.innerHTML = '<p class="s2-empty">Đang tải hồ sơ...</p>';
+    try {
+      const user = await apiRequest('profile/');
+      if (revision !== viewRevision) return;
 
+      const avatar = user.has_avatar
+        ? '<img src="api/profile/avatar" class="s2-avatar" alt="Ảnh đại diện">'
+        : '<div class="s2-avatar-placeholder">' + escapeHtml(user.full_name.slice(0, 1)) + '</div>';
+      const roleNames = user.roles.map(role => roleConfigs[role]?.label || role).join(', ');
+      const workArea = user.warehouses.join(', ') || user.territory || 'Chưa gán';
+      const profileFields = [
+        renderInputField('full_name', 'Họ và tên', user.full_name),
+        renderInputField('phone', 'Số điện thoại', user.phone, 'tel'),
+        renderInputField('username', 'Tài khoản', user.username, 'text', false, null, true),
+        renderInputField('scope', 'Kho / địa bàn', workArea, 'text', false, null, true)
+      ].join('');
+
+      moduleContent.innerHTML = `
+        <section class="module-head">
+          <div>
+            <h2>Hồ sơ cá nhân</h2>
+            <p>Cập nhật thông tin liên lạc và ảnh đại diện của bạn.</p>
+          </div>
+        </section>
+        <section class="inventory-panel s2-profile">
+          <div class="s2-profile-head">
+            ${avatar}
+            <div>
+              <h3>${escapeHtml(user.full_name)}</h3>
+              <p>${escapeHtml(user.email)}</p>
+              <p>${escapeHtml(roleNames)}</p>
+            </div>
+          </div>
+          <form id="s2ProfileForm">
+            <div class="form-fields">${profileFields}</div>
+            <p class="s2-form-error" id="s2ProfileError" role="alert"></p>
+            <button class="orange-button" type="submit">Lưu hồ sơ</button>
+          </form>
+          <hr>
+          <form id="s2AvatarForm">
+            <label>
+              Ảnh JPG/PNG, tối đa 2 MB
+              <input type="file" name="file" accept="image/png,image/jpeg" required>
+            </label>
+            <p>Ảnh tự cắt vuông ở giữa và tạo bản thu nhỏ.</p>
+            <button class="outline-button" type="submit">Cập nhật ảnh</button>
+          </form>
+        </section>
+      `;
+      document.getElementById('s2ProfileForm').onsubmit = saveProfile;
+      document.getElementById('s2AvatarForm').onsubmit = uploadProfileAvatar;
+    } catch (e) {
+      if (revision === viewRevision)
+        moduleContent.innerHTML = `<p class="s2-empty">${escapeHtml(e.message)}</p>`;
+    }
+  }
+
+  async function saveProfile(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector('button');
+    const errorMessage = document.getElementById('s2ProfileError');
+    const formData = new FormData(form);
+    const profile = {
+      full_name: formData.get('full_name'),
+      phone: formData.get('phone')
+    };
+
+    button.disabled = true;
+    errorMessage.textContent = '';
+    try {
+      await apiRequest('profile/', jsonRequestOptions('PUT', profile));
+      currentUser.fullName = profile.full_name;
+      document.querySelector('.user-chip strong').textContent = currentUser.fullName;
+      showToast('Đã cập nhật hồ sơ');
+      if (form.isConnected) renderProfile();
+    } catch (error) {
+      errorMessage.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function uploadProfileAvatar(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector('button');
+    const formData = new FormData(form);
+    const maxAvatarSize = 2 * 1024 * 1024;
+
+    button.disabled = true;
+    try {
+      if (formData.get('file').size > maxAvatarSize) {
+        throw new Error('Ảnh vượt quá 2 MB');
+      }
+      await apiRequest('profile/avatar', { method: 'POST', body: formData });
+      showToast('Đã cập nhật ảnh đại diện');
+      if (form.isConnected) renderProfile();
+    } catch (error) {
+      showRequestError(error);
+    } finally {
+      button.disabled = false;
+    }
+  }
 </script>

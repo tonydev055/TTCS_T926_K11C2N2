@@ -91,7 +91,7 @@ test('Sprint 1-2 menus retain authorized features and exclude later workflows',(
   for (const role of ['ADMIN','SALES_MANAGER','SALES_REP','WH_MANAGER','WAREHOUSE','ACCOUNTANT','CUSTOMER']) {
     const permissions=role==='ADMIN'?['admin.users','products.read','suppliers.read']:role==='WAREHOUSE'||role==='WH_MANAGER'?['products.read','suppliers.read']:['products.read'];
     app.run(`activeRole=${JSON.stringify(role)};currentUser={roles:[activeRole],permissions:${JSON.stringify(permissions)}}`);
-    const menu=Array.from(app.run('sprint2Menu()'));
+    const menu=Array.from(app.run('getAvailableMenu()'));
     assert.ok(menu.includes('Hồ sơ cá nhân'));
     assert.ok(menu.includes('Đổi mật khẩu'));
     assert.ok(menu.includes('Sản phẩm & bảng giá'));
@@ -103,16 +103,68 @@ test('Sprint 1-2 menus retain authorized features and exclude later workflows',(
 
 test('all extracted feature entry points load from index without missing scripts',()=>{
   const app=setup();
-  for(const name of ['s2Catalog','s2Profile','s2Audit','s2Import','renderUsersModule','renderRealHome','openForgotPassword']) {
+  for(const name of ['renderCatalog','renderProfile','renderAuditLog','renderExcelImport','renderUsersModule','renderRealHome','openForgotPassword']) {
     assert.equal(app.run(`typeof ${name}`),'function',name);
   }
+});
+
+test('profile renders escaped user data and connects save and avatar handlers',async()=>{
+  const app=setup();
+  app.context.fetch=async()=>({ok:true,json:async()=>({
+    full_name:'<img src=x>',email:'user@example.test',username:'example',phone:'0901234567',
+    roles:['CUSTOMER'],warehouses:[],territory:'Hà Nội',has_avatar:false
+  })});
+  await app.run('renderProfile()');
+  assert.match(app.elements.get('moduleContent').innerHTML,/&lt;img src=x&gt;/);
+  assert.match(app.elements.get('moduleContent').innerHTML,/Hà Nội/);
+  assert.equal(app.elements.get('s2ProfileForm').onsubmit,app.run('saveProfile'));
+  assert.equal(app.elements.get('s2AvatarForm').onsubmit,app.run('uploadProfileAvatar'));
+});
+
+test('profile saves only editable fields and displays server errors',async()=>{
+  const app=setup();
+  app.run('moduleContent.innerHTML=\'<form id="s2ProfileForm"></form><p id="s2ProfileError"></p>\'');
+  const form=app.elements.get('s2ProfileForm');
+  const button={disabled:false};
+  form.querySelector=()=>button;
+  app.context.FormData=class {get(key){return {full_name:'Nguyễn An',phone:'0901234567'}[key];}};
+  const chip={textContent:''};
+  app.context.document.querySelector=()=>chip;
+  app.run('currentUser={fullName:"Tên cũ"};renderProfile=()=>{}');
+  app.context.event={preventDefault(){},currentTarget:form};
+  app.context.fetch=async(url,options)=>{
+    assert.equal(url,'api/profile/');
+    assert.equal(options.method,'PUT');
+    assert.deepEqual(JSON.parse(options.body),{full_name:'Nguyễn An',phone:'0901234567'});
+    assert.equal(button.disabled,true);
+    return {ok:true,json:async()=>({})};
+  };
+  await app.run('saveProfile(event)');
+  assert.equal(chip.textContent,'Nguyễn An');
+  assert.equal(button.disabled,false);
+  app.context.fetch=async()=>({ok:false,status:400,json:async()=>({message:'Số điện thoại không hợp lệ'})});
+  await app.run('saveProfile(event)');
+  assert.equal(app.elements.get('s2ProfileError').textContent,'Số điện thoại không hợp lệ');
+  assert.equal(button.disabled,false);
+});
+
+test('avatar upload rejects files larger than 2 MB before calling the API',async()=>{
+  const app=setup();let calls=0;
+  const button={disabled:false};
+  app.context.event={preventDefault(){},currentTarget:{querySelector:()=>button}};
+  app.context.FormData=class {get(){return {size:2*1024*1024+1};}};
+  app.context.fetch=async()=>{calls++;throw new Error('Unexpected upload');};
+  await app.run('uploadProfileAvatar(event)');
+  assert.equal(calls,0);
+  assert.equal(app.elements.get('toast').textContent,'Ảnh vượt quá 2 MB');
+  assert.equal(button.disabled,false);
 });
 
 test('every role can open and submit password change without admin permissions',async()=>{
   for(const role of ['ADMIN','SALES_MANAGER','SALES_REP','WH_MANAGER','WAREHOUSE','ACCOUNTANT','CUSTOMER']) {
     const app=setup();let calls=0;
     app.run(`activeRole='${role}';currentUser={roles:[activeRole],permissions:[],requiresPasswordChange:true}`);
-    assert.equal(app.run("openSprint2View('Đổi mật khẩu')"),true);
+    assert.equal(app.run("renderFeatureView('Đổi mật khẩu')"),true);
     app.elements.get('changeCurrentPassword').value=' old-password ';
     app.elements.get('changeNewPassword').value='NewPassword123';
     app.elements.get('changeConfirmPassword').value='NewPassword123';

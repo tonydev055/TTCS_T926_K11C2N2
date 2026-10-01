@@ -1,21 +1,50 @@
-# Frontend Sprint 1-2
+# Giao diện KhoFlow
 
-Mo ung dung qua `index.html` tren Tomcat. Moi chuc nang co mot file HTML
-chua style va script cua chuc nang; HTML dong nam trong template string cua script.
+Chạy ứng dụng trên Tomcat và mở `index.html`. Mỗi chức năng có HTML,
+CSS và JavaScript trong cùng một file, được nạp vào trang chính.
 
-- `danh-muc/index.html`: san pham, nhom hang, quy doi, nha cung cap, nhom khach hang, bang gia.
-- `nhat-ky/index.html`: nhat ky he thong.
-- `nguoi-dung/index.html`: quan ly tai khoan.
-- `ho-so/index.html`: ho so va avatar.
-- `nhap-excel/index.html`: nhap san pham va nguoi dung.
-- `tong-quan/index.html`: truy cap nhanh.
-- `xac-thuc/index.html`: xu ly dang nhap, dang ky, quen/reset mat khau va doi mat khau khi dang dang nhap (moi vai tro).
-- `mailbox.html`: trang hop thu doc lap, HTML/CSS/JS cung file.
+## Tìm file cần sửa
 
-Cac file chuc nang la fragment duoc `assets/shared/feature-loader.js` nap
-vao khung ung dung, khong phai trang doc lap. HTML form dang nhap va khung
-chung van o `index.html`. `assets/shared/` chua CSS nen, API, dieu huong,
-trang thai va thanh phan tai su dung. Thu tu nap khai bao bang `data-feature`
-trong `index.html`; khoi phuc phien chi chay sau khi nap xong cac chuc nang.
+| File | Chức năng | Hàm bắt đầu |
+| --- | --- | --- |
+| `danh-muc/index.html` | Sản phẩm, nhóm hàng, quy đổi, nhà cung cấp, nhóm khách hàng, bảng giá | `renderCatalog()` |
+| `ho-so/index.html` | Hồ sơ và ảnh đại diện | `renderProfile()` |
+| `nhap-excel/index.html` | Xem trước, xác nhận nhập, tải báo cáo | `renderExcelImport()` |
+| `nhat-ky/index.html` | Nhật ký thao tác và bộ lọc | `renderAuditLog()` |
+| `nguoi-dung/index.html` | Tạo, khóa, xóa và tìm tài khoản | `renderUsersModule()` |
+| `tong-quan/index.html` | Truy cập nhanh | `renderRealHome()` |
+| `xac-thuc/index.html` | Đăng nhập, đăng ký, quên và đổi mật khẩu | Các sự kiện form và `renderChangePassword()` |
 
-Menu chi hien cac chuc nang Sprint 1-2. Khong thay doi backend.
+`mailbox.html` là trang hộp thư phát triển độc lập.
+
+## Phần dùng chung
+
+- `assets/shared/api.js`: gọi backend bằng `apiRequest()`, tạo yêu cầu JSON
+  bằng `jsonRequestOptions()`, kiểm tra quyền bằng `hasPermission()`.
+- `assets/shared/forms.js`: `openFormDialog()` mở hộp thoại,
+  `renderInputField()` tạo ô nhập.
+- `assets/shared/routes.js`: `getAvailableMenu()` lấy menu theo vai trò,
+  `renderFeatureView()` chọn chức năng cần hiển thị.
+- `assets/shared/navigation.js`: mở trang, cập nhật menu và thanh tiêu đề.
+- `assets/shared/state.js`: tài khoản hiện tại, vai trò và trạng thái trang.
+- `assets/shared/data-table.js`: bảng dữ liệu dùng chung.
+- `assets/shared/ui.js`: thông báo và xử lý văn bản trước khi đưa vào HTML.
+- `assets/shared/styles.css`: CSS dùng chung; CSS riêng nằm trong file chức năng.
+- `assets/shared/feature-loader.js`: tải các file khai báo bằng `data-feature`
+  trong trang chính, chạy script theo thứ tự rồi khôi phục phiên đăng nhập.
+
+## Khi chỉnh sửa
+
+1. Tìm hàm hiển thị trang, rồi đến sự kiện của nút hoặc form cần sửa.
+2. Đặt tên hàm theo việc nó làm, ví dụ `saveProfile()` hoặc `uploadProfileAvatar()`.
+3. Viết từng bước xử lý trên dòng riêng; tách hàm khi một sự kiện làm quá nhiều việc.
+4. Dữ liệu người dùng đưa vào HTML phải qua `escapeHtml()`.
+5. Giữ kiểm tra `viewRevision` và `isConnected` khi nhận phản hồi bất đồng bộ,
+   để phản hồi cũ không ghi đè trang vừa mở.
+6. Khi đổi tên hàm dùng chung, cập nhật cả nơi gọi và file kiểm thử.
+
+Chạy kiểm thử từ thư mục gốc repository:
+
+```powershell
+node --test QuanLyBanHangKho/test/frontend/real-data.test.cjs
+```

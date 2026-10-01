@@ -6,6 +6,7 @@ import java.util.Base64;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 public final class PasswordUtil {
+    public static final String DEFAULT_USER_PASSWORD = "Demo@123";
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final int ITERATIONS = 120_000;
     private PasswordUtil(){}

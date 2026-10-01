@@ -8,6 +8,11 @@ import java.io.*;
 public class DevMailboxServlet extends BaseServlet {
     private final BaseDAO dao=new BaseDAO();
     protected void doGet(HttpServletRequest q,HttpServletResponse r)throws IOException{
+        if("/accounts".equals(q.getPathInfo())){
+            try{ok(r,jsonRows(dao.query("SELECT lower(email) AS email FROM users UNION SELECT lower(recipient) AS email FROM dev_mailbox_messages ORDER BY email")));}
+            catch(Exception e){error(r,500,"Không thể tải danh sách địa chỉ hộp thư");}
+            return;
+        }
         String email=q.getParameter("email");
         if(email==null||email.isBlank()){error(r,400,"Vui lòng chọn địa chỉ hộp thư");return;}
         try{ok(r,jsonRows(dao.query("SELECT id,recipient,subject,body,action_url,created_at FROM dev_mailbox_messages WHERE lower(recipient)=lower(?) ORDER BY created_at DESC LIMIT 50",email.trim())));}

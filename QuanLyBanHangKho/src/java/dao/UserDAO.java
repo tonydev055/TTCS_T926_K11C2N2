@@ -3,6 +3,21 @@ import util.DBConnection;
 import java.sql.*;
 import java.util.*;
 public class UserDAO extends BaseDAO {
+    public boolean deleteUser(long id,long actorId)throws SQLException{
+        try(Connection c=DBConnection.getConnection()){
+            c.setAutoCommit(false);
+            try{boolean deleted=deleteUser(c,id,actorId);c.commit();return deleted;}
+            catch(SQLException|RuntimeException e){c.rollback();throw e;}
+        }
+    }
+    public boolean deleteUser(Connection c,long id,long actorId)throws SQLException{
+        if(id==actorId)throw new IllegalArgumentException("Không thể tự xóa tài khoản đang đăng nhập");
+        var user=Sql.one(c,"SELECT id,username,email,full_name FROM users WHERE id=? FOR UPDATE",id);
+        if(user==null)return false;
+        Sql.update(c,"DELETE FROM users WHERE id=?",id);
+        Sql.update(c,"INSERT INTO audit_logs(actor_user_id,action,object_type,object_id,old_value) VALUES(?,'DELETE','users',?,?)",actorId,String.valueOf(id),util.Json.stringify(user));
+        return true;
+    }
     public Map<String,Object> findForLogin(String email)throws SQLException{
         var x=query("SELECT id,email,username,full_name,phone,password_hash,active,locked_until,failed_login_attempts,session_version,territory,requires_password_change FROM users WHERE lower(email)=lower(?) OR lower(username)=lower(?)",email,email);
         return x.isEmpty()?null:x.get(0);

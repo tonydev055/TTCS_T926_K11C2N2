@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KhoMail — Hộp thư thử nghiệm</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/mailbox.css?v=1"></head>
+<body>
+  <header><a href="/" class="brand"><b>KF</b><span>KhoMail<small>Hộp thư thử nghiệm</small></span></a><span class="dev-badge">DEV ONLY</span></header>
+  <main>
+    <aside>
+      <p class="eyebrow">ĐỊA CHỈ HỘP THƯ</p><div class="address-card"><span id="mailAddress"></span><button id="copyAddress" title="Sao chép">▣</button></div>
+      <label for="accountSelect">Chọn tài khoản demo</label><select id="accountSelect"><option>admin@khoflow.local</option><option>sales.manager@khoflow.local</option><option>sales@khoflow.local</option><option>warehouse.manager@khoflow.local</option><option>warehouse@khoflow.local</option><option>accountant@khoflow.local</option><option>customer@khoflow.local</option></select>
+      <button id="randomAccount" class="secondary">⤨ Chọn địa chỉ ngẫu nhiên</button><button id="backToApp" class="back">← Trở về KhoFlow</button>
+      <div class="privacy"><b>Hộp thư nội bộ</b><p>Chỉ dùng để kiểm thử trên máy này. Không nhập dữ liệu thật.</p></div>
+    </aside>
+    <section class="inbox">
+      <div class="inbox-head"><div><p class="eyebrow">INBOX</p><h1>Thư đến</h1><span id="mailCount">Đang tải...</span></div><div><button id="refreshMail">↻ Làm mới</button><button id="clearMail" class="danger">Dọn hộp thư</button></div></div>
+      <div id="mailList" class="mail-list"></div>
+    </section>
+  </main>
+  <div id="toast"></div><script src="assets/mailbox.js?v=1"></script>
+</body></html>

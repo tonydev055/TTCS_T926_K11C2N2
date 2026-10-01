@@ -8,8 +8,6 @@ public final class JsonUtil {
         r.getWriter().write(json);
     }
     public static String esc(String s) {
-    return s == null ? "" : s.replace("\\", "\\\\")
-                             .replace("\"", "\\\"")
-                             .replace("\n", "\\n");
+    String value=Json.stringify(s==null?"":s);return value.substring(1,value.length()-1);
 }
 }

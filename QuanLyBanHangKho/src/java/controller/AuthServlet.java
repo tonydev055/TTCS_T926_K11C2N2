@@ -21,7 +21,7 @@ public class AuthServlet extends BaseServlet {
      if("/login".equals(path)){login(b,q,r);return;}
      if("/logout".equals(path)){HttpSession s=q.getSession(false);if(s!=null)s.invalidate();ok(r,"{\"message\":\"Đã đăng xuất\"}");return;}
      if("/register".equals(path)){register(b,r);return;}
-     if("/forgot-password".equals(path)){forgot(b,r);return;}
+     if("/forgot-password".equals(path)){forgot(b,q,r);return;}
      if("/reset-password".equals(path)){reset(b,r);return;}
      if("/change-password".equals(path)){change(b,q,r);return;}
      error(r,404,"Endpoint không tồn tại");
@@ -52,9 +52,10 @@ public class AuthServlet extends BaseServlet {
    long id=users.create(username,email,fullName,RequestJson.text(b,"phone"),PasswordUtil.encode(password),"Tự đăng ký",List.of("CUSTOMER"),List.of());
    created(r,"{\"id\":"+id+",\"message\":\"Tạo tài khoản thành công. Bạn có thể đăng nhập ngay.\"}");
  }
- private void forgot(String b,HttpServletResponse r)throws Exception{
+ private void forgot(String b,HttpServletRequest q,HttpServletResponse r)throws Exception{
    Map<String,Object> u=users.findForLogin(RequestJson.text(b,"email"));
-   if(u!=null&&Boolean.TRUE.equals(u.get("active"))){String token=PasswordUtil.randomToken();users.createResetToken(((Number)u.get("id")).longValue(),PasswordUtil.tokenHash(token));EmailService.passwordReset(String.valueOf(u.get("email")),token);}
+   String origin=q.getRequestURL().substring(0,q.getRequestURL().length()-q.getRequestURI().length());
+   if(u!=null&&Boolean.TRUE.equals(u.get("active"))){String token=PasswordUtil.randomToken();users.createResetToken(((Number)u.get("id")).longValue(),PasswordUtil.tokenHash(token));EmailService.passwordReset(String.valueOf(u.get("email")),token,origin+q.getContextPath()+"/");}
    ok(r,"{\"message\":\"Nếu tài khoản tồn tại, hướng dẫn đặt lại mật khẩu đã được gửi.\"}");
  }
  private void reset(String b,HttpServletResponse r)throws Exception{

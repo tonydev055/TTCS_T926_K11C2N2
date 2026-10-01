@@ -19,6 +19,9 @@ public class Sprint2SelfTest {
  private static void fails(Task action,String message)throws Exception{Savepoint point=c.setSavepoint();boolean failed=false;try{action.run();}catch(Exception expected){failed=true;}finally{c.rollback(point);c.releaseSavepoint(point);}check(failed,message);}
  private static Map<String,Object> product(String sku,long category){return new LinkedHashMap<>(Map.of("sku",sku,"name","Sản phẩm thử nghiệm","category_id",category,"base_unit","lon","packaging","24 lon / thùng","cost_price","12000.50","active",true));}
  public static void main(String[] args)throws Exception{
+  check(EmailService.passwordResetUrl("http://localhost:8080/QuanLyBanHangKho/","test").equals("http://localhost:8080/QuanLyBanHangKho/index.html?resetToken=test"),"Reset link preserves deployment context");
+  check(EmailService.passwordResetUrl("https://example.test/app","a+b").equals("https://example.test/app/index.html?resetToken=a%2Bb"),"Reset link handles missing slash and encodes token");
+  check(EmailService.passwordResetUrl("http://localhost:8080/","test").equals("http://localhost:8080/index.html?resetToken=test"),"Reset link supports root deployment");
   CatalogService service=new CatalogService();String suffix=Long.toString(System.nanoTime());
   try(Connection connection=DBConnection.getConnection()){
    c=connection;long actor=Sql.id(Sql.one(c,"SELECT id FROM users ORDER BY id LIMIT 1"));CatalogService.begin(c,actor);
@@ -71,9 +74,20 @@ public class Sprint2SelfTest {
     var userRows=List.of(new XlsxService.Row(2,Map.of("username","test"+suffix,"email","test"+suffix+"@example.test","full_name","Người kiểm thử","phone","0901234567","role","WAREHOUSE","warehouse_code","","territory",""),""),new XlsxService.Row(3,Map.of("username","testok"+suffix,"email","testok"+suffix+"@example.test","full_name","Người kiểm thử","phone","0901234567","role","CUSTOMER","warehouse_code","","territory",""),""));
     var users=importer.process(c,"users",userRows,false,true);check(!Boolean.TRUE.equals(users.get(0).get("valid"))&&Boolean.TRUE.equals(users.get(1).get("valid")),"User import validates role/warehouse and skips invalid row");check(Sql.one(c,"SELECT id FROM dev_mailbox_messages WHERE recipient=?","testok"+suffix+"@example.test")!=null,"Imported user gets activation mailbox message");
     var importedUser=Sql.one(c,"SELECT password_hash,requires_password_change FROM users WHERE email=?","testok"+suffix+"@example.test");
-    check(PasswordUtil.verify("demo@123",String.valueOf(importedUser.get("password_hash"))),"Imported user receives default demo password");
+    check(PasswordUtil.verify("Demo@123",String.valueOf(importedUser.get("password_hash"))),"Imported user receives default demo password");
     check(Boolean.TRUE.equals(importedUser.get("requires_password_change")),"Imported user must change temporary password");
-    check(String.valueOf(Sql.one(c,"SELECT body FROM dev_mailbox_messages WHERE recipient=?","testok"+suffix+"@example.test").get("body")).contains("demo@123"),"Mailbox contains default temporary password");
+    check(String.valueOf(Sql.one(c,"SELECT body FROM dev_mailbox_messages WHERE recipient=?","testok"+suffix+"@example.test").get("body")).contains("Demo@123"),"Mailbox contains default temporary password");
+    var userDao=new dao.UserDAO();
+    long deleteId=Sql.id(Sql.one(c,"SELECT id FROM users WHERE email=?","testok"+suffix+"@example.test"));
+    fails(()->userDao.deleteUser(c,actor,actor),"Self deletion rejected");
+    long auditId=Sql.id(Sql.one(c,"INSERT INTO audit_logs(actor_user_id,action,object_type) VALUES(?,'TEST','users') RETURNING id",deleteId));
+    fails(()->userDao.deleteUser(c,deleteId,actor),"User with audit history cannot be deleted");
+    check(Sql.one(c,"SELECT user_id FROM user_roles WHERE user_id=?",deleteId)!=null,"Failed delete preserves roles");
+    Sql.update(c,"DELETE FROM audit_logs WHERE id=?",auditId);
+    check(userDao.deleteUser(c,deleteId,actor),"Unused imported user can be deleted");
+    check(Sql.one(c,"SELECT id FROM users WHERE id=?",deleteId)==null&&Sql.one(c,"SELECT user_id FROM user_roles WHERE user_id=?",deleteId)==null,"Delete removes user and role links");
+    check(Sql.one(c,"SELECT id FROM audit_logs WHERE actor_user_id=? AND object_type='users' AND object_id=? AND action='DELETE'",actor,String.valueOf(deleteId))!=null,"Deletion records actor and target in audit");
+    check(!userDao.deleteUser(c,deleteId,actor),"Repeated deletion reports missing user");
     var customerPrices=service.list(c,"price_lists",false,true,actor);check(customerPrices.isEmpty(),"Customer without assigned group sees no other group prices");
     BufferedImage image=new BufferedImage(320,180,BufferedImage.TYPE_INT_RGB);ByteArrayOutputStream bytes=new ByteArrayOutputStream();ImageIO.write(image,"png",bytes);var images=ImageService.normalize(bytes.toByteArray(),true);var avatar=ImageIO.read(new ByteArrayInputStream(images.image()));check(avatar.getWidth()==256&&avatar.getHeight()==256,"Avatar square crop");check(ImageIO.read(new ByteArrayInputStream(images.thumbnail())).getWidth()==64,"Avatar thumbnail");fails(()->ImageService.normalize(new byte[2097153],true),"Oversized avatar rejected");fails(()->ImageService.normalize("not an image".getBytes(),true),"Fake image rejected");
     List<String> headers=ImportService.headers("products",true);byte[] template=XlsxService.template(headers);byte[] workbook=withRows(template,"<row r=\"2\"><c r=\"A2\" t=\"inlineStr\"><is><t>SKU-X</t></is></c><c r=\"B2\" t=\"inlineStr\"><is><t>Sữa</t></is></c></row><row r=\"3\"><c r=\"A3\"><f>1+1</f><v>2</v></c></row>");var xlsxRows=XlsxService.read(new ByteArrayInputStream(workbook),headers);check(xlsxRows.size()==2&&xlsxRows.get(0).values().get("name").equals("Sữa"),"Read actual XLSX rows and Unicode");check(!xlsxRows.get(1).error().isEmpty(),"Excel formulas rejected per row");

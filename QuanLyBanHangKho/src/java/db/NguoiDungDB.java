@@ -242,7 +242,7 @@ public class NguoiDungDB extends CoSoDB {
             c.setAutoCommit(false);
             try (
                 PreparedStatement p = c.prepareStatement(
-                    "UPDATE users SET full_name=?,phone=?,territory=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+                    "UPDATE users SET full_name=?,phone=?,territory=?,session_version=session_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=?"
                 )
             ) {
                 p.setString(1, fullName);

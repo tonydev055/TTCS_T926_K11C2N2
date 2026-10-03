@@ -308,7 +308,7 @@ public class NguoiDungDB extends CoSoDB {
             "Bắt buộc ghi lý do khoá"
         );
         update(
-            "UPDATE users SET active=?,lock_reason=?,session_version=session_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            "UPDATE users SET active=?,lock_reason=?,failed_login_attempts=0,locked_until=NULL,session_version=session_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=?",
             !locked,
             locked ? reason : null,
             id

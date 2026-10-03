@@ -19,13 +19,11 @@ public class XacThucFilter implements Filter {
         HttpServletRequest q = (HttpServletRequest) a;
         HttpServletResponse r = (HttpServletResponse) b;
         String uri = q.getRequestURI();
+        String endpoint = q.getServletPath() + Objects.toString(q.getPathInfo(), "");
         if (
-            uri.endsWith("/api/health") ||
-            uri.contains("/api/dev-mailbox") ||
-            uri.contains("/api/auth/login") ||
-            uri.contains("/api/auth/register") ||
-            uri.contains("/api/auth/forgot-password") ||
-            uri.contains("/api/auth/reset-password")
+            Set.of("/api/health", "/api/auth/login", "/api/auth/register",
+                "/api/auth/forgot-password", "/api/auth/reset-password").contains(endpoint) ||
+            q.getServletPath().equals("/api/dev-mailbox")
         ) {
             c.doFilter(a, b);
             return;
@@ -48,7 +46,13 @@ public class XacThucFilter implements Filter {
                 PhanHoiJsonUtil.send(r, 401, "{\"message\":\"Phiên đã bị thu hồi\",\"action\":\"login\"}");
                 return;
             }
-            if (uri.contains("/api/auth/")) {
+            if (Boolean.TRUE.equals(s.getAttribute("requiresPasswordChange")) &&
+                !Set.of("/api/auth/me", "/api/auth/change-password", "/api/auth/logout").contains(endpoint)) {
+                PhanHoiJsonUtil.send(r, 403,
+                    "{\"message\":\"Vui lòng đổi mật khẩu tạm trước khi sử dụng chức năng này\",\"action\":\"change-password\"}");
+                return;
+            }
+            if (q.getServletPath().equals("/api/auth")) {
                 c.doFilter(a, b);
                 return;
             }

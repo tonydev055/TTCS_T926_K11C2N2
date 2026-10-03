@@ -147,7 +147,8 @@ public class XacThucServlet extends CoSoServlet {
             MatKhauUtil.encode(password),
             "Tự đăng ký",
             List.of("CUSTOMER"),
-            List.of()
+            List.of(),
+            false
         );
         created(
             r,

@@ -29,6 +29,7 @@ function openApp(user = {}) {
 }
 
 function openView(view) {
+  if (currentUser.requiresPasswordChange) view = 'Đổi mật khẩu';
   const menu =
     typeof getAvailableMenu === 'function' ? getAvailableMenu() : roleConfigs[activeRole].menu;
   if (!menu.includes(view)) return;

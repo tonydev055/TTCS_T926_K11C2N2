@@ -249,3 +249,13 @@ test('delete user requires confirmation, blocks self and reloads after success',
   await app.run('deleteUserAccount(button,reload)');
   assert.equal(calls,1);assert.equal(reloads,1);assert.equal(app.context.button.disabled,false);
 });
+
+test('temporary password redirects navigation until password change succeeds',()=>{
+  const app=setup();
+  app.run("activeRole='CUSTOMER';currentUser={roles:['CUSTOMER'],permissions:['products.read'],requiresPasswordChange:true}");
+  app.run("openView('Sản phẩm & bảng giá')");
+  assert.equal(app.elements.get('pageTitle').textContent,'Đổi mật khẩu');
+  assert.ok(app.elements.get('changePasswordForm'));
+  app.run("currentUser.requiresPasswordChange=false;renderCatalog=()=>{};openView('Sản phẩm & bảng giá')");
+  assert.equal(app.elements.get('pageTitle').textContent,'Sản phẩm & bảng giá');
+});

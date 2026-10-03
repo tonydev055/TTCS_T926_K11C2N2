@@ -185,13 +185,19 @@ public class NguoiDungDB extends CoSoDB {
         List<String> roles,
         List<String> warehouseCodes
     ) throws SQLException {
+        return create(username, email, fullName, phone, passwordHash, territory, roles, warehouseCodes, true);
+    }
+
+    public long create(String username, String email, String fullName, String phone,
+        String passwordHash, String territory, List<String> roles, List<String> warehouseCodes,
+        boolean temporaryPassword) throws SQLException {
         try (Connection c = KetNoiDB.getConnection()) {
             c.setAutoCommit(false);
             try {
                 long id;
                 try (
                     PreparedStatement p = c.prepareStatement(
-                        "INSERT INTO users(username,email,full_name,phone,password_hash,territory,requires_password_change) VALUES(?,?,?,?,?,?,true)",
+                        "INSERT INTO users(username,email,full_name,phone,password_hash,territory,requires_password_change) VALUES(?,?,?,?,?,?,?)",
                         Statement.RETURN_GENERATED_KEYS
                     )
                 ) {
@@ -201,6 +207,7 @@ public class NguoiDungDB extends CoSoDB {
                     p.setString(4, phone);
                     p.setString(5, passwordHash);
                     p.setString(6, territory);
+                    p.setBoolean(7, temporaryPassword);
                     p.executeUpdate();
                     try (ResultSet r = p.getGeneratedKeys()) {
                         r.next();

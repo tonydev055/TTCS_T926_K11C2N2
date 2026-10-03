@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KhoMail — Hộp thư thử nghiệm</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet"><style>
+:root{--orange:#f47a00;--ink:#19130f;--muted:#7d7066;--line:#eadfd6;--bg:#fff9f3}*{box-sizing:border-box}body{margin:0;font-family:"Be Vietnam Pro",Arial,sans-serif;background:var(--bg);color:var(--ink)}button,select{font:inherit}button{cursor:pointer}header{height:74px;padding:0 6vw;display:flex;align-items:center;justify-content:space-between;background:#fff;border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:11px;color:inherit;text-decoration:none;font-weight:700}.brand>b{width:42px;height:42px;display:grid;place-items:center;background:var(--orange);color:#fff;border-radius:13px}.brand>span{display:flex;flex-direction:column}.brand small{font-size:9px;color:var(--muted);font-weight:500}.dev-badge{font-size:9px;font-weight:700;letter-spacing:.12em;color:#a64f00;background:#fff0df;border-radius:20px;padding:7px 10px}main{min-height:calc(100vh - 74px);display:grid;grid-template-columns:330px 1fr}aside{padding:36px 28px;background:#24201c;color:#fff}.eyebrow{font-size:9px;font-weight:700;letter-spacing:.15em;color:var(--orange);margin:0 0 9px}.address-card{display:flex;align-items:center;gap:8px;background:#fff;color:var(--ink);padding:12px;border-radius:11px;font-size:11px;overflow:hidden}.address-card span{flex:1;overflow-wrap:anywhere}.address-card button{border:0;background:#fff1df;color:#c65c00;border-radius:8px;width:31px;height:31px}aside label{display:block;font-size:10px;color:#c8bdb5;margin:28px 0 8px}aside select{width:100%;height:44px;border:1px solid #514840;border-radius:9px;background:#332d28;color:#fff;padding:0 10px;font-size:10px}.secondary,.back{width:100%;height:43px;margin-top:10px;border-radius:9px}.secondary{border:1px solid #594d44;background:#332d28;color:#fff}.back{border:0;background:transparent;color:#f6a255}.privacy{margin-top:34px;padding:15px;border:1px solid #4a413a;border-radius:12px}.privacy b{font-size:10px}.privacy p{font-size:9px;color:#bdb2a9;line-height:1.6;margin:6px 0 0}.inbox{padding:40px clamp(24px,5vw,70px)}.inbox-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--line);padding-bottom:20px}.inbox-head h1{font-size:30px;margin:0 0 5px}.inbox-head span{font-size:10px;color:var(--muted)}.inbox-head button{height:38px;border:1px solid var(--line);border-radius:9px;background:#fff;padding:0 13px;font-size:10px}.inbox-head .danger{color:#bd3a30}.mail-list{display:grid;gap:13px;margin-top:22px}.mail{background:#fff;border:1px solid var(--line);border-radius:15px;padding:19px 20px;box-shadow:0 8px 24px rgba(74,45,21,.05)}.mail-top{display:flex;align-items:center;gap:12px}.sender{width:40px;height:40px;border-radius:12px;background:#fff0df;color:#d46300;display:grid;place-items:center;font-weight:700}.mail-title{flex:1}.mail h2{font-size:13px;margin:0 0 4px}.mail small{font-size:9px;color:var(--muted)}.mail time{font-size:9px;color:#9b8d83}.mail-body{margin:15px 0;padding-top:14px;border-top:1px solid #f1e8e0;color:#695d54;font-size:10px;line-height:1.7}.open-link{display:inline-flex;align-items:center;gap:7px;background:var(--orange);color:#fff;text-decoration:none;border-radius:9px;padding:10px 14px;font-size:10px;font-weight:700}.empty{text-align:center;padding:80px 20px;color:var(--muted)}.empty b{display:block;font-size:15px;color:var(--ink);margin-bottom:7px}#toast{position:fixed;right:24px;bottom:24px;background:#1e1a17;color:#fff;padding:12px 16px;border-radius:9px;font-size:10px;opacity:0;transform:translateY(10px);transition:.2s}#toast.show{opacity:1;transform:none}@media(max-width:760px){main{grid-template-columns:1fr}aside{padding:24px}.inbox{padding:28px 18px}.inbox-head{align-items:flex-start;gap:15px}.inbox-head>div:last-child{display:flex;flex-direction:column;gap:7px}.mail-top{align-items:flex-start}.mail time{display:none}}
+
+#customEmail{width:100%;min-height:44px;padding:10px;font:inherit;font-size:12px;border:1px solid #514840;border-radius:8px}#accountError{font-size:12px;color:#ffce9e;overflow-wrap:anywhere}.mail-title{min-width:0}.mail-title small,.mail-body{overflow-wrap:anywhere}
+</style></head>
+<body>
+  <header><a href="index.html" class="brand"><b>KF</b><span>KhoMail<small>Hộp thư thử nghiệm</small></span></a><span class="dev-badge">DEV ONLY</span></header>
+  <main>
+    <aside>
+      <p class="eyebrow">ĐỊA CHỈ HỘP THƯ</p><div class="address-card"><span id="mailAddress"></span><button id="copyAddress" title="Sao chép">▣</button></div>
+      <label for="accountSelect">Chọn tài khoản</label><select id="accountSelect"><option value="">Đang tải tài khoản...</option></select>
+      <p id="accountError" role="status"></p>
+      <form id="openMailboxForm"><label for="customEmail">Email khác</label><input id="customEmail" type="email" required placeholder="Email cần xem"><button class="secondary" type="submit">Mở hộp thư</button></form>
+      <button id="backToApp" class="back">← Trở về KhoFlow</button>
+      <div class="privacy"><b>Hộp thư nội bộ</b><p>Chỉ dùng để kiểm thử trên máy này. Không nhập dữ liệu thật.</p></div>
+    </aside>
+    <section class="inbox">
+      <div class="inbox-head"><div><p class="eyebrow">INBOX</p><h1>Thư đến</h1><span id="mailCount">Đang tải...</span></div><div><button id="refreshMail">↻ Làm mới</button><button id="clearMail" class="danger">Dọn hộp thư</button></div></div>
+      <div id="mailList" class="mail-list"></div>
+    </section>
+  </main>
+  <div id="toast"></div><script>
+let accounts=[];
+const params=new URLSearchParams(location.search);
+const select=document.getElementById('accountSelect'),address=document.getElementById('mailAddress'),list=document.getElementById('mailList'),count=document.getElementById('mailCount');
+const customEmail=document.getElementById('customEmail');
+let current=(params.get('email')||'').trim().toLowerCase(),requestId=0;
+function toast(message){const el=document.getElementById('toast');el.textContent=message;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1800)}
+function formatDate(value){return new Intl.DateTimeFormat('vi-VN',{dateStyle:'short',timeStyle:'short'}).format(new Date(value))}
+function escapeHtml(value){const div=document.createElement('div');div.textContent=value??'';return div.innerHTML}
+function resetLink(actionUrl){
+ try{
+  const token=new URL(actionUrl,location.href).searchParams.get('resetToken');
+  if(!token)return '';
+  const url=new URL('index.html',location.href);
+  url.searchParams.set('resetToken',token);
+  return url.href;
+ }catch(_){return '';}
+}
+function renderAccounts(){
+ select.replaceChildren();
+ const emails=[...new Set([...accounts,current].filter(Boolean))];
+ if(!emails.length)select.add(new Option('Chưa có tài khoản',''));
+ for(const email of emails)select.add(new Option(email,email));
+ select.value=current;
+}
+async function loadAccounts(){
+ try{
+  const response=await fetch('api/dev-mailbox/accounts',{cache:'no-store'});
+  if(!response.ok)throw new Error();
+  accounts=(await response.json()).map(row=>row.email);
+  if(!current)current=accounts[0]||'';
+  renderAccounts();customEmail.value=current;
+  document.getElementById('accountError').textContent='';
+ }catch(_){document.getElementById('accountError').textContent='Không tải được danh sách. Bạn vẫn có thể nhập email bên dưới.';renderAccounts();}
+}
+function openMailbox(email){
+ current=email.trim().toLowerCase();customEmail.value=current;renderAccounts();
+ history.replaceState(null,'','?email='+encodeURIComponent(current));
+ return loadMail();
+}
+async function loadMail(){
+ const email=current,request=++requestId;
+ address.textContent=email||'Chưa chọn email';
+ if(!email){count.textContent='';list.textContent='Chọn hoặc nhập email để xem hộp thư.';return;}
+ count.textContent='Đang làm mới...';
+ try{
+  const response=await fetch('api/dev-mailbox?email='+encodeURIComponent(email),{cache:'no-store'});
+  if(!response.ok)throw new Error();
+  const mails=await response.json();
+  if(request!==requestId||email!==current)return;
+  count.textContent=mails.length+' thư';
+  list.innerHTML=mails.length?mails.map(mail=>`<article class="mail"><div class="mail-top"><span class="sender">KF</span><div class="mail-title"><h2>${escapeHtml(mail.subject)}</h2><small>KhoFlow System → ${escapeHtml(mail.recipient)}</small></div><time>${formatDate(mail.created_at)}</time></div><p class="mail-body">${escapeHtml(mail.body)}</p>${resetLink(mail.action_url)?`<a class="open-link" href="${escapeHtml(resetLink(mail.action_url))}">Đặt lại mật khẩu <span>→</span></a>`:''}</article>`).join(''):'<div class="empty"><b>Hộp thư đang trống</b><span>Chưa có thư gửi đến địa chỉ này.</span></div>';
+ }catch(_){if(request!==requestId||email!==current)return;count.textContent='Không thể tải thư';list.innerHTML='<div class="empty"><b>Mất kết nối</b><span>Không thể kết nối tới hộp thư thử nghiệm.</span></div>';}
+}
+select.addEventListener('change',()=>openMailbox(select.value));
+document.getElementById('openMailboxForm').addEventListener('submit',event=>{event.preventDefault();if(customEmail.checkValidity())openMailbox(customEmail.value)});
+document.getElementById('copyAddress').addEventListener('click',async()=>{if(!current)return;await navigator.clipboard.writeText(current);toast('Đã sao chép địa chỉ')});
+document.getElementById('refreshMail').addEventListener('click',async()=>{await loadAccounts();await loadMail()});
+document.getElementById('clearMail').addEventListener('click',async()=>{
+ const email=current;if(!email||!confirm('Dọn toàn bộ thư của '+email+'?'))return;
+ try{const response=await fetch('api/dev-mailbox?email='+encodeURIComponent(email),{method:'DELETE'});if(!response.ok)throw new Error();if(current===email)await loadMail();}
+ catch(_){toast('Không thể dọn hộp thư. Vui lòng thử lại.');}
+});
+document.getElementById('backToApp').addEventListener('click',()=>location.href='index.html');
+loadAccounts().then(loadMail);setInterval(loadMail,5000);
+</script>
+</body></html>

@@ -1,0 +1,67 @@
+<!-- Loaded by the application shell: ../index.html -->
+<style>
+  #s2AuditFilters {
+    flex-wrap: wrap;
+  }
+  #s2AuditFilters label {
+    font-size: 12px;
+  }
+  #s2AuditFilters input {
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+</style>
+<script>
+  async function renderAuditLog() {
+    const revision = viewRevision;
+    let page = 1,
+      request = 0;
+    moduleContent.innerHTML = `<section class="module-head"><div><h2>Nhật ký hệ thống</h2><p>Theo dõi người thực hiện, thời điểm và dữ liệu trước/sau thay đổi.</p></div></section><section class="inventory-panel"><form id="s2AuditFilters" class="inventory-toolbar"><select name="actor" aria-label="Người thực hiện" class="filter-select"><option value="">Tất cả người dùng</option></select><select name="type" aria-label="Loại đối tượng" class="filter-select"><option value="">Tất cả đối tượng</option></select><label>Từ ngày <input name="from" type="date"></label><label>Đến ngày <input name="to" type="date"></label><button class="outline-button" type="submit">Lọc</button></form><div id="s2AuditRows" class="table-scroll"></div><div id="s2AuditPages" class="inventory-footer"></div></section>`;
+    const form = document.getElementById('s2AuditFilters'),
+      host = document.getElementById('s2AuditRows');
+    const loadAuditEntries = async () => {
+      const call = ++request;
+      host.innerHTML = '<p class="s2-empty">Đang tải nhật ký...</p>';
+      try {
+        const params = new URLSearchParams(new FormData(form));
+        params.set('page', page);
+        const data = await apiRequest(`audit/?${params}`);
+        if (revision !== viewRevision || call !== request || !host.isConnected) return;
+        host.innerHTML = data.items.length
+          ? `<table class="feature-table s2-table"><thead><tr><th>Thời điểm</th><th>Người thực hiện</th><th>Thao tác</th><th>Đối tượng</th><th>Trước / Sau</th></tr></thead><tbody>${data.items.map((row) => `<tr><td>${escapeHtml(row.created_at)}</td><td>${escapeHtml(row.actor_name || 'Hệ thống')}</td><td>${escapeHtml(row.action)}</td><td>${escapeHtml(row.object_type)} #${escapeHtml(row.object_id)}</td><td><details><summary>Xem thay đổi</summary><strong>Trước</strong><pre>${escapeHtml(JSON.stringify(row.old_value, null, 2))}</pre><strong>Sau</strong><pre>${escapeHtml(JSON.stringify(row.new_value, null, 2))}</pre></details></td></tr>`).join('')}</tbody></table>`
+          : '<p class="s2-empty">Chưa có nhật ký phù hợp.</p>';
+        document.getElementById('s2AuditPages').innerHTML =
+          `<span>${number(data.total)} bản ghi · Trang ${page}</span><div class="pagination"><button id="s2AuditPrev" ${page === 1 ? 'disabled' : ''}>‹</button><button id="s2AuditNext" ${page * 50 >= data.total ? 'disabled' : ''}>›</button></div>`;
+        document.getElementById('s2AuditPrev').onclick = () => {
+          page--;
+          loadAuditEntries();
+        };
+        document.getElementById('s2AuditNext').onclick = () => {
+          page++;
+          loadAuditEntries();
+        };
+      } catch (e) {
+        if (host.isConnected) host.innerHTML = `<p class="s2-empty">${escapeHtml(e.message)}</p>`;
+      }
+    };
+    form.onsubmit = (event) => {
+      event.preventDefault();
+      page = 1;
+      loadAuditEntries();
+    };
+    // Tải bộ lọc riêng để lỗi bộ lọc không chặn danh sách nhật ký.
+    apiRequest('audit/filters')
+      .then((filters) => {
+        if (!form.isConnected) return;
+        form.elements.actor.innerHTML += filters.users
+          .map((u) => `<option value="${u.id}">${escapeHtml(u.full_name)}</option>`)
+          .join('');
+        form.elements.type.innerHTML += filters.types
+          .map((t) => `<option>${escapeHtml(t.object_type)}</option>`)
+          .join('');
+      })
+      .catch(showRequestError);
+    loadAuditEntries();
+  }
+</script>

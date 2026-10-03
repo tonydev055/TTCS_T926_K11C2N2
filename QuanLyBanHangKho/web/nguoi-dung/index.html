@@ -1,0 +1,327 @@
+<!-- Loaded by the application shell: ../index.html -->
+<style>
+  .real-user-delete {
+    color: #b72e2e;
+  }
+  .real-user-delete:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+</style>
+<script>
+  const formModal = document.getElementById('formModal');
+  let activeFormContext = null;
+
+  function openEntityForm(view, mode = 'create', recordLabel = '', metadata = {}) {
+    if (view !== 'Người dùng') return;
+    const schema =
+      mode === 'edit'
+        ? formSchemas.users.filter((field) => field[0] === 'status')
+        : formSchemas.users;
+    activeFormContext = { view, mode, recordLabel, ...metadata };
+    document.getElementById('formModalEyebrow').textContent =
+      mode === 'edit' ? 'CHỈNH SỬA THÔNG TIN' : 'TẠO DỮ LIỆU MỚI';
+    document.getElementById('formModalTitle').textContent =
+      mode === 'edit' ? `Sửa ${recordLabel || view}` : `${view} — Tạo mới`;
+    document.getElementById('formModalDescription').textContent =
+      `Biểu mẫu dành cho vai trò ${roleConfigs[activeRole].label}. Các trường có dấu * là bắt buộc.`;
+    document.getElementById('formFields').innerHTML =
+      `<div class="form-section-title">THÔNG TIN CHUNG</div>${schema.map((field, index) => renderFormField(field, mode, recordLabel, index)).join('')}`;
+    if (view === 'Người dùng' && mode === 'edit' && document.getElementById('field-status'))
+      document.getElementById('field-status').value = metadata.locked ? 'Tạm khóa' : 'Hoạt động';
+    formModal.classList.add('open');
+    formModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    setTimeout(
+      () =>
+        document
+          .querySelector('#formFields input, #formFields select, #formFields textarea')
+          ?.focus(),
+      80
+    );
+  }
+
+  function renderFormField(field, mode, recordLabel, index) {
+    const [name, label, type, required, options, full] = field;
+    const sample = '';
+    let control;
+    if (type === 'select')
+      control = `<select id="field-${name}" name="${name}" ${required ? 'required' : ''}><option value="">Chọn ${label.toLowerCase()}</option>${options.map((option) => `<option ${sample === option ? 'selected' : ''}>${option}</option>`).join('')}</select>`;
+    else if (type === 'textarea')
+      control = `<textarea id="field-${name}" name="${name}" ${required ? 'required' : ''} placeholder="Nhập ${label.toLowerCase()}">${sample}</textarea>`;
+    else
+      control = `<input id="field-${name}" name="${name}" type="${type}" ${required ? 'required' : ''} value="${sample}" placeholder="Nhập ${label.toLowerCase()}">`;
+    return `<div class="form-group ${full ? 'full' : ''}"><label for="field-${name}">${label}${required ? ' <b>*</b>' : ''}</label>${control}<small class="field-error">Vui lòng nhập ${label.toLowerCase()}.</small></div>`;
+  }
+
+  function closeEntityForm() {
+    formModal.classList.remove('open');
+    formModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    activeFormContext = null;
+  }
+
+  document.getElementById('closeFormModal').addEventListener('click', closeEntityForm);
+  document.getElementById('cancelEntityForm').addEventListener('click', closeEntityForm);
+  formModal.addEventListener('click', (event) => {
+    if (event.target === formModal) closeEntityForm();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && formModal.classList.contains('open')) closeEntityForm();
+  });
+  document.getElementById('entityForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    let valid = true;
+    document.querySelectorAll('#formFields [required]').forEach((control) => {
+      const group = control.closest('.form-group');
+      const invalid = !String(control.value).trim();
+      group.classList.toggle('invalid', invalid);
+      if (invalid) valid = false;
+    });
+    if (!valid) {
+      showToast('Vui lòng điền đủ các trường bắt buộc');
+      return;
+    }
+    if (activeFormContext?.view === 'Người dùng' && activeFormContext.mode === 'create') {
+      const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+      const roleByLabel = Object.fromEntries(
+        Object.entries(roleConfigs).map(([code, item]) => [item.label, code])
+      );
+      const role = roleByLabel[data.role] || 'CUSTOMER';
+      const payload = {
+        username: data.username,
+        fullName: data.fullName,
+        email: data.email,
+        phone: data.phone,
+        territory: data.scope,
+        roles: [role],
+        warehouses: ['WAREHOUSE', 'WH_MANAGER'].includes(role) ? [data.scope] : []
+      };
+      try {
+        const response = await fetch('api/users/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.message || 'Không thể tạo tài khoản.');
+        closeEntityForm();
+        showToast(result.message);
+        openView('Người dùng');
+      } catch (e) {
+        showToast(e.message);
+      }
+      return;
+    }
+    if (
+      activeFormContext?.view === 'Người dùng' &&
+      activeFormContext.mode === 'edit' &&
+      activeFormContext.userId
+    ) {
+      const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+      const shouldLock = data.status === 'Tạm khóa';
+      const action = shouldLock ? 'lock' : 'unlock';
+      const reason = shouldLock ? window.prompt('Nhập lý do khóa tài khoản:') : '';
+      if (shouldLock && (!reason || !reason.trim())) return;
+      try {
+        const response = await fetch(`api/users/${activeFormContext.userId}/${action}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason: reason || '' })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok)
+          throw new Error(result.message || 'Không thể cập nhật trạng thái tài khoản.');
+        closeEntityForm();
+        showToast(result.message);
+        openView('Người dùng');
+      } catch (e) {
+        showToast(e.message);
+      }
+      return;
+    }
+    showToast('Chức năng lưu dữ liệu này chưa được kết nối.');
+  });
+
+  async function deleteUserAccount(button, reload) {
+    if (button.disabled) return;
+    const id = Number(button.dataset.userId);
+    if (id === Number(currentUser.id)) {
+      showToast('Không thể tự xóa tài khoản đang đăng nhập');
+      return;
+    }
+    if (
+      !window.confirm(
+        'Xóa tài khoản "' + button.dataset.userName + '"? Thao tác này không thể hoàn tác.'
+      )
+    )
+      return;
+    button.disabled = true;
+    try {
+      const result = await apiRequest('users/' + id, { method: 'DELETE' });
+      showToast(result.message);
+      if (button.isConnected) await reload();
+    } catch (error) {
+      showToast(error.message);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function renderUsersModule() {
+    const roleLabels = Object.fromEntries(
+      Object.entries(roleConfigs).map(([code, item]) => [code, item.label])
+    );
+    let page = 1;
+    const size = 5;
+    let debounce;
+    let requestId = 0;
+    const revision = viewRevision;
+    moduleContent.innerHTML = `<section class="module-head"><div><p>Quản lý tài khoản, trạng thái hoạt động </p></div><div class="module-actions"><button class="orange-button" id="createRealUser">+ Tạo người dùng</button></div></section><section class="operation-summary compact-summary"><article><span class="op-icon orange">▦</span><div><small>Tổng tài khoản</small><strong id="userStatTotal">—</strong><em>Dữ liệu toàn hệ thống</em></div></article><article><span class="op-icon blue">✓</span><div><small>Đang hoạt động</small><strong id="userStatActive">—</strong><em>Có thể đăng nhập</em></div></article><article><span class="op-icon purple">⌁</span><div><small>Cần đổi mật khẩu</small><strong id="userStatPassword">—</strong><em>Yêu cầu khi đăng nhập</em></div></article><article><span class="op-icon red">!</span><div><small>Đang bị khóa</small><strong id="userStatLocked">—</strong><em>Khóa tay hoặc tạm thời</em></div></article></section><section class="inventory-panel"><div class="inventory-toolbar"><label class="search-control"><span>⌕</span><input id="realUserSearch" type="search" placeholder="Tìm tên, tài khoản, email hoặc số điện thoại..."></label><select id="realUserStatus" class="filter-select"><option value="">Tất cả trạng thái</option><option value="active">Hoạt động</option><option value="locked">Đã khóa</option></select><span id="realUserResult" class="filter-result"></span></div><div class="table-scroll"><table class="feature-table role-module-table"><thead><tr><th>Tài khoản</th><th>Họ tên</th><th>Vai trò</th><th>Kho / địa bàn</th><th>Lần đăng nhập cuối</th><th>Trạng thái</th><th></th></tr></thead><tbody id="realUserRows"></tbody></table></div><div class="inventory-footer"><span id="realUserFooter">Đang tải dữ liệu...</span><div id="realUserPagination" class="pagination"></div></div></section>`;
+    const formatDate = (value) =>
+      value
+        ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(
+            new Date(value)
+          )
+        : 'Chưa đăng nhập';
+    const load = async () => {
+      if (revision !== viewRevision) return;
+      const request = ++requestId;
+      const search = document.getElementById('realUserSearch').value.trim(),
+        status = document.getElementById('realUserStatus').value;
+      document.getElementById('realUserRows').innerHTML =
+        '<tr><td colspan="7" style="text-align:center;padding:38px;color:#8c7d72">Đang tải dữ liệu...</td></tr>';
+      try {
+        const response = await fetch(
+          `api/users/?page=${page}&size=${size}&search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}`
+        );
+        const payload = await response.json();
+        if (revision !== viewRevision || request !== requestId) return;
+        if (!response.ok) throw new Error(dataError(response, payload));
+        document.getElementById('userStatTotal').textContent = number(payload.stats.total);
+        document.getElementById('userStatActive').textContent = number(payload.stats.active);
+        document.getElementById('userStatPassword').textContent = number(
+          payload.stats.requires_password_change
+        );
+        document.getElementById('userStatLocked').textContent = number(payload.stats.locked);
+        document.getElementById('realUserResult').textContent = `${payload.total} kết quả`;
+        document.getElementById('realUserFooter').textContent =
+          `Trang ${payload.page} · ${payload.total} tài khoản phù hợp`;
+        document.getElementById('realUserRows').innerHTML =
+          payload.items
+            .map((item) => {
+              const locked = item.is_locked === true,
+                statusLabel = locked ? 'Đã khóa' : 'Hoạt động';
+              const roles =
+                (item.roles || '')
+                  .split(',')
+                  .filter(Boolean)
+                  .map((code) => roleLabels[code] || code)
+                  .join(', ') || 'Chưa gán';
+              const scope = item.warehouses || item.territory || '—';
+              return `<tr><td><a href="#" data-user-id="${item.id}">${escapeHtml(item.username)}</a><small style="display:block;color:#988a7f;margin-top:4px">${escapeHtml(item.email)}</small></td><td><strong>${escapeHtml(item.full_name)}</strong></td><td>${escapeHtml(roles)}</td><td>${escapeHtml(scope)}</td><td>${escapeHtml(formatDate(item.last_login_at))}</td><td><span class="status-pill ${operationStatusClass(statusLabel)}">${statusLabel}</span>${item.failed_login_attempts ? `<small style="display:block;color:#b15a36;margin-top:4px">${item.failed_login_attempts} lần sai</small>` : ''}</td><td><div class="user-row-actions"><button class="row-action real-user-detail" data-user-id="${item.id}" data-user-name="${escapeHtml(item.username)}" data-locked="${locked}">Chi tiết</button><button class="row-action real-user-lock ${locked ? 'unlock' : ''}" data-user-id="${item.id}" data-locked="${locked}">${locked ? 'Mở khóa' : 'Khóa'}</button><button class="row-action real-user-delete" data-user-id="${item.id}" data-user-name="${escapeHtml(item.username)}" ${Number(item.id) === Number(currentUser.id) ? 'disabled title="Không thể tự xóa tài khoản"' : ''}>Xóa</button></div></td></tr>`;
+            })
+            .join('') ||
+          '<tr><td colspan="7" style="text-align:center;padding:38px;color:#8c7d72">Không tìm thấy tài khoản phù hợp.</td></tr>';
+        const pages = Math.max(1, Math.ceil(payload.total / size));
+        if (page > pages) {
+          page = pages;
+          return load();
+        }
+        document.getElementById('realUserPagination').innerHTML =
+          `<button data-page="${Math.max(1, page - 1)}" ${page === 1 ? 'disabled' : ''}>‹</button>${Array.from(
+            { length: pages },
+            (_, i) => i + 1
+          )
+            .map(
+              (value) =>
+                `<button data-page="${value}" class="${value === page ? 'active' : ''}">${value}</button>`
+            )
+            .join(
+              ''
+            )}<button data-page="${Math.min(pages, page + 1)}" ${page === pages ? 'disabled' : ''}>›</button>`;
+        document.querySelectorAll('#realUserPagination button').forEach((button) =>
+          button.addEventListener('click', () => {
+            if (button.disabled) return;
+            page = Number(button.dataset.page);
+            load();
+          })
+        );
+        document
+          .querySelectorAll('.real-user-detail')
+          .forEach((button) =>
+            button.addEventListener('click', () =>
+              openEntityForm('Người dùng', 'edit', button.dataset.userName, {
+                userId: Number(button.dataset.userId),
+                locked: button.dataset.locked === 'true'
+              })
+            )
+          );
+        document
+          .querySelectorAll('.real-user-delete')
+          .forEach((button) =>
+            button.addEventListener('click', () => deleteUserAccount(button, load))
+          );
+        document.querySelectorAll('.real-user-lock').forEach((button) =>
+          button.addEventListener('click', async () => {
+            const locked = button.dataset.locked === 'true';
+            const reason = locked ? '' : window.prompt('Nhập lý do khóa tài khoản:');
+            if (!locked && (!reason || !reason.trim())) return;
+            button.disabled = true;
+            try {
+              const response = await fetch(
+                `api/users/${button.dataset.userId}/${locked ? 'unlock' : 'lock'}`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ reason: reason || '' })
+                }
+              );
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok)
+                throw new Error(result.message || 'Không thể cập nhật trạng thái tài khoản');
+              showToast(result.message);
+              await load();
+            } catch (error) {
+              showToast(error.message);
+            } finally {
+              button.disabled = false;
+            }
+          })
+        );
+      } catch (error) {
+        if (revision !== viewRevision || request !== requestId) return;
+        ['userStatTotal', 'userStatActive', 'userStatPassword', 'userStatLocked'].forEach(
+          (id) => (document.getElementById(id).textContent = '—')
+        );
+        document.getElementById('realUserFooter').textContent = 'Chưa tải được dữ liệu';
+        document.getElementById('realUserPagination').innerHTML = '';
+        document.getElementById('realUserResult').textContent = '';
+        document.getElementById('realUserRows').innerHTML =
+          `<tr><td colspan="7" style="text-align:center;padding:38px;color:#bd2b2b">${escapeHtml(error.message)}</td></tr>`;
+      }
+    };
+    document.getElementById('realUserSearch').addEventListener('input', () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        page = 1;
+        load();
+      }, 300);
+    });
+    document.getElementById('realUserStatus').addEventListener('change', () => {
+      page = 1;
+      load();
+    });
+    document
+      .getElementById('createRealUser')
+      .addEventListener('click', () => openEntityForm('Người dùng'));
+    load();
+  }
+
+  function operationStatusClass(status) {
+    if (['Hoạt động', 'Đã hoàn tất', 'Đã xuất', 'Đã giao', 'Đã nhận', 'Đã chốt'].includes(status))
+      return 'status-ok';
+    if (['Đã khóa', 'Có sai lệch', 'Soạn thiếu'].includes(status)) return 'status-out';
+    return 'status-low';
+  }
+</script>

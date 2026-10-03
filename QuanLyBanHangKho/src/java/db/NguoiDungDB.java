@@ -191,6 +191,13 @@ public class NguoiDungDB extends CoSoDB {
     public long create(String username, String email, String fullName, String phone,
         String passwordHash, String territory, List<String> roles, List<String> warehouseCodes,
         boolean temporaryPassword) throws SQLException {
+        username = username == null ? "" : username.trim();
+        email = email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+        if (!username.matches("[A-Za-z0-9_.-]{3,80}")) throw new IllegalArgumentException(
+            "Tên đăng nhập chỉ gồm chữ, số, dấu chấm, gạch dưới, gạch ngang (3–80 ký tự)");
+        if (email.length() > 255 || !email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+"))
+            throw new IllegalArgumentException("Email không hợp lệ");
+        validateProfile(fullName, phone);
         try (Connection c = KetNoiDB.getConnection()) {
             c.setAutoCommit(false);
             try {
@@ -235,6 +242,7 @@ public class NguoiDungDB extends CoSoDB {
         List<String> warehouses,
         long actorId
     ) throws SQLException {
+        validateProfile(fullName, phone);
         if (id == actorId && roles.stream().noneMatch("ADMIN"::equals)) throw new SQLException(
             "Không thể tự thu hồi vai trò quản trị của chính mình"
         );
@@ -321,6 +329,12 @@ public class NguoiDungDB extends CoSoDB {
             locked ? reason : null,
             id
         );
+    }
+
+    private static void validateProfile(String fullName, String phone) {
+        if (fullName == null || fullName.isBlank() || fullName.length() > 150)
+            throw new IllegalArgumentException("Họ tên phải có từ 1 đến 150 ký tự");
+        service.DanhMucService.phone(phone == null ? "" : phone, false);
     }
 
     public void createResetToken(long userId, String hash) throws SQLException {

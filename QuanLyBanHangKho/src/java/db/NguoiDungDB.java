@@ -267,6 +267,14 @@ public class NguoiDungDB extends CoSoDB {
         if (
             (roles.contains("WAREHOUSE") || roles.contains("WH_MANAGER")) && warehouses.isEmpty()
         ) throw new SQLException("Vai trò kho phải gắn với ít nhất một kho");
+        for (String role : roles) {
+            if (TruyVanDB.one(c, "SELECT id FROM roles WHERE code=?", role) == null)
+                throw new IllegalArgumentException("Vai trò không tồn tại: " + role);
+        }
+        for (String warehouse : warehouses) {
+            if (TruyVanDB.one(c, "SELECT id FROM warehouses WHERE code=? AND active", warehouse) == null)
+                throw new IllegalArgumentException("Mã kho không tồn tại hoặc đã ngừng hoạt động: " + warehouse);
+        }
         try (PreparedStatement d = c.prepareStatement("DELETE FROM user_roles WHERE user_id=?")) {
             d.setLong(1, id);
             d.executeUpdate();

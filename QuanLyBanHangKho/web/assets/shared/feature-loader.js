@@ -3,6 +3,11 @@ window.frontendReady = (async () => {
   const submit = loginForm.querySelector('button[type="submit"]');
   submit.disabled = true;
   try {
+    const mailConfig = await fetch('api/auth/mail-config', { cache: 'no-store' });
+    if (mailConfig.ok) {
+      const config = await mailConfig.json();
+      document.getElementById('openDevMailbox').hidden = !config.developmentMailbox;
+    }
     const pages = await Promise.all(
       [...document.querySelectorAll('[data-feature]')].map(async (link) => {
         const response = await fetch(link.getAttribute('href'), { cache: 'no-store' });

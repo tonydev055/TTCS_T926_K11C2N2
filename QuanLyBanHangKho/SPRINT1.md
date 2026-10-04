@@ -13,7 +13,7 @@ DB_PASSWORD=123456
 APP_URL=http://localhost:8080/
 ```
 
-Thông báo kích hoạt và liên kết đặt lại mật khẩu đang được ghi vào Tomcat Log bởi `ThuDienTuService`. Khi triển khai thật, thay lớp này bằng SMTP hoặc nhà cung cấp email.
+Email kích hoạt và đặt lại mật khẩu hỗ trợ Gmail SMTP qua hàng đợi transaction; xem `SMTP_SETUP.md`. Chế độ `dev` lưu KhoMail. Không ghi mật khẩu hoặc liên kết reset vào Tomcat Log.
 
 ## Tài khoản demo
 

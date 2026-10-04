@@ -105,10 +105,9 @@ public class NguoiDungServlet extends CoSoServlet {
                 YeuCauJson.strings(b, "roles"),
                 YeuCauJson.strings(b, "warehouses")
             );
-            ThuDienTuService.activation(email, password);
             created(
                 r,
-                "{\"id\":" + id + ",\"message\":\"Đã tạo tài khoản và gửi thông tin kích hoạt\"}"
+                "{\"id\":" + id + ",\"message\":\"Đã tạo tài khoản; thông tin đăng nhập đã được đưa vào hàng đợi gửi thư\"}"
             );
         } catch (Exception e) {
             error(

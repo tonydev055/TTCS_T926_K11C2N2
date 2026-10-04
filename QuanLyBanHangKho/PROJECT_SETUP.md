@@ -1,5 +1,7 @@
 # KhoFlow — Hướng dẫn chạy dự án
 
+Gửi email thật qua Gmail SMTP: xem [SMTP_SETUP.md](SMTP_SETUP.md). Chạy thêm `database/smtp.sql` trước khi build/test. Mặc định môi trường phát triển vẫn dùng KhoMail; bật `MAIL_MODE=smtp` cùng thông tin Gmail để chuyển sang gửi thật.
+
 ## Thành phần đã hoàn thiện
 
 - Đăng nhập, đăng ký và phân quyền theo vai trò.

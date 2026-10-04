@@ -9,14 +9,16 @@ $classes=Join-Path $projectRoot 'build/web/WEB-INF/classes'
 $testClasses=Join-Path $projectRoot 'build/test-classes'
 New-Item -ItemType Directory -Force $classes,$testClasses,(Join-Path $projectRoot 'dist') | Out-Null
 $sources=Get-ChildItem (Join-Path $projectRoot 'src/java') -Recurse -Filter '*.java' | ForEach-Object FullName
-& "$JavaHome/bin/javac.exe" -encoding UTF-8 -cp "$TomcatHome/lib/servlet-api.jar" -d $classes $sources
+& "$JavaHome/bin/javac.exe" -encoding UTF-8 -cp "$TomcatHome/lib/servlet-api.jar;$(Join-Path $projectRoot 'web/WEB-INF/lib/*')" -d $classes $sources
 if($LASTEXITCODE -ne 0){throw 'Java compilation failed'}
 if($Test){
   $tests=Get-ChildItem (Join-Path $projectRoot 'test/security'),(Join-Path $projectRoot 'test/service') -Recurse -Filter '*.java' | ForEach-Object FullName
-  & "$JavaHome/bin/javac.exe" -encoding UTF-8 -cp "$classes;$TomcatHome/lib/servlet-api.jar" -d $testClasses $tests
+  & "$JavaHome/bin/javac.exe" -encoding UTF-8 -cp "$classes;$TomcatHome/lib/servlet-api.jar;$(Join-Path $projectRoot 'web/WEB-INF/lib/*')" -d $testClasses $tests
   if($LASTEXITCODE -ne 0){throw 'Test compilation failed'}
   & "$JavaHome/bin/java.exe" -cp "$classes;$testClasses;$(Join-Path $projectRoot 'web/WEB-INF/lib/*')" service.Sprint2SelfTest
   if($LASTEXITCODE -ne 0){throw 'Sprint 2 tests failed'}
+  & "$JavaHome/bin/java.exe" -cp "$classes;$testClasses;$(Join-Path $projectRoot 'web/WEB-INF/lib/*')" service.SmtpSelfTest
+  if($LASTEXITCODE -ne 0){throw 'SMTP tests failed; run database/smtp.sql first'}
   & "$JavaHome/bin/java.exe" -cp "$classes;$testClasses" security.PhanQuyenSelfTest
   if($LASTEXITCODE -ne 0){throw 'Permission tests failed'}
   & node --test (Join-Path $projectRoot 'test/frontend/real-data.test.cjs')

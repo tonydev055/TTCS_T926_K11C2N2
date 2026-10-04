@@ -153,13 +153,7 @@ public class NhapDuLieuService {
                             id,
                             wh.get("id")
                         );
-                        TruyVanDB.update(
-                            c,
-                            "INSERT INTO dev_mailbox_messages(recipient,subject,body) VALUES(?,?,?)",
-                            email,
-                            "Kích hoạt tài khoản KhoFlow",
-                            "Tài khoản của bạn đã được tạo. Mật khẩu tạm thời: " + password
-                        );
+                        ThuDienTuService.activation(c, email, password);
                     }
                     result.put("action", "Tạo mới");
                 }

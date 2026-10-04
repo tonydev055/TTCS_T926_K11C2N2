@@ -22,7 +22,7 @@ public class XacThucFilter implements Filter {
         String endpoint = q.getServletPath() + Objects.toString(q.getPathInfo(), "");
         if (
             Set.of("/api/health", "/api/auth/login", "/api/auth/register",
-                "/api/auth/forgot-password", "/api/auth/reset-password").contains(endpoint) ||
+                "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/mail-config").contains(endpoint) ||
             q.getServletPath().equals("/api/dev-mailbox")
         ) {
             c.doFilter(a, b);

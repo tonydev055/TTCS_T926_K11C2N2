@@ -222,6 +222,7 @@ public class NguoiDungDB extends CoSoDB {
                     }
                 }
                 assign(c, id, roles, warehouseCodes);
+                if (temporaryPassword) service.ThuDienTuService.activation(c, email, util.MatKhauUtil.DEFAULT_USER_PASSWORD);
                 c.commit();
                 return id;
             } catch (Exception e) {
@@ -337,16 +338,26 @@ public class NguoiDungDB extends CoSoDB {
         service.DanhMucService.phone(phone == null ? "" : phone, false);
     }
 
-    public void createResetToken(long userId, String hash) throws SQLException {
-        update(
+    public void createResetToken(long userId, String hash, String email, String token, String applicationUrl) throws SQLException {
+        try (Connection c = KetNoiDB.getConnection()) {
+            c.setAutoCommit(false);
+            try {
+        TruyVanDB.update(c,
             "UPDATE password_reset_tokens SET used_at=CURRENT_TIMESTAMP WHERE user_id=? AND used_at IS NULL",
             userId
         );
-        update(
+        TruyVanDB.update(c,
             "INSERT INTO password_reset_tokens(user_id,token_hash,expires_at) VALUES(?,?,CURRENT_TIMESTAMP+INTERVAL '30 minutes')",
             userId,
             hash
         );
+                service.ThuDienTuService.passwordReset(c, email, token, applicationUrl);
+                c.commit();
+            } catch (SQLException | RuntimeException e) {
+                c.rollback();
+                throw e;
+            }
+        }
     }
 
     public Long consumeResetToken(String hash) throws SQLException {

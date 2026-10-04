@@ -40,7 +40,7 @@ Kiểm thử service dùng transaction rollback, bao gồm SKU trùng, quyền g
 ## Giới hạn phạm vi
 
 - Nhập Excel hỗ trợ `.xlsx` theo mẫu, trang đầu tiên, tối đa 5.000 dòng/8 MB. Không hỗ trợ `.xls`, công thức hoặc macro; không tự diễn giải mã SKU dạng số đã bị Excel làm mất số 0 đầu.
-- Email phát triển được lưu vào KhoMail như Sprint 1; chưa cấu hình SMTP gửi ra ngoài.
+- Email hỗ trợ Gmail SMTP qua hàng đợi transaction; xem `SMTP_SETUP.md`. Khi `MAIL_MODE=dev`, email vẫn chỉ lưu KhoMail.
 - Tài khoản mới do Admin tạo thủ công hoặc nhập từ Excel dùng mật khẩu tạm `Demo@123` (chữ D hoa), lưu dạng hash và phải đổi khi đăng nhập lần đầu. Tài khoản đã tồn tại không bị đổi mật khẩu.
 - Đã có bảng nền `orders`, `order_lines`, `stock_receipts`, `stock_receipt_lines` để bảo vệ tham chiếu và kiểm thử quy đổi; giao diện tạo đơn, nhập/xuất kho và toàn bộ workflow của các sprint sau chưa triển khai.
 - Chưa đo coverage bằng công cụ, chưa có CI/staging hoặc nghiệm thu PO; không coi kiểm thử cục bộ là hoàn tất toàn bộ Definition of Done trong backlog.

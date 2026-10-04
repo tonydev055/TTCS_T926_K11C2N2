@@ -1,0 +1,17 @@
+BEGIN;
+CREATE TABLE IF NOT EXISTS mail_outbox (
+ id BIGSERIAL PRIMARY KEY,
+ recipient VARCHAR(255) NOT NULL,
+ subject VARCHAR(255) NOT NULL,
+ body TEXT,
+ action_url TEXT,
+ status VARCHAR(16) NOT NULL DEFAULT 'PENDING' CHECK(status IN ('PENDING','SENT','FAILED')),
+ attempts INTEGER NOT NULL DEFAULT 0,
+ next_attempt_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ expires_at TIMESTAMP NOT NULL,
+ created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ sent_at TIMESTAMP,
+ last_error VARCHAR(120)
+);
+CREATE INDEX IF NOT EXISTS mail_outbox_pending ON mail_outbox(next_attempt_at) WHERE status='PENDING';
+COMMIT;

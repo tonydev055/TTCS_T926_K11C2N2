@@ -17,6 +17,10 @@ public class XacThucServlet extends CoSoServlet {
     private final NguoiDungDB users = new NguoiDungDB();
 
     protected void doGet(HttpServletRequest q, HttpServletResponse r) throws IOException {
+        if ("/mail-config".equals(q.getPathInfo())) {
+            ok(r, "{\"developmentMailbox\":" + ThuDienTuService.developmentMailbox() + "}");
+            return;
+        }
         if ("/me".equals(q.getPathInfo())) {
             HttpSession s = q.getSession(false);
             if (s == null || s.getAttribute("userId") == null) {
@@ -167,9 +171,7 @@ public class XacThucServlet extends CoSoServlet {
             String token = MatKhauUtil.randomToken();
             users.createResetToken(
                 ((Number) u.get("id")).longValue(),
-                MatKhauUtil.tokenHash(token)
-            );
-            ThuDienTuService.passwordReset(
+                MatKhauUtil.tokenHash(token),
                 String.valueOf(u.get("email")),
                 token,
                 origin + q.getContextPath() + "/"

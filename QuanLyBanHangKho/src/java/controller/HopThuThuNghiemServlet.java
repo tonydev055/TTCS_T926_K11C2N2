@@ -10,6 +10,14 @@ public class HopThuThuNghiemServlet extends CoSoServlet {
 
     private final CoSoDB db = new CoSoDB();
 
+    protected void service(HttpServletRequest q, HttpServletResponse r) throws jakarta.servlet.ServletException, IOException {
+        if (!service.ThuDienTuService.developmentMailbox()) {
+            error(r, 404, "Hộp thư thử nghiệm đã tắt");
+            return;
+        }
+        super.service(q, r);
+    }
+
     protected void doGet(HttpServletRequest q, HttpServletResponse r) throws IOException {
         if ("/accounts".equals(q.getPathInfo())) {
             try {

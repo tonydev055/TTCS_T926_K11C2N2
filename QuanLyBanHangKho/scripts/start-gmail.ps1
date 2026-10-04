@@ -1,4 +1,4 @@
-param(
+﻿param(
   [string]$TomcatHome='C:/Users/ASUS/Downloads/apache-tomcat-10.1.60-windows-x64/apache-tomcat-10.1.60',
   [string]$JavaHome='C:/Program Files/Java/jdk-17',
   [string]$AppUrl='http://localhost:8080/QuanLyBanHangKho/'

@@ -131,7 +131,10 @@
       .getElementById('s2Import')
       ?.addEventListener('click', () => renderExcelImport('products'));
     try {
-      const rows = await apiRequest(`${endpoint}/`);
+      const [rows, categories] = await Promise.all([
+        apiRequest(`${endpoint}/`),
+        endpoint === 'products' ? apiRequest('categories/') : Promise.resolve([])
+      ]);
       if (revision !== viewRevision || request !== catalogState.request || !host.isConnected) return;
       catalogState.rows = rows;
       const columns = catalogState.columns[endpoint].filter(
@@ -142,6 +145,10 @@
         if (key === 'active') return value ? 'Đang hoạt động' : 'Ngừng hoạt động';
         if (key === 'locked') return value ? 'Đã khóa nội dung' : 'Chưa phát sinh đơn';
         if (key === 'cost_price') return formatMoney(value);
+        if (key === 'category_name') {
+          const category = categories.find((item) => item.id === row.category_id);
+          return category ? formatCategoryPath(category, categories) : value || '—';
+        }
         if (key === 'parent_id') return rows.find((item) => item.id === value)?.name || 'Nhóm gốc';
         if (key === 'factor') return `× ${number(value)}`;
         return value == null ? '—' : String(value);

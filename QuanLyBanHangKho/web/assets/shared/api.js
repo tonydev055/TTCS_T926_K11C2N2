@@ -40,7 +40,7 @@ function jsonRequestOptions(method, data) {
   return { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) };
 }
 function showRequestError(error) {
-  showToast(error.message || 'Không thể xử lý yêu cầu');
+  showToast(error.message || 'Không thể xử lý yêu cầu', 'error');
 }
 const formatMoney = (value) =>
   value == null

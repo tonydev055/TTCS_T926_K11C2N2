@@ -1,6 +1,7 @@
-function showToast(message) {
+function showToast(message, tone = 'info') {
   const toast = document.getElementById('toast');
   toast.textContent = message;
+  toast.dataset.tone = tone;
   toast.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);

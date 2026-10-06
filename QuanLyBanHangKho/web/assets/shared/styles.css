@@ -2695,8 +2695,22 @@ td a {
     flex: 1;
   }
 }
+/* Semantic colors for catalog actions and feedback. */
+.s2-row-actions [data-edit] { background:#fff2e5; color:#9a4500; border:1px solid #ffd3a5; }
+.s2-row-actions [data-delete] { background:#fff1f0; color:#b42318; border:1px solid #fecaca; }
+.s2-row-actions [data-delete]:hover { background:#fee2e2; }
+.s2-row-actions [data-details], .s2-row-actions [data-version] { background:#eff6ff; color:#1d4ed8; }
+.s2-status { display:inline-flex; padding:4px 9px; border-radius:6px; font-size:12px; font-weight:500; white-space:nowrap; }
+.s2-status.is-active { background:#eaf7ee; color:#176b39; }
+.s2-status.is-inactive { background:#f1f2f3; color:#61666b; }
 .s2-product-identity { display:flex; align-items:center; gap:8px; min-width:180px; }
 .s2-product-identity strong { font-size:14px; font-weight:500; }
 .s2-product-identity small, .s2-cell-note { display:block; color:#61666b; font-size:12px; margin-top:4px; }
+.s2-form-error:empty { display:none; }
+.s2-form-error:not(:empty), .s2-empty[role='alert'] { margin:0 26px 16px; padding:12px 14px; background:#fff1f0; border:1px solid #fecaca; border-radius:6px; color:#b42318; line-height:1.5; }
 .form-dialog .form-group label { font-size:13px; }
+.form-dialog .form-group input[aria-invalid='true'], .form-dialog .form-group select[aria-invalid='true'] { border-color:#d92d20; }
+.form-dialog .field-error { color:#b42318; font-size:12px; }
+.toast[data-tone='error'] { background:#fff1f0; color:#b42318; border:1px solid #fecaca; }
+.toast[data-tone='success'] { background:#eaf7ee; color:#176b39; border:1px solid #a6dcb7; }
 .form-dialog input[type='file']::file-selector-button { border:1px solid #c9cccf; border-radius:4px; padding:4px 8px; background:#f6f6f7; color:#202223; font:inherit; margin-right:8px; }

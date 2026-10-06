@@ -228,6 +228,7 @@
       const renderCell = (row, key) => {
         if (endpoint === 'products' && key === 'name') return `<div class="s2-product-identity">${row.has_image ? `<img class="s2-product-thumb" src="api/products/${row.id}/thumbnail?v=${encodeURIComponent(row.updated_at || request)}" alt="">` : ''}<div><strong>${escapeHtml(row.name)}</strong><small>${escapeHtml(row.sku)}</small></div></div>`;
         if (endpoint === 'products' && key === 'base_unit') return `${escapeHtml(row.base_unit)}${row.packaging ? `<small class="s2-cell-note">${escapeHtml(row.packaging)}</small>` : ''}`;
+        if (key === 'active') return `<span class="s2-status ${row.active ? 'is-active' : 'is-inactive'}">${escapeHtml(display(row, key))}</span>`;
         return escapeHtml(display(row, key));
       };
       let call = 0;
@@ -317,7 +318,7 @@
               button.disabled = true;
               try {
                 await apiRequest(`${endpoint}/${button.dataset.delete}`, { method: 'DELETE' });
-                showToast('Đã xóa dữ liệu');
+                showToast('Đã xóa dữ liệu', 'success');
                 renderCatalog(endpoint);
               } catch (e) {
                 showRequestError(e);
@@ -634,7 +635,7 @@
             }
           }
           dialog.close();
-          showToast(result.message);
+          showToast(result.message, 'success');
           renderCatalog(endpoint);
         } catch (e) {
           error.textContent = e.message;

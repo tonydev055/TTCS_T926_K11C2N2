@@ -62,6 +62,32 @@ function openFormDialog(title, body, submitLabel = 'Lưu thay đổi') {
   };
   document.getElementById('s2Close').onclick = close;
   document.getElementById('s2Cancel').onclick = close;
+  const form = document.getElementById('s2Form');
+  form.addEventListener('invalid', (event) => {
+    event.preventDefault();
+    const field = event.target;
+    const firstInvalid = form.querySelector('[aria-invalid="true"]');
+    field.setAttribute('aria-invalid', 'true');
+    if (!firstInvalid || firstInvalid === field) field.focus();
+    const group = field.closest('.form-group');
+    if (!group) return;
+    group.classList.add('invalid');
+    let message = group.querySelector('.field-error');
+    if (!message) {
+      message = document.createElement('small');
+      message.className = 'field-error';
+      message.id = `error-${field.name}`;
+      field.setAttribute('aria-describedby', message.id);
+      group.append(message);
+    }
+    message.textContent = field.validity.valueMissing ? 'Vui lòng điền trường này.' : 'Giá trị chưa hợp lệ. Vui lòng kiểm tra lại.';
+  }, true);
+  form.addEventListener('input', (event) => {
+    if (event.target.validity?.valid) {
+      event.target.removeAttribute('aria-invalid');
+      event.target.closest('.form-group')?.classList.remove('invalid');
+    }
+  });
   const restoreFocus = manageDialogFocus(modal, close);
   return { modal, form: document.getElementById('s2Form'), close };
 }

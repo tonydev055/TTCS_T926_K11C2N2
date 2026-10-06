@@ -9,7 +9,7 @@ function setup() {
   const html = fs.readFileSync(path.join(__dirname,'../../web/index.html'),'utf8');
   const elements = new Map();
   class Element {
-    constructor() { this.value=''; this.textContent=''; this.isConnected=true; this.listeners={}; this.classList={add(){},remove(){},toggle(){}}; }
+    constructor() { this.value=''; this.textContent=''; this.isConnected=true; this.listeners={}; this.dataset={}; this.classList={add(){},remove(){},toggle(){}}; }
     addEventListener(event,handler) { this.listeners[event]=handler; }
     focus() {}
     reset() { for(const element of elements.values()) element.value=''; }

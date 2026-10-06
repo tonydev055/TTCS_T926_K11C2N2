@@ -127,6 +127,17 @@ public class Sprint2SelfTest {
                     "Reject category cycle"
                 );
                 long p = service.save(c, "products", null, product("TEST-P" + suffix, d), true);
+                var productPage = service.page(c, "products", false, false, actor, 99, 1, "TEST-P" + suffix, "true");
+                check(((Number) productPage.get("total")).longValue() == 1, "Catalog search and status count");
+                check(((Number) productPage.get("page")).intValue() == 1, "Clamp catalog page after filtering");
+                var pageItems = (List<Map<String, Object>>) productPage.get("items");
+                check(pageItems.size() == 1 && TruyVanDB.id(pageItems.get(0)) == p && !pageItems.get(0).containsKey("cost_price"), "Paged results preserve cost permissions");
+                check(((Number) service.page(c, "products", false, false, actor, 1, 20, "' OR 1=1 --", "").get("total")).longValue() == 0, "Catalog search treats SQL text literally");
+                check(((Number) service.page(c, "products", false, false, actor, 1, 20, "TEST-P" + suffix, "false").get("total")).longValue() == 0, "Inactive filter excludes active products");
+                fails(() -> service.page(c, "products", false, false, actor, 0, 20, "", ""), "Reject invalid catalog page");
+                for (String table : DanhMucService.TABLES) {
+                    check(service.page(c, table, false, false, actor, 1, 20, "", "").containsKey("items"), "Pagination query for " + table);
+                }
                 fails(
                     () -> service.save(c, "products", null, product("TEST-P" + suffix, d), true),
                     "Unique SKU"

@@ -146,12 +146,29 @@ test('product thumbnail URL changes when its image version changes',async()=>{
   const app=setup();
   app.run("currentUser={permissions:['products.read']}");
   const products=[{id:7,sku:'SP-01',name:'Sản phẩm',category_id:1,category_name:'Nhóm',base_unit:'Cái',packaging:'',active:true,has_image:true,updated_at:'2026-10-05 10:00:00'}];
-  app.context.fetch=async(url)=>({ok:true,json:async()=>url==='api/products/'?products:[{id:1,name:'Nhóm'}]});
+  app.context.fetch=async(url)=>({ok:true,json:async()=>url.startsWith('api/products/')?{items:products,total:1,page:1}:[{id:1,name:'Nhóm'}]});
   await app.run("renderCatalog('products')");
   assert.match(app.elements.get('s2Table').innerHTML,/thumbnail\?v=2026-10-05%2010%3A00%3A00/);
   products[0].updated_at='2026-10-05 10:01:00';
   await app.run("renderCatalog('products')");
   assert.match(app.elements.get('s2Table').innerHTML,/thumbnail\?v=2026-10-05%2010%3A01%3A00/);
+});
+
+test('catalog pagination requests the next page from the server', async () => {
+  const app = setup();
+  const urls = [];
+  app.context.fetch = async url => {
+    urls.push(url);
+    return { ok: true, json: async () => ({ items: [{id: 1, name: 'Nhà cung cấp'}], total: 21,
+      page: Number(new URLSearchParams(url.split('?')[1]).get('page')) }) };
+  };
+  await app.run("renderCatalog('suppliers')");
+  await app.elements.get('s2Next').onclick();
+  // The handler starts the asynchronous renderer.
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert.match(urls[1], /page=2/);
+  assert.equal(app.elements.get('s2Footer').textContent, 'Trang 2 / 2');
+  assert.match(app.elements.get('s2Table').innerHTML, /Nhà cung cấp/);
 });
 
 test('audit log shows product name next to the object id',async()=>{

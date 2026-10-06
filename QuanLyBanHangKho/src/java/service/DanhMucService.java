@@ -95,21 +95,28 @@ public class DanhMucService {
         boolean customer,
         long actor
     ) throws SQLException {
-        if (table.equals("products")) return TruyVanDB.rows(
-            c,
+        var query = listQuery(table, cost, customer, actor);
+        var rows = TruyVanDB.rows(c, query.sql(), query.params());
+        addPriceLines(c, table, customer, rows);
+        return rows;
+    }
+
+    private record ListQuery(String sql, Object[] params) {}
+
+    private ListQuery listQuery(String table, boolean cost, boolean customer, long actor) {
+        if (!TABLES.contains(table)) throw new IllegalArgumentException("Chức năng không tồn tại");
+        if (table.equals("products")) return new ListQuery(
             "SELECT p.id,p.sku,p.name,p.category_id,c.name category_name,p.base_unit,p.packaging,p.active,p.updated_at,(p.image IS NOT NULL) has_image" +
                 (cost ? ",p.cost_price" : "") +
                 " FROM products p JOIN categories c ON c.id=p.category_id " +
                 (customer ? "WHERE p.active=true " : "") +
-                "ORDER BY p.id DESC"
+                "ORDER BY p.id DESC", new Object[] {}
         );
-        if (table.equals("product_units")) return TruyVanDB.rows(
-            c,
-            "SELECT u.*,p.sku,p.name product_name FROM product_units u JOIN products p ON p.id=u.product_id WHERE u.active=true ORDER BY p.sku,u.factor"
+        if (table.equals("product_units")) return new ListQuery(
+            "SELECT u.*,p.sku,p.name product_name FROM product_units u JOIN products p ON p.id=u.product_id WHERE u.active=true ORDER BY p.sku,u.factor", new Object[] {}
         );
         if (table.equals("price_lists")) {
-            var lists = TruyVanDB.rows(
-                c,
+            return new ListQuery(
                 "SELECT p.*,g.name group_name,EXISTS(SELECT 1 FROM orders o WHERE o.price_list_id=p.id) locked FROM price_lists p JOIN customer_groups g ON g.id=p.customer_group_id " +
                     (customer
                         ? "WHERE p.active AND CURRENT_DATE BETWEEN p.valid_from AND p.valid_to AND p.customer_group_id=(SELECT customer_group_id FROM users WHERE id=?) "
@@ -117,7 +124,17 @@ public class DanhMucService {
                     "ORDER BY p.id DESC",
                 customer ? new Object[] { actor } : new Object[] {}
             );
-            for (var p : lists)
+        }
+        if (customer && table.equals("customer_groups")) return new ListQuery(
+            "SELECT g.* FROM customer_groups g JOIN users u ON u.customer_group_id=g.id WHERE u.id=?",
+            new Object[] { actor }
+        );
+        return new ListQuery("SELECT * FROM " + table + " ORDER BY id DESC", new Object[] {});
+    }
+
+    private void addPriceLines(Connection c, String table, boolean customer, List<Map<String, Object>> rows) throws SQLException {
+        if (table.equals("price_lists")) {
+            for (var p : rows)
                 p.put(
                     "lines",
                     TruyVanDB.rows(
@@ -128,14 +145,37 @@ public class DanhMucService {
                         p.get("id")
                     )
                 );
-            return lists;
         }
-        if (customer && table.equals("customer_groups")) return TruyVanDB.rows(
-            c,
-            "SELECT g.* FROM customer_groups g JOIN users u ON u.customer_group_id=g.id WHERE u.id=?",
-            actor
-        );
-        return TruyVanDB.rows(c, "SELECT * FROM " + table + " ORDER BY id DESC");
+    }
+
+    public Map<String, Object> page(Connection c, String table, boolean cost, boolean customer,
+        long actor, int page, int size, String search, String status) throws SQLException {
+        if (page < 1 || size < 1 || size > 100) throw new IllegalArgumentException("Phân trang không hợp lệ");
+        if (!Set.of("", "true", "false").contains(status)) throw new IllegalArgumentException("Trạng thái không hợp lệ");
+        var query = listQuery(table, cost, customer, actor);
+        String columns = switch (table) {
+            case "products" -> "sku,name,category_name,base_unit,packaging";
+            case "product_units" -> "sku,product_name,name,factor";
+            case "suppliers" -> "code,name,tax_code,contact_name,phone,payment_terms";
+            case "price_lists" -> "name,group_name,valid_from,valid_to,version";
+            default -> "code,name";
+        };
+        List<Object> params = new ArrayList<>(Arrays.asList(query.params()));
+        String source = " FROM (" + query.sql() + ") records WHERE strpos(lower(concat_ws(' '," + columns + ")), lower(?)) > 0";
+        params.add(search.trim());
+        if (!status.isEmpty() && Set.of("products", "suppliers", "price_lists", "product_units").contains(table)) {
+            source += " AND active=?";
+            params.add(Boolean.valueOf(status));
+        }
+        long total = ((Number) TruyVanDB.one(c, "SELECT count(*) total" + source, params.toArray()).get("total")).longValue();
+        int lastPage = (int) Math.max(1, (total + size - 1) / size);
+        page = Math.min(page, lastPage);
+        String order = table.equals("product_units") ? "sku,factor,id" : "id DESC";
+        params.add(size);
+        params.add((long) (page - 1) * size);
+        var items = TruyVanDB.rows(c, "SELECT *" + source + " ORDER BY " + order + " LIMIT ? OFFSET ?", params.toArray());
+        addPriceLines(c, table, customer, items);
+        return Map.of("items", items, "total", total, "page", page, "size", size);
     }
 
     public long save(Connection c, String table, Long id, Map<String, Object> data, boolean cost)

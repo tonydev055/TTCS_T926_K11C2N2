@@ -71,6 +71,15 @@ public class DanhMucServlet extends CoSoServlet {
                 r.getOutputStream().write((byte[]) row.get(column));
                 return;
             }
+            if ((path == null || path.equals("/")) && q.getParameter("page") != null) {
+                int page = Integer.parseInt(q.getParameter("page"));
+                int size = Integer.parseInt(Objects.requireNonNullElse(q.getParameter("size"), "20"));
+                var result = service.page(c, table, cost(q), customer(q), actor(q), page, size,
+                    Objects.requireNonNullElse(q.getParameter("search"), ""),
+                    Objects.requireNonNullElse(q.getParameter("status"), ""));
+                PhanHoiJsonUtil.send(r, 200, XuLyJson.stringify(result));
+                return;
+            }
             var rows = service.list(c, table, cost(q), customer(q), actor(q));
             if (path != null && !path.equals("/")) {
                 long id = Long.parseLong(path.substring(1));

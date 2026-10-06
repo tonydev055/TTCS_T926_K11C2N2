@@ -152,12 +152,9 @@
       .getElementById('s2Import')
       ?.addEventListener('click', () => renderExcelImport('products'));
     try {
-      const [rows, categories] = await Promise.all([
-        apiRequest(`${endpoint}/`),
-        endpoint === 'products' ? apiRequest('categories/') : Promise.resolve([])
-      ]);
+      let rows = [];
+      const categories = ['products', 'categories'].includes(endpoint) ? await apiRequest('categories/') : [];
       if (revision !== viewRevision || request !== catalogState.request || !host.isConnected) return;
-      catalogState.rows = rows;
       const columns = catalogState.columns[endpoint].filter(
         ([key]) => key !== 'cost_price' || hasPermission('products.cost')
       );
@@ -170,25 +167,40 @@
           const category = categories.find((item) => item.id === row.category_id);
           return category ? formatCategoryPath(category, categories) : value || '—';
         }
-        if (key === 'parent_id') return rows.find((item) => item.id === value)?.name || 'Nhóm gốc';
+        if (key === 'parent_id') return categories.find((item) => item.id === value)?.name || 'Nhóm gốc';
         if (key === 'factor') return `× ${number(value)}`;
         return value == null ? '—' : String(value);
       };
-      const renderCatalogRows = () => {
+      let call = 0;
+      const renderCatalogRows = async () => {
+        const requestId = ++call;
         const query = document.getElementById('s2Search').value.trim().toLocaleLowerCase('vi'),
           status = document.getElementById('s2Status').value;
-        const filtered = rows.filter(
-          (row) =>
-            (!status || row.active == null || String(row.active) === status) &&
-            columns.some(([key]) => display(row, key).toLocaleLowerCase('vi').includes(query))
-        );
-        const pageCount = Math.max(1, Math.ceil(filtered.length / 20));
-        catalogState.page = Math.min(catalogState.page, pageCount);
-        document.getElementById('s2Count').textContent = `${number(filtered.length)} bản ghi`;
+        host.innerHTML = '<p class="s2-empty">Đang tải dữ liệu...</p>';
+        document.getElementById('s2Pages').innerHTML = '';
+        document.getElementById('s2Count').textContent = 'Đang tải...';
+        let data;
+        try {
+          const params = new URLSearchParams({ page: catalogState.page, size: 20, search: query, status });
+          data = await apiRequest(`${endpoint}/?${params}`);
+          if (revision !== viewRevision || request !== catalogState.request || requestId !== call || !host.isConnected) return;
+          if (!Array.isArray(data.items) || !Number.isInteger(data.page) || !Number.isFinite(data.total)) throw new Error('Dữ liệu trả về không hợp lệ.');
+        } catch (error) {
+          if (revision === viewRevision && requestId === call && host.isConnected) {
+            host.innerHTML = `<p class="s2-empty" role="alert">${escapeHtml(error.message)}</p>`;
+            document.getElementById('s2Count').textContent = 'Chưa tải được dữ liệu';
+          }
+          return;
+        }
+        rows = data.items;
+        catalogState.rows = rows;
+        const filtered = rows;
+        const pageCount = Math.max(1, Math.ceil(data.total / 20));
+        catalogState.page = data.page;
+        document.getElementById('s2Count').textContent = `${number(data.total)} bản ghi`;
         document.getElementById('s2Footer').textContent = `Trang ${catalogState.page} / ${pageCount}`;
         host.innerHTML = filtered.length
           ? `<table class="feature-table s2-table"><thead><tr>${columns.map(([, label]) => `<th>${label}</th>`).join('')}<th>Thao tác</th></tr></thead><tbody>${filtered
-              .slice((catalogState.page - 1) * 20, catalogState.page * 20)
               .map(
                 (row) =>
                   `<tr>${columns.map(([key]) => `<td>${key === 'name' && row.has_image ? `<img class="s2-product-thumb" src="api/products/${row.id}/thumbnail?v=${encodeURIComponent(row.updated_at || request)}" alt="">` : ''}${escapeHtml(display(row, key))}</td>`).join('')}<td><div class="s2-row-actions">${endpoint === 'price-lists' ? `<button class="row-action" data-details="${row.id}">Chi tiết</button>` : ''}${writable ? `${endpoint === 'price-lists' ? `<button class="row-action" data-version="${row.id}">Phiên bản mới</button>` : ''}${!row.locked ? `<button class="row-action" data-edit="${row.id}">Sửa</button><button class="row-action" data-delete="${row.id}">Xóa</button>` : ''}` : ''}</div></td></tr>`
@@ -245,15 +257,21 @@
             })
         );
       };
+      let debounce;
+      if (!['products', 'suppliers', 'price-lists', 'product-units'].includes(endpoint)) document.getElementById('s2Status').hidden = true;
       document.getElementById('s2Search').oninput = () => {
+        clearTimeout(debounce);
+        call++;
         catalogState.page = 1;
-        renderCatalogRows();
+        debounce = setTimeout(() => {
+          if (host.isConnected && revision === viewRevision) renderCatalogRows();
+        }, 300);
       };
       document.getElementById('s2Status').onchange = () => {
         catalogState.page = 1;
         renderCatalogRows();
       };
-      renderCatalogRows();
+      await renderCatalogRows();
     } catch (e) {
       if (host.isConnected && revision === viewRevision)
         host.innerHTML = `<p class="s2-empty" role="alert">${escapeHtml(e.message)}</p>`;

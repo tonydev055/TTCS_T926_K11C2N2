@@ -5,6 +5,8 @@ param(
 )
 $ErrorActionPreference='Stop'
 $projectRoot=Split-Path -Parent $PSScriptRoot
+& node (Join-Path $PSScriptRoot 'version-frontend.cjs')
+if($LASTEXITCODE -ne 0){throw 'Frontend asset versioning failed'}
 $classes=Join-Path $projectRoot 'build/web/WEB-INF/classes'
 $testClasses=Join-Path $projectRoot 'build/test-classes'
 New-Item -ItemType Directory -Force $classes,$testClasses,(Join-Path $projectRoot 'dist') | Out-Null

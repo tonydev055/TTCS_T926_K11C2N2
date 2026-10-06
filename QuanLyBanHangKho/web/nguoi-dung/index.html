@@ -98,7 +98,7 @@
         warehouses: ['WAREHOUSE', 'WH_MANAGER'].includes(role) ? [data.scope] : []
       };
       try {
-        const response = await fetch('api/users/', {
+        const response = await apiFetch('api/users/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -124,7 +124,7 @@
       const reason = shouldLock ? window.prompt('Nhập lý do khóa tài khoản:') : '';
       if (shouldLock && (!reason || !reason.trim())) return;
       try {
-        const response = await fetch(`api/users/${activeFormContext.userId}/${action}`, {
+        const response = await apiFetch(`api/users/${activeFormContext.userId}/${action}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ reason: reason || '' })
@@ -193,7 +193,7 @@
       document.getElementById('realUserRows').innerHTML =
         '<tr><td colspan="7" style="text-align:center;padding:38px;color:#8c7d72">Đang tải dữ liệu...</td></tr>';
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           `api/users/?page=${page}&size=${size}&search=${encodeURIComponent(search)}&role=${encodeURIComponent(role)}&status=${encodeURIComponent(status)}`
         );
         const payload = await response.json();
@@ -270,7 +270,7 @@
             if (!locked && (!reason || !reason.trim())) return;
             button.disabled = true;
             try {
-              const response = await fetch(
+              const response = await apiFetch(
                 `api/users/${button.dataset.userId}/${locked ? 'unlock' : 'lock'}`,
                 {
                   method: 'POST',

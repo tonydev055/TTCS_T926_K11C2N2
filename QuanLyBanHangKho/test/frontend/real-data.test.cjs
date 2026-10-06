@@ -26,7 +26,7 @@ function setup() {
   for(const [,id] of html.matchAll(/id="([^"]+)"/g)) elements.set(id,new Element());
   const context=vm.createContext({
     document:{getElementById:id=>elements.get(id),querySelectorAll:()=>[],addEventListener(){},createElement:()=>new Element()},
-    sessionStorage:{getItem:()=>null},window:{location:{search:''}},URLSearchParams,Intl,setTimeout,clearTimeout,
+    sessionStorage:{getItem:()=>null},window:{location:{search:''}},URLSearchParams,AbortSignal,Intl,setTimeout,clearTimeout,
     fetch:async()=>({ok:true,json:async()=>[]})
   });
   for (const [,src] of html.matchAll(/<script src="([^"?]+)(?:\?[^\"]*)?"/g)) {
@@ -254,7 +254,8 @@ test('password change validates fields and shows API or session errors without r
     assert.match(app.elements.get('changePasswordError').textContent,expected);
     assert.equal(app.elements.get('changePasswordSuccess').textContent,'');
     assert.equal(app.elements.get('changePasswordSubmit').disabled,false);
-    assert.equal(app.run('currentUser.requiresPasswordChange'),true);
+    assert.equal(app.run('currentUser.requiresPasswordChange'), status === 401 ? undefined : true);
+    if (status === 401) assert.match(app.elements.get('loginError').textContent, /hết hạn/);
   }
 });
 

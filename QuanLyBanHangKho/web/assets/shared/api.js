@@ -1,8 +1,30 @@
 function hasPermission(permission) {
   return (currentUser.permissions || []).includes(permission);
 }
+function expireSession() {
+  if (!Object.keys(currentUser).length) return;
+  currentUser = {};
+  viewRevision++;
+  sessionStorage.removeItem?.('khoFlowSession');
+  document.querySelectorAll('.form-modal.open').forEach((modal) => {
+    if (modal.id === 's2Dialog') modal.remove();
+    else { modal.classList.remove('open'); modal.setAttribute('aria-hidden', 'true'); }
+  });
+  if (document.body) document.body.style.overflow = '';
+  appView.classList.add('is-hidden');
+  registerView.classList.add('is-hidden');
+  loginView.classList.remove('is-hidden');
+  passwordInput.value = '';
+  loginError.textContent = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+  emailInput.focus();
+}
+async function apiFetch(url, options = {}) {
+  const response = await fetch(url, { ...options, signal: options.signal || AbortSignal.timeout(30000) });
+  if (response.status === 401 && !url.startsWith('api/auth/login')) expireSession();
+  return response;
+}
 async function apiRequest(path, options = {}) {
-  const response = await fetch(`api/${path}`, { cache: 'no-store', ...options });
+  const response = await apiFetch(`api/${path}`, { cache: 'no-store', ...options });
   const data = await response
     .json()
     .catch(() => ({ message: 'Máy chủ trả về dữ liệu không hợp lệ' }));

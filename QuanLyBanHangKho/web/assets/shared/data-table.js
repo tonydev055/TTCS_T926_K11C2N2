@@ -81,7 +81,7 @@ async function renderRealModule(view, sourceIndex = 0) {
     .getElementById('recordSource')
     .addEventListener('change', (event) => renderRealModule(view, Number(event.target.value)));
   try {
-    const response = await fetch(`api/${endpoint}/`, { cache: 'no-store' });
+    const response = await apiFetch(`api/${endpoint}/`, { cache: 'no-store' });
     const payload = await response.json();
     if (!isCurrent()) return;
     if (!response.ok) throw new Error(dataError(response, payload));

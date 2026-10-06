@@ -630,7 +630,139 @@ function renderTable() {
   });
 }
 
+/* ─── Form: Mở thêm ──────────────────────────────────────────────── */
+
+function openAdd() {
+  editId = null;
+  document.getElementById('formTitle').textContent = 'Thêm chính sách chiết khấu';
+  resetForm();
+  showView('vForm');
+}
+
+/* ─── Form: Mở sửa ───────────────────────────────────────────────── */
+
+function openEdit(id) {
+  const p = store.find(s => s.id === id);
+  if (!p) return;
+  editId = id;
+  document.getElementById('formTitle').textContent = 'Sửa chính sách chiết khấu';
+  resetForm();
+  document.getElementById('fName').value  = p.name;
+  document.getElementById('fScope').value = p.scope;
+  document.getElementById('fType').value  = p.dtype;
+  onScopeChange();
+  document.getElementById('fTarget').value = p.tid;
+  onTypeChange();
+  document.getElementById('tiersWrap').innerHTML = '';
+  p.tiers.forEach(t => addTier(t.q, t.v));
+  showView('vForm');
+}
+
+function cancelForm() { showView('vList') }
+
+/* ─── Form: Reset ────────────────────────────────────────────────── */
+
+function resetForm() {
+  document.getElementById('fName').value  = '';
+  document.getElementById('fScope').value = 'SKU';
+  document.getElementById('fType').value  = 'PERCENT';
+  clearErrors();
+  onScopeChange();
+  document.getElementById('tiersWrap').innerHTML = '';
+  addTier();
+}
+
+/* ─── Scope → rebuild dropdown đối tượng ────────────────────────── */
+
+function onScopeChange() {
+  const scope = document.getElementById('fScope').value;
+  const sel   = document.getElementById('fTarget');
+  sel.innerHTML = '<option value="">-- Chọn đối tượng --</option>';
+  const data  = scope === 'SKU' ? SKUS : GROUPS;
+
+  if (data.length === 0) {
+    // Khi chưa có dữ liệu từ backend: placeholder
+    const o = document.createElement('option');
+    o.value = ''; o.disabled = true;
+    o.textContent = scope === 'SKU'
+      ? '(Chưa có dữ liệu SKU — cần kết nối backend)'
+      : '(Chưa có dữ liệu nhóm hàng — cần kết nối backend)';
+    sel.appendChild(o);
+    return;
+  }
+
+  data.forEach(item => {
+    const o = document.createElement('option');
+    o.value = item.id; o.textContent = item.name;
+    sel.appendChild(o);
+  });
+}
+
+/* ─── Type → cập nhật nhãn cột tier ─────────────────────────────── */
+
+function onTypeChange() {
+  const lbl = document.getElementById('fType').value === 'PERCENT'
+    ? 'Chiết khấu (%) *'
+    : 'Giảm mỗi chiếc (đ) *';
+  document.querySelectorAll('.tier-val-lbl').forEach(el => el.textContent = lbl);
+}
+
+/* ─── Thêm bậc chiết khấu ────────────────────────────────────────── */
+
+function addTier(q = '', v = '') {
+  const dtype = document.getElementById('fType').value;
+  const lbl   = dtype === 'PERCENT' ? 'Chiết khấu (%) *' : 'Giảm mỗi chiếc (đ) *';
+  const ph    = dtype === 'PERCENT' ? '5' : '300000';
+  const rid   = 'tr-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+  const div   = document.createElement('div');
+  div.className = 'tier-row'; div.id = rid;
+  div.innerHTML = `
+    <div>
+      <div class="tier-lbl">Số lượng từ *</div>
+      <input type="number" min="1" class="fc tier-qty" placeholder="1"
+             value="${esc(String(q))}" oninput="clrTierErr()">
+    </div>
+    <div>
+      <div class="tier-lbl tier-val-lbl">${lbl}</div>
+      <input type="number" min="0.01" step="any" class="fc tier-val" placeholder="${ph}"
+             value="${esc(String(v))}" oninput="clrValErr(this)">
+    </div>
+    <div style="padding-bottom:0">
+      <button class="btn btn-ghost-danger" onclick="removeTier('${rid}')">Xóa bậc</button>
+    </div>
+  `;
+  document.getElementById('tiersWrap').appendChild(div);
+}
+
+function removeTier(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+/* ─── Clear lỗi ──────────────────────────────────────────────────── */
+
+function clearErrors() {
+  ['fAlert', 'tAlert'].forEach(id => document.getElementById(id).classList.remove('show'));
+  ['eName', 'eTarget', 'eTiers'].forEach(id => document.getElementById(id).classList.remove('show'));
+  document.querySelectorAll('.fc.error').forEach(el => el.classList.remove('error'));
+}
+
+function clrTierErr() {
+  document.getElementById('tAlert').classList.remove('show');
+  document.getElementById('eTiers').classList.remove('show');
+}
+
+function clrValErr(inp) {
+  inp.classList.remove('error');
+  const dtype = document.getElementById('fType').value;
+  const v = parseFloat(inp.value);
+  if (dtype === 'PERCENT' && !isNaN(v) && v > 0 && v <= 100) {
+    document.getElementById('tAlert').classList.remove('show');
+  }
+}
+
 (function init() {
+  onScopeChange();
   renderTable();
 })();
 </script>

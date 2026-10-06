@@ -397,6 +397,76 @@
 
         </div>
       </div>
+      <!-- ══ VIEW: FORM THÊM / SỬA ══ -->
+      <div id="vForm" class="hidden">
+        <div>
+          <h1 class="page-title" id="formTitle">Thêm chính sách chiết khấu</h1>
+          <p class="page-sub">Cấu hình đối tượng áp dụng và các bậc số lượng.</p>
+        </div>
+
+        <div class="form-card">
+          <div class="form-section-title">Thông tin chính sách</div>
+
+          <!-- Alert lỗi tổng -->
+          <div class="alert alert-danger" id="fAlert"><span>⚠</span><span id="fAlertMsg"></span></div>
+
+          <!-- Tên -->
+          <div class="fg">
+            <label class="fl" for="fName">Tên chính sách<span class="req">*</span></label>
+            <input type="text" id="fName" class="fc" placeholder="VD: Điện thoại A · ưu đãi số lượng">
+            <span class="field-err" id="eName">Vui lòng nhập tên chính sách.</span>
+          </div>
+
+          <!-- Phạm vi + Đối tượng -->
+          <div class="fg-row">
+            <div class="fg" style="margin:0">
+              <label class="fl" for="fScope">Phạm vi<span class="req">*</span></label>
+              <select id="fScope" class="fc" onchange="onScopeChange()">
+                <option value="SKU">SKU</option>
+                <option value="GROUP">Nhóm hàng</option>
+              </select>
+            </div>
+            <div class="fg" style="margin:0">
+              <label class="fl" for="fTarget">Đối tượng áp dụng<span class="req">*</span></label>
+              <select id="fTarget" class="fc">
+                <%-- BACKEND-INJECT: điền options ở đây hoặc rebuild bằng JS khi onScopeChange --%>
+                <option value="">-- Chọn đối tượng --</option>
+              </select>
+              <span class="field-err" id="eTarget">Vui lòng chọn đối tượng áp dụng.</span>
+            </div>
+          </div>
+
+          <!-- Loại chiết khấu -->
+          <div class="fg">
+            <label class="fl" for="fType">Loại chiết khấu<span class="req">*</span></label>
+            <select id="fType" class="fc" onchange="onTypeChange()">
+              <option value="PERCENT">Phần trăm (%)</option>
+              <option value="FIXED">Số tiền / chiếc</option>
+            </select>
+          </div>
+
+          <!-- Bậc số lượng -->
+          <div>
+            <div class="tiers-header">Bậc số lượng</div>
+            <div class="alert alert-danger" id="tAlert"><span>⚠</span><span id="tAlertMsg"></span></div>
+            <div id="tiersWrap"></div>
+            <button class="add-tier-btn" onclick="addTier()">+ Thêm bậc số lượng</button>
+            <span class="field-err" id="eTiers" style="display:block;margin-top:4px"></span>
+          </div>
+
+          <!-- Actions -->
+          <div class="form-actions">
+            <button class="btn btn-secondary" onclick="cancelForm()">Hủy</button>
+            <button class="btn btn-primary" onclick="savePolicy()">Lưu chính sách</button>
+          </div>
+        </div>
+      </div>
+      <!-- /vForm -->
+
+    </div>
+  </div>
+</div>
+
     </div>
   </div>
 </div>

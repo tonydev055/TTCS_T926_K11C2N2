@@ -395,8 +395,55 @@
           </div>
         </div>
 
+        <!-- ── Sub: Kiểm tra áp dụng ── -->
+        <div id="sCheck" class="hidden">
+          <div class="check-card">
+            <div class="check-inputs">
+              <div class="fg" style="margin:0">
+                <label class="fl">Sản phẩm</label>
+                <select id="ckSku" class="fc">
+                  <option value="">-- Chọn sản phẩm --</option>
+                  <%-- BACKEND-INJECT: SKUS — điền danh sách SKU từ ProductDAO
+                  <c:forEach var="s" items="${skuList}">
+                    <option value="${s.id}">${s.name}</option>
+                  </c:forEach>
+                  --%>
+                </select>
+              </div>
+              <div class="fg" style="margin:0">
+                <label class="fl">Số lượng</label>
+                <input id="ckQty" type="number" min="1" class="fc" placeholder="10">
+              </div>
+              <div class="fg" style="margin:0">
+                <label class="fl">Đơn giá (đ)</label>
+                <input id="ckPrice" type="number" min="0" class="fc" placeholder="0">
+              </div>
+            </div>
+            <div class="check-btn-row">
+              <button class="btn btn-primary" onclick="runCheck()">Kiểm tra áp dụng</button>
+            </div>
+            <div class="check-banner" id="ckBanner"></div>
+            <div class="check-result hidden" id="ckResult">
+              <div class="table-wrap" style="margin-top:0">
+                <table class="cmp-tbl">
+                  <thead>
+                    <tr>
+                      <th>Chính sách</th>
+                      <th>Bậc áp dụng</th>
+                      <th>Giảm / chiếc</th>
+                      <th>Kết quả</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cmpBody"></tbody>
+                </table>
+              </div>
+              <div class="check-summary" id="ckSummary"></div>
+            </div>
+          </div>
         </div>
       </div>
+      <!-- /vList -->
+
       <!-- ══ VIEW: FORM THÊM / SỬA ══ -->
       <div id="vForm" class="hidden">
         <div>
@@ -467,8 +514,13 @@
   </div>
 </div>
 
-    </div>
-  </div>
-</div>
+<!-- Toast container -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     JAVASCRIPT — Frontend logic
+     Dữ liệu được inject từ backend vào 3 biến: SKUS, GROUPS, store
+     (xem nhãn BACKEND-INJECT bên dưới)
+═══════════════════════════════════════════════════════════════════════ -->
 </body>
 </html>

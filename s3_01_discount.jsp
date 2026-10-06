@@ -522,5 +522,117 @@
      Dữ liệu được inject từ backend vào 3 biến: SKUS, GROUPS, store
      (xem nhãn BACKEND-INJECT bên dưới)
 ═══════════════════════════════════════════════════════════════════════ -->
+<script>
+/* ─────────────────────────────────────────────────────────────────────
+   BACKEND-INJECT: SKUS
+   Khi kết nối backend, thay mảng [] bằng JSP scriptlet hoặc API fetch.
+
+   Ví dụ JSP:
+     const SKUS = [
+       <% for(SKU s : ProductDAO.getAllSKUs()) { %>
+         { id: '<%=s.getId()%>', name: '<%=s.getCode()%> — <%=s.getName()%>', gid: '<%=s.getGroupId()%>' },
+       <% } %>
+     ];
+
+   Ví dụ API fetch (trong initData()):
+     const res = await fetch('/api/skus');
+     SKUS = await res.json();
+───────────────────────────────────────────────────────────────────── */
+let SKUS = [];   /* [BACKEND-INJECT: SKUS] */
+
+/* ─────────────────────────────────────────────────────────────────────
+   BACKEND-INJECT: GROUPS
+   Inject danh sách nhóm hàng từ ProductGroupDAO.getAll()
+───────────────────────────────────────────────────────────────────── */
+let GROUPS = []; /* [BACKEND-INJECT: GROUPS] */
+
+/* ─────────────────────────────────────────────────────────────────────
+   BACKEND-INJECT: STORE (DiscountPolicy + DiscountTier)
+   Inject từ DiscountPolicyDAO.getAllWithTiers()
+   Cấu trúc mỗi phần tử:
+   {
+     id: number,
+     name: string,
+     scope: 'SKU' | 'GROUP',
+     tid: string,       // target_id
+     tname: string,     // target_name
+     dtype: 'PERCENT' | 'FIXED',
+     active: boolean,
+     tiers: [ { q: number, v: number }, ... ]
+   }
+───────────────────────────────────────────────────────────────────── */
+let store = [];  /* [BACKEND-INJECT: STORE] */
+
+/* Biến trạng thái UI */
+let editId   = null;    // null = thêm mới, number = sửa
+let curTab   = 'policy';
+let nextId   = 1;       // dùng tạm khi chưa có auto-increment từ DB
+
+/* ─── View management ─────────────────────────────────────────────── */
+
+function showView(id) {
+  ['vList','vForm'].forEach(v => document.getElementById(v).classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+function gotoList() { showView('vList') }
+
+function navigate(page) {
+  // Hook để nhúng vào router của project
+  // Ví dụ: window.location.href = '/QuanLyBanHangKho/' + page;
+  console.log('[S3-01] navigate to:', page);
+}
+
+function switchTab(tab) {
+  curTab = tab;
+  document.getElementById('tBtnPolicy').classList.toggle('active', tab === 'policy');
+  document.getElementById('tBtnCheck').classList.toggle('active', tab === 'check');
+  document.getElementById('sPolicyList').classList.toggle('hidden', tab !== 'policy');
+  document.getElementById('sCheck').classList.toggle('hidden', tab !== 'check');
+  if (tab === 'check') buildCheckDropdown();
+}
+
+/* ─── Render bảng danh sách ───────────────────────────────────────── */
+
+function renderTable() {
+  const q  = document.getElementById('searchInput').value.toLowerCase().trim();
+  const fs = document.getElementById('filterScope').value;
+
+  const rows = store.filter(p => {
+    const ms = !q || p.name.toLowerCase().includes(q)
+                  || p.tid.toLowerCase().includes(q)
+                  || p.tname.toLowerCase().includes(q);
+    const mf = !fs || p.scope === fs;
+    return ms && mf;
+  });
+
+  const tbody = document.getElementById('tBody');
+  const empty = document.getElementById('emptyState');
+  tbody.innerHTML = '';
+  empty.classList.toggle('hidden', rows.length > 0);
+
+  rows.forEach(p => {
+    const tierQty = p.tiers.map(t => '≥' + t.q).join(' / ');
+    const tierVal = p.tiers.map(t =>
+      p.dtype === 'PERCENT' ? t.v + '%' : fvnd(t.v)
+    ).join(' / ');
+    const badgeClass = p.scope === 'SKU' ? 'badge-sku' : 'badge-grp';
+    const scopeLabel = p.scope === 'SKU' ? 'SKU' : 'Nhóm';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><div class="policy-name">${esc(p.name)}</div></td>
+      <td><span class="badge ${badgeClass}">${scopeLabel} · ${esc(p.tname)}</span></td>
+      <td class="tiers-qty">${esc(tierQty)}</td>
+      <td class="tiers-val">${esc(tierVal)}</td>
+      <td><button class="btn btn-edit" onclick="openEdit(${p.id})">Sửa</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+(function init() {
+  renderTable();
+})();
+</script>
 </body>
 </html>

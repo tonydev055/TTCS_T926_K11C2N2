@@ -21,7 +21,7 @@ function setup() {
         elements.set(id,new Element());
       }
     }
-    get innerHTML() { return this.markup ?? this.textContent.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    get innerHTML() { return this.markup ?? String(this.textContent).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   }
   for(const [,id] of html.matchAll(/id="([^"]+)"/g)) elements.set(id,new Element());
   const context=vm.createContext({
@@ -146,7 +146,7 @@ test('product thumbnail URL changes when its image version changes',async()=>{
   const app=setup();
   app.run("currentUser={permissions:['products.read']}");
   const products=[{id:7,sku:'SP-01',name:'Sản phẩm',category_id:1,category_name:'Nhóm',base_unit:'Cái',packaging:'',active:true,has_image:true,updated_at:'2026-10-05 10:00:00'}];
-  app.context.fetch=async(url)=>({ok:true,json:async()=>url.startsWith('api/products/')?{items:products,total:1,page:1}:[{id:1,name:'Nhóm'}]});
+  app.context.fetch=async(url)=>({ok:true,json:async()=>url.startsWith('api/products/?')?{items:products,total:1,page:1}:[{id:1,name:'Nhóm'}]});
   await app.run("renderCatalog('products')");
   assert.match(app.elements.get('s2Table').innerHTML,/thumbnail\?v=2026-10-05%2010%3A00%3A00/);
   products[0].updated_at='2026-10-05 10:01:00';
@@ -169,6 +169,50 @@ test('catalog pagination requests the next page from the server', async () => {
   assert.match(urls[1], /page=2/);
   assert.equal(app.elements.get('s2Footer').textContent, 'Trang 2 / 2');
   assert.match(app.elements.get('s2Table').innerHTML, /Nhà cung cấp/);
+});
+
+test('category tree escapes names and safely renders orphaned or cyclic categories', () => {
+  const app = setup();
+  app.context.treeCategories = [{id:1,name:'Điện thoại',parent_id:null}, {id:2,name:'<img src=x>',parent_id:1},
+    {id:3,name:'Nhóm mất cha',parent_id:99}, {id:4,name:'Vòng A',parent_id:5}, {id:5,name:'Vòng B',parent_id:4}];
+  const html = app.run('renderCategoryTree(treeCategories, 2)');
+  assert.match(html, /&lt;img src=x&gt;/);
+  assert.match(html, /data-category="2" aria-pressed="true"/);
+  assert.match(html, /Nhóm mất cha/);
+  assert.equal((html.match(/data-category="4"/g) || []).length, 1);
+  assert.equal((html.match(/data-category="5"/g) || []).length, 1);
+});
+
+test('SKU list displays separate model, brand, attributes and passes filters to the API', async () => {
+  const app = setup();
+  const urls = [];
+  app.context.fetch = async url => {
+    urls.push(url);
+    const data = url === 'api/categories/' ? [{id:1,name:'Điện thoại'}]
+      : url === 'api/brands/' ? [{id:9,name:'Apple'}]
+      : url === 'api/products/attribute-options' ? [{name:'Bộ nhớ',value:'128GB'}, {name:'Bộ nhớ',value:'256GB'}]
+      : {items:[{id:3,sku:'SKU-3',name:'iPhone 15 Đen',model_name:'iPhone 15',brand_name:'Apple',category_id:1,
+          attributes:{'Màu sắc':'<đen>', 'Bộ nhớ':'128GB'},condition:'NEW',active:true}],total:1,page:1};
+    return {ok:true,json:async()=>data};
+  };
+  await app.run("renderCatalog('products', {category_id:1,model_id:7})");
+  const html = app.elements.get('s2Table').innerHTML;
+  assert.match(html, /iPhone 15/);
+  assert.match(html, /Apple/);
+  assert.match(html, /Màu sắc: &lt;đen&gt;/);
+  assert.match(urls.at(-1), /category_id=1/);
+  assert.match(urls.at(-1), /model_id=7/);
+  app.elements.get('s2Brand').value = '9';
+  app.elements.get('s2Attribute').value = 'Bộ nhớ';
+  app.elements.get('s2Attribute').onchange();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  app.elements.get('s2AttributeValue').value = '128GB';
+  app.elements.get('s2AttributeValue').onchange();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  const params = new URLSearchParams(urls.at(-1).split('?')[1]);
+  assert.equal(params.get('brand_id'), '9');
+  assert.equal(params.get('attribute_name'), 'Bộ nhớ');
+  assert.equal(params.get('attribute_value'), '128GB');
 });
 
 test('home summary only requests authorized data and shares user statistics', async () => {

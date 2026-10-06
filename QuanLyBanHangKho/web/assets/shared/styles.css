@@ -32,6 +32,10 @@ dialog {
 button {
   cursor: pointer;
 }
+button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 3px;
+}
 .is-hidden {
   display: none !important;
 }

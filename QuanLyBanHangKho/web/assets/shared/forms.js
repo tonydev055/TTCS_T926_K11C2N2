@@ -1,3 +1,25 @@
+function manageDialogFocus(modal, close) {
+  const previous = document.activeElement;
+  const onKey = (event) => {
+    if (event.key === 'Escape') { event.preventDefault(); close(); return; }
+    if (event.key !== 'Tab') return;
+    const fields = [...modal.querySelectorAll('button,input,select,textarea,a[href]')]
+      .filter((field) => !field.disabled && field.type !== 'hidden' && field.getClientRects().length);
+    if (!fields.length) return;
+    const first = fields[0], last = fields.at(-1);
+    if (!modal.contains(document.activeElement) || (event.shiftKey && document.activeElement === first)) {
+      event.preventDefault(); (event.shiftKey ? last : first).focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault(); first.focus();
+    }
+  };
+  modal.addEventListener('keydown', onKey);
+  modal.querySelector('input:not([type="hidden"]),select,textarea')?.focus();
+  return () => {
+    modal.removeEventListener('keydown', onKey);
+    if (previous?.isConnected) previous.focus();
+  };
+}
 function openFormDialog(title, body, submitLabel = 'Lưu dữ liệu') {
   document.getElementById('s2Dialog')?.remove();
   const modal = document.createElement('div');
@@ -28,25 +50,11 @@ function openFormDialog(title, body, submitLabel = 'Lưu dữ liệu') {
   const close = () => {
     modal.remove();
     document.body.style.overflow = '';
+    restoreFocus();
   };
   document.getElementById('s2Close').onclick = close;
   document.getElementById('s2Cancel').onclick = close;
-  modal.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') close();
-    if (event.key === 'Tab') {
-      const fields = [...modal.querySelectorAll('button,input,select,textarea')].filter(
-        (field) => !field.disabled
-      );
-      if (event.shiftKey && document.activeElement === fields[0]) {
-        event.preventDefault();
-        fields.at(-1).focus();
-      } else if (!event.shiftKey && document.activeElement === fields.at(-1)) {
-        event.preventDefault();
-        fields[0].focus();
-      }
-    }
-  });
-  modal.querySelector('input,select,button')?.focus();
+  const restoreFocus = manageDialogFocus(modal, close);
   return { modal, form: document.getElementById('s2Form'), close };
 }
 function renderInputField(

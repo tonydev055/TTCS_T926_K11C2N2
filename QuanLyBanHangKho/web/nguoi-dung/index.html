@@ -11,6 +11,7 @@
 <script>
   const formModal = document.getElementById('formModal');
   let activeFormContext = null;
+  let restoreEntityFocus;
 
   function openEntityForm(view, mode = 'create', recordLabel = '', metadata = {}) {
     if (view !== 'Người dùng') return;
@@ -32,13 +33,7 @@
     formModal.classList.add('open');
     formModal.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
-    setTimeout(
-      () =>
-        document
-          .querySelector('#formFields input, #formFields select, #formFields textarea')
-          ?.focus(),
-      80
-    );
+    restoreEntityFocus = manageDialogFocus(formModal, closeEntityForm);
   }
 
   function renderFormField(field, mode, recordLabel, index) {
@@ -59,6 +54,8 @@
     formModal.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
     activeFormContext = null;
+    restoreEntityFocus?.();
+    restoreEntityFocus = null;
   }
 
   document.getElementById('closeFormModal').addEventListener('click', closeEntityForm);
@@ -71,11 +68,14 @@
   });
   document.getElementById('entityForm').addEventListener('submit', async (event) => {
     event.preventDefault();
+    const submit = event.currentTarget.querySelector('button[type="submit"]');
+    if (submit.disabled) return;
     let valid = true;
     document.querySelectorAll('#formFields [required]').forEach((control) => {
       const group = control.closest('.form-group');
       const invalid = !String(control.value).trim();
       group.classList.toggle('invalid', invalid);
+      control.setAttribute('aria-invalid', String(invalid));
       if (invalid) valid = false;
     });
     if (!valid) {
@@ -97,6 +97,7 @@
         roles: [role],
         warehouses: ['WAREHOUSE', 'WH_MANAGER'].includes(role) ? [data.scope] : []
       };
+      submit.disabled = true;
       try {
         const response = await apiFetch('api/users/', {
           method: 'POST',
@@ -110,7 +111,7 @@
         openView('Người dùng');
       } catch (e) {
         showToast(e.message);
-      }
+      } finally { submit.disabled = false; }
       return;
     }
     if (
@@ -123,6 +124,7 @@
       const action = shouldLock ? 'lock' : 'unlock';
       const reason = shouldLock ? window.prompt('Nhập lý do khóa tài khoản:') : '';
       if (shouldLock && (!reason || !reason.trim())) return;
+      submit.disabled = true;
       try {
         const response = await apiFetch(`api/users/${activeFormContext.userId}/${action}`, {
           method: 'POST',
@@ -137,7 +139,7 @@
         openView('Người dùng');
       } catch (e) {
         showToast(e.message);
-      }
+      } finally { submit.disabled = false; }
       return;
     }
     showToast('Chức năng lưu dữ liệu này chưa được kết nối.');

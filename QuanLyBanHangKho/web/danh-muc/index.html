@@ -131,11 +131,21 @@
       'price-lists': 'Giá bán, giá sàn và thời gian hiệu lực theo nhóm khách hàng.',
       suppliers: 'Nguồn hàng, liên hệ và điều khoản thanh toán.'
     };
-    moduleContent.innerHTML = `<section class="module-head"><div><span class="eyebrow">DANH MỤC HÀNG HÓA</span><h2>${catalogState.labels[endpoint]}</h2><p>${descriptions[endpoint]}</p></div><div class="module-actions">${endpoint === 'products' && writable ? '<button class="outline-button" id="s2Import">⇧ Nhập Excel</button>' : ''}${writable ? '<button class="orange-button" id="s2Create">+ Thêm mới</button>' : ''}</div></section><div class="s2-tabs" role="tablist">${tabs.map((key) => `<button role="tab" data-catalog="${key}" class="${key === endpoint ? 'selected' : ''}">${catalogState.labels[key]}</button>`).join('')}</div><section class="inventory-panel"><div class="inventory-toolbar"><label class="search-control"><span>⌕</span><input type="search" id="s2Search" placeholder="Tìm mã, tên hoặc thông tin..."></label><select id="s2Status" class="filter-select"><option value="">Tất cả trạng thái</option><option value="true">Đang hoạt động</option><option value="false">Ngừng hoạt động</option></select><button class="outline-button" id="s2Reload">↻ Tải lại</button><span id="s2Count" class="filter-result"></span></div><div id="s2Table" class="table-scroll" aria-live="polite"><p class="s2-empty">Đang tải dữ liệu...</p></div><div class="inventory-footer"><span id="s2Footer"></span><div id="s2Pages" class="pagination"></div></div></section>`;
+    moduleContent.innerHTML = `<section class="module-head"><div><span class="eyebrow">DANH MỤC HÀNG HÓA</span><h2>${catalogState.labels[endpoint]}</h2><p>${descriptions[endpoint]}</p></div><div class="module-actions">${endpoint === 'products' && writable ? '<button class="outline-button" id="s2Import">⇧ Nhập Excel</button>' : ''}${writable ? '<button class="orange-button" id="s2Create">+ Thêm mới</button>' : ''}</div></section><div class="s2-tabs" role="tablist">${tabs.map((key) => `<button role="tab" aria-selected="${key === endpoint}" tabindex="${key === endpoint ? 0 : -1}" data-catalog="${key}" class="${key === endpoint ? 'selected' : ''}">${catalogState.labels[key]}</button>`).join('')}</div><section class="inventory-panel"><div class="inventory-toolbar"><label class="search-control"><span>⌕</span><input type="search" id="s2Search" placeholder="Tìm mã, tên hoặc thông tin..."></label><select id="s2Status" class="filter-select"><option value="">Tất cả trạng thái</option><option value="true">Đang hoạt động</option><option value="false">Ngừng hoạt động</option></select><button class="outline-button" id="s2Reload">↻ Tải lại</button><span id="s2Count" class="filter-result"></span></div><div id="s2Table" class="table-scroll" aria-live="polite"><p class="s2-empty">Đang tải dữ liệu...</p></div><div class="inventory-footer"><span id="s2Footer"></span><div id="s2Pages" class="pagination"></div></div></section>`;
     const host = document.getElementById('s2Table');
     moduleContent
       .querySelectorAll('[data-catalog]')
-      .forEach((button) => (button.onclick = () => renderCatalog(button.dataset.catalog)));
+      .forEach((button, index, buttons) => {
+        button.onclick = () => renderCatalog(button.dataset.catalog);
+        button.onkeydown = (event) => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+          event.preventDefault();
+          const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1
+            : (index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length;
+          renderCatalog(buttons[next].dataset.catalog);
+          moduleContent.querySelector('[role="tab"][aria-selected="true"]')?.focus();
+        };
+      });
     document.getElementById('s2Reload').onclick = () => renderCatalog(endpoint);
     document.getElementById('s2Create')?.addEventListener('click', () => openCatalogForm(endpoint));
     document

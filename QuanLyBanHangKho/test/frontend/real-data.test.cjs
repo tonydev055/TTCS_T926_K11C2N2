@@ -171,6 +171,28 @@ test('catalog pagination requests the next page from the server', async () => {
   assert.match(app.elements.get('s2Table').innerHTML, /Nhà cung cấp/);
 });
 
+test('home summary only requests authorized data and shares user statistics', async () => {
+  const app = setup();
+  const urls = [];
+  app.context.fetch = async url => {
+    urls.push(url);
+    return { ok: true, json: async () => ({ stats: { total: 12, locked: 2 } }) };
+  };
+  app.run("currentUser={permissions:['admin.users']};renderRealHome()");
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert.deepEqual(urls, ['api/users/?page=1&size=1']);
+  assert.equal(app.elements.get('homeMetric0').textContent, '12');
+  assert.equal(app.elements.get('homeMetric1').textContent, '2');
+  assert.doesNotMatch(app.elements.get('moduleContent').innerHTML, /Sẵn sàng/);
+});
+test('home summary does not invent zero values when an API fails', async () => {
+  const app = setup();
+  app.context.fetch = async () => ({ ok: false, status: 500, json: async () => ({}) });
+  app.run("currentUser={permissions:['products.read']};renderRealHome()");
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert.equal(app.elements.get('homeMetric0').textContent, 'Chưa tải được');
+});
+
 test('audit log shows product name next to the object id',async()=>{
   const app=setup();
   app.context.FormData=class { *[Symbol.iterator](){} };

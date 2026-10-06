@@ -11,11 +11,50 @@
       ? currentUser.warehouses.join(', ')
       : currentUser.territory || 'Toàn hệ thống';
     const permissionCount = (currentUser.permissions || []).length;
-    moduleContent.innerHTML = `<section class="role-hero app-welcome"><div><span class="eyebrow">KHÔNG GIAN LÀM VIỆC</span><h2>Chào ${escapeHtml(currentUser.fullName || currentUser.email || 'bạn')}</h2><p>${escapeHtml(roleConfigs[activeRole].label)} · Phạm vi: ${escapeHtml(areas)}</p><div class="welcome-badges"><span>✓ Phiên đăng nhập an toàn</span><span>✓ ${permissionCount} quyền đang hiệu lực</span></div></div><div class="welcome-role"><small>VAI TRÒ HIỆN TẠI</small><strong>${escapeHtml(roleConfigs[activeRole].label)}</strong><span>${escapeHtml(areas)}</span></div></section><section class="home-overview"><article><span>01</span><div><small>QUYỀN TRUY CẬP</small><strong>${permissionCount}</strong><p>Chức năng được server cho phép</p></div></article><article><span>02</span><div><small>PHẠM VI</small><strong>${escapeHtml(areas)}</strong><p>Kho hoặc địa bàn đang phụ trách</p></div></article><article><span>03</span><div><small>TRẠNG THÁI</small><strong>Sẵn sàng</strong><p>Dữ liệu được tải trực tiếp từ hệ thống</p></div></article></section><section class="panel home-shortcuts"><div class="panel-heading"><div><span class="eyebrow">TRUY CẬP NHANH</span><h3>Công việc của bạn</h3><p>Chỉ hiển thị các chức năng phù hợp với quyền hiện tại.</p></div></div><div class="role-shortcuts">${menu.map((view, index) => `<button data-open-view="${escapeHtml(view)}"><span>${String(index + 1).padStart(2, '0')}</span><strong>${escapeHtml(view)}</strong><small>Mở chức năng →</small></button>`).join('')}</div></section>`;
+    moduleContent.innerHTML = `<section class="role-hero app-welcome"><div><span class="eyebrow">KHÔNG GIAN LÀM VIỆC</span><h2>Chào ${escapeHtml(currentUser.fullName || currentUser.email || 'bạn')}</h2><p>${escapeHtml(roleConfigs[activeRole].label)} · Phạm vi: ${escapeHtml(areas)}</p><div class="welcome-badges"><span>Thông tin tài khoản hiện tại</span><span>✓ ${permissionCount} quyền đang hiệu lực</span></div></div><div class="welcome-role"><small>VAI TRÒ HIỆN TẠI</small><strong>${escapeHtml(roleConfigs[activeRole].label)}</strong><span>${escapeHtml(areas)}</span></div></section><section class="home-overview" id="homeMetrics" aria-live="polite"></section><section class="panel" id="homeActivity" hidden></section><section class="panel home-shortcuts"><div class="panel-heading"><div><span class="eyebrow">TRUY CẬP NHANH</span><h3>Công việc của bạn</h3><p>Chỉ hiển thị các chức năng phù hợp với quyền hiện tại.</p></div></div><div class="role-shortcuts">${menu.map((view, index) => `<button data-open-view="${escapeHtml(view)}"><span>${String(index + 1).padStart(2, '0')}</span><strong>${escapeHtml(view)}</strong><small>Mở chức năng →</small></button>`).join('')}</div></section>`;
     moduleContent
       .querySelectorAll('[data-open-view]')
       .forEach((button) =>
         button.addEventListener('click', () => openView(button.dataset.openView))
       );
+    loadHomeSummary();
+  }
+
+  async function loadHomeSummary() {
+    const revision = viewRevision;
+    const host = document.getElementById('homeMetrics');
+    const activity = document.getElementById('homeActivity');
+    const metrics = [];
+    if (hasPermission('admin.users')) {
+      metrics.push({ label: 'Tài khoản', path: 'users/?page=1&size=1', value: data => data.stats.total });
+      metrics.push({ label: 'Tài khoản bị khóa', path: 'users/?page=1&size=1', value: data => data.stats.locked });
+    }
+    if (hasPermission('products.read')) metrics.push({ label: 'Sản phẩm', path: 'products/?page=1&size=1', value: data => data.total });
+    if (hasPermission('suppliers.read')) metrics.push({ label: 'Nhà cung cấp', path: 'suppliers/?page=1&size=1', value: data => data.total });
+    host.innerHTML = metrics.length ? metrics.map((metric, index) => `<article><span>${String(index + 1).padStart(2, '0')}</span><div><small>${escapeHtml(metric.label)}</small><strong id="homeMetric${index}">Đang tải...</strong><p>Dữ liệu trong phạm vi được cấp quyền</p></div></article>`).join('') : '<p>Chọn một chức năng bên dưới để bắt đầu công việc.</p>';
+    const requests = new Map();
+    await Promise.allSettled(metrics.map(async (metric, index) => {
+      if (!requests.has(metric.path)) requests.set(metric.path, apiRequest(metric.path));
+      try {
+        const data = await requests.get(metric.path);
+        if (revision !== viewRevision || !host.isConnected) return;
+        const value = metric.value(data);
+        if (!Number.isFinite(value)) throw new Error('Dữ liệu không hợp lệ');
+        document.getElementById(`homeMetric${index}`).textContent = number(value);
+      } catch (_) {
+        if (revision === viewRevision && host.isConnected) document.getElementById(`homeMetric${index}`).textContent = 'Chưa tải được';
+      }
+    }));
+    if (!hasPermission('admin.audit') || revision !== viewRevision || !activity.isConnected) return;
+    activity.hidden = false;
+    activity.innerHTML = '<div class="panel-heading"><h3>Hoạt động gần đây</h3></div><p class="s2-empty">Đang tải...</p>';
+    try {
+      const data = await apiRequest('audit/?page=1');
+      if (revision !== viewRevision || !activity.isConnected) return;
+      activity.innerHTML = `<div class="panel-heading"><h3>Hoạt động gần đây</h3><button class="outline-button" id="homeOpenAudit">Xem nhật ký</button></div><div class="table-scroll">${data.items.length ? `<table class="feature-table"><thead><tr><th>Thời điểm</th><th>Người thực hiện</th><th>Thao tác</th><th>Đối tượng</th></tr></thead><tbody>${data.items.slice(0, 5).map(row => `<tr><td>${escapeHtml(row.created_at)}</td><td>${escapeHtml(row.actor_name || 'Hệ thống')}</td><td>${escapeHtml(row.action)}</td><td>${escapeHtml(row.object_name || row.object_type)}</td></tr>`).join('')}</tbody></table>` : '<p class="s2-empty">Chưa có hoạt động.</p>'}</div>`;
+      document.getElementById('homeOpenAudit').onclick = () => openView('Nhật ký hệ thống');
+    } catch (_) {
+      if (revision === viewRevision && activity.isConnected) activity.innerHTML = '<p class="s2-empty" role="alert">Không tải được hoạt động gần đây. Mở Nhật ký hệ thống để thử lại.</p>';
+    }
   }
 </script>

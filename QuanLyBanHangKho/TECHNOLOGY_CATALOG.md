@@ -1,5 +1,7 @@
 # Danh mục công nghệ
 
+> Bản giao diện thử hiện tại bám Sprint 1–3: chỉ sử dụng Sản phẩm/SKU và Nhóm hàng. Các tab mẫu sản phẩm, thương hiệu, thuộc tính và tình trạng hàng đã được bỏ. Schema mở rộng dưới đây được giữ để bảo toàn dữ liệu đã có; giao diện không gọi các API mở rộng này.
+
 Cấu trúc: danh mục nhiều cấp → mẫu sản phẩm → SKU. Thương hiệu gắn vào mẫu; màu sắc, bộ nhớ, RAM và các cấu hình khác gắn vào từng SKU. Giá và lịch sử giao dịch tiếp tục tham chiếu SKU hiện có.
 
 Trong **Sản phẩm & bảng giá**, tạo thương hiệu, tạo mẫu với thương hiệu và danh mục, rồi tạo từng biến thể tại tab Sản phẩm. Nút **Xem SKU** mở các biến thể của mẫu. Chọn danh mục cha sẽ lọc cả danh mục con; có thể kết hợp thương hiệu và một thuộc tính.

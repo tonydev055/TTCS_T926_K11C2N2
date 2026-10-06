@@ -183,36 +183,15 @@ test('category tree escapes names and safely renders orphaned or cyclic categori
   assert.equal((html.match(/data-category="5"/g) || []).length, 1);
 });
 
-test('SKU list displays separate model, brand, attributes and passes filters to the API', async () => {
-  const app = setup();
-  const urls = [];
+test('catalog stays within sprint scope and avoids extension API dependencies', async () => {
+  const app = setup(), urls = [];
   app.context.fetch = async url => {
     urls.push(url);
-    const data = url === 'api/categories/' ? [{id:1,name:'Điện thoại'}]
-      : url === 'api/brands/' ? [{id:9,name:'Apple'}]
-      : url === 'api/products/attribute-options' ? [{name:'Bộ nhớ',value:'128GB'}, {name:'Bộ nhớ',value:'256GB'}]
-      : {items:[{id:3,sku:'SKU-3',name:'iPhone 15 Đen',model_name:'iPhone 15',brand_name:'Apple',category_id:1,
-          attributes:{'Màu sắc':'<đen>', 'Bộ nhớ':'128GB'},condition:'NEW',active:true}],total:1,page:1};
-    return {ok:true,json:async()=>data};
+    return {ok:true,json:async()=>url === 'api/categories/' ? [] : {items:[],total:0,page:1}};
   };
-  await app.run("renderCatalog('products', {category_id:1,model_id:7})");
-  const html = app.elements.get('s2Table').innerHTML;
-  assert.match(html, /iPhone 15/);
-  assert.match(html, /Apple/);
-  assert.match(html, /Màu sắc: &lt;đen&gt;/);
-  assert.match(urls.at(-1), /category_id=1/);
-  assert.match(urls.at(-1), /model_id=7/);
-  app.elements.get('s2Brand').value = '9';
-  app.elements.get('s2Attribute').value = 'Bộ nhớ';
-  app.elements.get('s2Attribute').onchange();
-  await new Promise(resolve => setTimeout(resolve, 0));
-  app.elements.get('s2AttributeValue').value = '128GB';
-  app.elements.get('s2AttributeValue').onchange();
-  await new Promise(resolve => setTimeout(resolve, 0));
-  const params = new URLSearchParams(urls.at(-1).split('?')[1]);
-  assert.equal(params.get('brand_id'), '9');
-  assert.equal(params.get('attribute_name'), 'Bộ nhớ');
-  assert.equal(params.get('attribute_value'), '128GB');
+  await app.run("renderCatalog('products')");
+  assert.doesNotMatch(app.elements.get('moduleContent').innerHTML, /Mẫu sản phẩm|Thương hiệu|Lọc thuộc tính/);
+  assert.equal(urls.some(url => /brands|product-models|attribute-options/.test(url)), false);
 });
 
 test('home summary only requests authorized data and shares user statistics', async () => {

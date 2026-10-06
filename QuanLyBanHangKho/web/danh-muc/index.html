@@ -56,16 +56,8 @@
   #s2CategoryTree button[aria-pressed="true"] { background: var(--orange-soft); color: #9a4500; font-weight: 600; }
   .catalog-layout > .inventory-panel { min-width: 0; }
   .catalog-layout .inventory-toolbar { flex-wrap: wrap; gap: 10px; }
-  .s2-attribute-line { display: grid; grid-template-columns: 1fr 1fr 36px; gap: 10px; margin: 10px 0; align-items: end; }
-  .s2-attribute-line button { height: 40px; border: 0; border-radius: 8px; color: #b91c1c; }
-  @media (max-width: 1000px) {
-    .catalog-layout { grid-template-columns: minmax(0, 1fr); }
-    #s2CategoryTree { max-height: 230px; }
-  }
-  @media (max-width: 470px) {
-    .s2-attribute-line { grid-template-columns: minmax(0, 1fr) 36px; }
-    .s2-attribute-line label:first-child { grid-column: 1 / -1; }
-  }
+
+@media(max-width:1000px){.catalog-layout{grid-template-columns:minmax(0,1fr)}#s2CategoryTree{max-height:230px}}
 </style>
 <script>
   const catalogState = {
@@ -75,8 +67,6 @@
     request: 0,
     labels: {
       products: 'Sản phẩm',
-      brands: 'Thương hiệu',
-      'product-models': 'Mẫu sản phẩm',
       categories: 'Nhóm hàng',
       'product-units': 'Quy đổi đơn vị',
       'customer-groups': 'Nhóm khách hàng',
@@ -85,8 +75,6 @@
     },
     permissions: {
       products: 'products.write',
-      brands: 'products.write',
-      'product-models': 'products.write',
       categories: 'products.write',
       'product-units': 'units.write',
       'customer-groups': 'prices.write',
@@ -96,17 +84,11 @@
     columns: {
       products: [
         ['name', 'Sản phẩm'],
-        ['model_name', 'Mẫu sản phẩm'],
-        ['brand_name', 'Thương hiệu'],
-        ['attributes', 'Cấu hình / biến thể'],
-        ['condition', 'Tình trạng hàng'],
         ['category_name', 'Nhóm hàng'],
         ['base_unit', 'Đơn vị / Quy cách'],
         ['cost_price', 'Giá vốn'],
         ['active', 'Trạng thái']
       ],
-      brands: [['code', 'Mã hãng'], ['name', 'Thương hiệu'], ['active', 'Trạng thái']],
-      'product-models': [['code', 'Mã mẫu'], ['name', 'Mẫu sản phẩm'], ['brand_name', 'Thương hiệu'], ['category_name', 'Nhóm hàng'], ['variant_count', 'Số SKU'], ['active', 'Trạng thái']],
       categories: [
         ['code', 'Mã nhóm'],
         ['name', 'Tên nhóm'],
@@ -142,34 +124,30 @@
       ]
     }
   };
-  async function renderCatalog(endpoint, filters = {}) {
+  async function renderCatalog(endpoint) {
     const revision = viewRevision,
       request = ++catalogState.request;
     catalogState.endpoint = endpoint;
     catalogState.page = 1;
-    let selectedCategory = filters.category_id || '';
-    const hasTree = ['products', 'product-models', 'categories'].includes(endpoint);
+    let selectedCategory = '';
+    const hasTree = ['products','categories'].includes(endpoint);
     const writable = hasPermission(catalogState.permissions[endpoint]);
     const tabs = endpoint === 'suppliers' ? ['suppliers'] : [
       'products',
-      'product-models',
-      ...(hasPermission('products.write') || hasPermission('catalog.read') ? ['brands'] : []),
       ...(hasPermission('products.write') || hasPermission('catalog.read') ? ['categories'] : []),
       ...(hasPermission('units.write') ? ['product-units'] : []),
       ...(hasPermission('prices.write') ? ['customer-groups'] : []),
       'price-lists'
     ];
     const descriptions = {
-      products: 'Mỗi màu sắc, dung lượng hoặc cấu hình bán có một SKU riêng.',
-      brands: 'Thương hiệu được quản lý riêng, dùng chung cho các loại sản phẩm.',
-      'product-models': 'Nhóm các SKU theo mẫu sản phẩm, thương hiệu và danh mục.',
+      products: 'SKU, hình ảnh, quy cách đóng gói và trạng thái kinh doanh.',
       categories: 'Cấu trúc nhóm hàng nhiều cấp dùng chung toàn hệ thống.',
       'product-units': 'Quy đổi đơn vị về đơn vị cơ sở của từng SKU.',
       'customer-groups': 'Phân nhóm khách hàng để áp dụng đúng chính sách giá.',
       'price-lists': 'Giá bán, giá sàn và thời gian hiệu lực theo nhóm khách hàng.',
       suppliers: 'Nguồn hàng, liên hệ và điều khoản thanh toán.'
     };
-    moduleContent.innerHTML = `<section class="module-head"><div><span class="eyebrow">DANH MỤC HÀNG HÓA</span><h2>${catalogState.labels[endpoint]}</h2><p>${descriptions[endpoint]}</p></div><div class="module-actions">${endpoint === 'products' && writable ? '<button class="outline-button" id="s2Import">⇧ Nhập Excel</button>' : ''}${writable ? `<button class="orange-button" id="s2Create">${endpoint === 'products' ? '+ Thêm sản phẩm' : '+ Thêm mới'}</button>` : ''}</div></section><div class="s2-tabs" role="tablist">${tabs.map((key) => `<button role="tab" aria-selected="${key === endpoint}" tabindex="${key === endpoint ? 0 : -1}" data-catalog="${key}" class="${key === endpoint ? 'selected' : ''}">${catalogState.labels[key]}</button>`).join('')}</div>${filters.model_id ? '<div class="catalog-filter-note">Đang xem SKU của một mẫu sản phẩm. <button class="text-button" id="s2ClearModel">Xem tất cả SKU</button></div>' : ''}<div class="catalog-layout ${hasTree ? '' : 'catalog-layout-flat'}">${hasTree ? '<aside class="catalog-tree-panel"><h3>Cây danh mục</h3><div id="s2CategoryTree" aria-label="Danh mục sản phẩm"></div></aside>' : ''}<section class="inventory-panel"><div class="inventory-toolbar"><label class="search-control"><span>⌕</span><input type="search" id="s2Search" placeholder="Tìm mã, tên hoặc thông tin..."></label><select id="s2Status" class="filter-select"><option value="">Tất cả trạng thái</option><option value="true">Đang hoạt động</option><option value="false">Ngừng hoạt động</option></select>${['products','product-models'].includes(endpoint) ? '<select id="s2Brand" class="filter-select" aria-label="Lọc thương hiệu"><option value="">Tất cả thương hiệu</option></select>' : ''}${endpoint === 'products' ? '<select id="s2Attribute" class="filter-select" aria-label="Lọc thuộc tính"><option value="">Tất cả thuộc tính</option></select><select id="s2AttributeValue" class="filter-select" aria-label="Giá trị thuộc tính" disabled><option value="">Tất cả giá trị</option></select>' : ''}<button class="outline-button" id="s2Reload">↻ Tải lại</button><span id="s2Count" class="filter-result"></span></div><div id="s2Table" class="table-scroll" aria-live="polite"><p class="s2-empty">Đang tải dữ liệu...</p></div><div class="inventory-footer"><span id="s2Footer"></span><div id="s2Pages" class="pagination"></div></div></section></div>`;
+    moduleContent.innerHTML = `<section class="module-head"><div><span class="eyebrow">DANH MỤC HÀNG HÓA</span><h2>${catalogState.labels[endpoint]}</h2><p>${descriptions[endpoint]}</p></div><div class="module-actions">${endpoint === 'products' && writable ? '<button class="outline-button" id="s2Import">⇧ Nhập Excel</button>' : ''}${writable ? `<button class="orange-button" id="s2Create">${endpoint === 'products' ? '+ Thêm sản phẩm' : '+ Thêm mới'}</button>` : ''}</div></section><div class="s2-tabs" role="tablist">${tabs.map((key) => `<button role="tab" aria-selected="${key === endpoint}" tabindex="${key === endpoint ? 0 : -1}" data-catalog="${key}" class="${key === endpoint ? 'selected' : ''}">${catalogState.labels[key]}</button>`).join('')}</div><div class="catalog-layout ${hasTree ? '' : 'catalog-layout-flat'}">${hasTree ? '<aside class="catalog-tree-panel"><h3>Nhóm hàng</h3><div id="s2CategoryTree" aria-label="Nhóm hàng sản phẩm"></div></aside>' : ''}<section class="inventory-panel"><div class="inventory-toolbar"><label class="search-control"><span>⌕</span><input type="search" id="s2Search" placeholder="Tìm mã, tên hoặc thông tin..."></label><select id="s2Status" class="filter-select"><option value="">Tất cả trạng thái</option><option value="true">Đang hoạt động</option><option value="false">Ngừng hoạt động</option></select><button class="outline-button" id="s2Reload">↻ Tải lại</button><span id="s2Count" class="filter-result"></span></div><div id="s2Table" class="table-scroll" aria-live="polite"><p class="s2-empty">Đang tải dữ liệu...</p></div><div class="inventory-footer"><span id="s2Footer"></span><div id="s2Pages" class="pagination"></div></div></section></div>`;
     const host = document.getElementById('s2Table');
     moduleContent
       .querySelectorAll('[data-catalog]')
@@ -185,35 +163,19 @@
         };
       });
     document.getElementById('s2Reload').onclick = () => renderCatalog(endpoint);
-    document.getElementById('s2ClearModel')?.addEventListener('click', () => renderCatalog('products'));
     document.getElementById('s2Create')?.addEventListener('click', () => openCatalogForm(endpoint));
     document
       .getElementById('s2Import')
       ?.addEventListener('click', () => renderExcelImport('products'));
     try {
       let rows = [];
-      const [categories, brands, attributeOptions] = await Promise.all([
-        hasTree ? apiRequest('categories/') : [],
-        ['products', 'product-models'].includes(endpoint) ? apiRequest('brands/') : [],
-        endpoint === 'products' ? apiRequest('products/attribute-options') : []
-      ]);
+      const categories = ['products', 'categories'].includes(endpoint) ? await apiRequest('categories/') : [];
       if (revision !== viewRevision || request !== catalogState.request || !host.isConnected) return;
-      const brandSelect = document.getElementById('s2Brand');
-      if (['products', 'product-models'].includes(endpoint)) {
-        brandSelect.innerHTML += brands.map(brand => `<option value="${escapeHtml(brand.id)}">${escapeHtml(brand.name)}</option>`).join('');
-      }
-      const attributeSelect = document.getElementById('s2Attribute');
-      const attributeValue = document.getElementById('s2AttributeValue');
-      if (endpoint === 'products') {
-        attributeSelect.innerHTML += [...new Set(attributeOptions.map(item => item.name))].map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
-      }
       const columns = catalogState.columns[endpoint].filter(
         ([key]) => key !== 'cost_price' || hasPermission('products.cost')
       );
       const display = (row, key) => {
         const value = row[key];
-        if (key === 'attributes') return Object.entries(value || {}).map(([name, content]) => `${name}: ${content}`).join(' · ') || '—';
-        if (key === 'condition') return { NEW: 'Mới', USED: 'Đã qua sử dụng', DISPLAY: 'Trưng bày' }[value] || '—';
         if (key === 'active') return value ? 'Đang hoạt động' : 'Ngừng hoạt động';
         if (key === 'locked') return value ? 'Đã khóa nội dung' : 'Chưa phát sinh đơn';
         if (key === 'cost_price') return formatMoney(value);
@@ -242,13 +204,7 @@
         let data;
         try {
           const params = new URLSearchParams({ page: catalogState.page, size: 20, search: query, status });
-          if (selectedCategory) params.set('category_id', selectedCategory);
-          if (brandSelect?.value) params.set('brand_id', brandSelect.value);
-          if (endpoint === 'products' && filters.model_id) params.set('model_id', filters.model_id);
-          if (endpoint === 'products' && attributeSelect.value) {
-            params.set('attribute_name', attributeSelect.value);
-            if (attributeValue.value) params.set('attribute_value', attributeValue.value);
-          }
+          if (endpoint === 'products' && selectedCategory) params.set('category_id', selectedCategory);
           data = await apiRequest(`${endpoint}/?${params}`);
           if (revision !== viewRevision || request !== catalogState.request || requestId !== call || !host.isConnected) return;
           if (!Array.isArray(data.items) || !Number.isInteger(data.page) || !Number.isFinite(data.total)) throw new Error('Dữ liệu trả về không hợp lệ.');
@@ -270,7 +226,7 @@
           ? `<table class="feature-table s2-table"><thead><tr>${columns.map(([, label]) => `<th>${label}</th>`).join('')}<th>Thao tác</th></tr></thead><tbody>${filtered
               .map(
                 (row) =>
-                  `<tr>${columns.map(([key]) => `<td>${renderCell(row, key)}</td>`).join('')}<td><div class="s2-row-actions">${endpoint === 'product-models' ? `<button class="row-action" data-variants="${row.id}">Xem SKU</button>` : ''}${endpoint === 'price-lists' ? `<button class="row-action" data-details="${row.id}">Chi tiết</button>` : ''}${writable ? `${endpoint === 'price-lists' ? `<button class="row-action" data-version="${row.id}">Phiên bản mới</button>` : ''}${!row.locked ? `<button class="row-action" data-edit="${row.id}">Sửa</button><button class="row-action" data-delete="${row.id}">Xóa</button>` : ''}` : ''}</div></td></tr>`
+                  `<tr>${columns.map(([key]) => `<td>${renderCell(row, key)}</td>`).join('')}<td><div class="s2-row-actions">${endpoint === 'price-lists' ? `<button class="row-action" data-details="${row.id}">Chi tiết</button>` : ''}${writable ? `${endpoint === 'price-lists' ? `<button class="row-action" data-version="${row.id}">Phiên bản mới</button>` : ''}${!row.locked ? `<button class="row-action" data-edit="${row.id}">Sửa</button><button class="row-action" data-delete="${row.id}">Xóa</button>` : ''}` : ''}</div></td></tr>`
               )
               .join('')}</tbody></table>`
           : `<div class="s2-empty"><strong>${rows.length ? 'Không có kết quả phù hợp' : 'Chưa có dữ liệu'}</strong><p>${writable ? 'Thêm bản ghi đầu tiên hoặc điều chỉnh bộ lọc.' : 'Dữ liệu sẽ xuất hiện sau khi được khai báo.'}</p></div>`;
@@ -292,9 +248,6 @@
                 rows.find((row) => row.id === Number(button.dataset.edit))
               ))
         );
-        host.querySelectorAll('[data-variants]').forEach(button => {
-          button.onclick = () => renderCatalog('products', { model_id: button.dataset.variants });
-        });
         host.querySelectorAll('[data-version]').forEach(
           (button) =>
             (button.onclick = () =>
@@ -327,16 +280,13 @@
             })
         );
       };
-      let debounce;
-      if (!['products', 'product-models', 'brands', 'suppliers', 'price-lists', 'product-units'].includes(endpoint)) document.getElementById('s2Status').hidden = true;
       if (hasTree) {
         const tree = document.getElementById('s2CategoryTree');
         tree.innerHTML = renderCategoryTree(categories, selectedCategory);
         tree.querySelectorAll('[data-category]').forEach(button => {
           button.onclick = () => {
             if (endpoint === 'categories' && button.dataset.category) {
-              const category = categories.find(item => String(item.id) === button.dataset.category);
-              if (writable) openCatalogForm('categories', category);
+              if (writable) openCatalogForm('categories', categories.find(item => String(item.id) === button.dataset.category));
               return;
             }
             selectedCategory = button.dataset.category;
@@ -346,18 +296,8 @@
           };
         });
       }
-      if (brandSelect) brandSelect.onchange = () => { catalogState.page = 1; renderCatalogRows(); };
-      if (endpoint === 'products') {
-        attributeSelect.onchange = () => {
-          attributeValue.value = '';
-          attributeValue.disabled = !attributeSelect.value;
-          const values = [...new Set(attributeOptions.filter(item => item.name === attributeSelect.value).map(item => item.value))];
-          attributeValue.innerHTML = '<option value="">Tất cả giá trị</option>' + values.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
-          catalogState.page = 1;
-          renderCatalogRows();
-        };
-        attributeValue.onchange = () => { catalogState.page = 1; renderCatalogRows(); };
-      }
+      let debounce;
+      if (!['products', 'suppliers', 'price-lists', 'product-units'].includes(endpoint)) document.getElementById('s2Status').hidden = true;
       document.getElementById('s2Search').oninput = () => {
         clearTimeout(debounce);
         call++;
@@ -409,21 +349,17 @@
     try {
       let fields = '',
         products = [],
-        groups = [],
-        models = [];
+        groups = [];
       const activeField = () =>
         renderInputField('active', 'Trạng thái', record.active ?? true, 'text', true, [
           [true, 'Đang hoạt động'],
           [false, 'Ngừng hoạt động']
         ]);
       if (endpoint === 'products') {
-        const [categories, productModels] = await Promise.all([apiRequest('categories/'), apiRequest('product-models/')]);
-        models = productModels;
+        const categories = await apiRequest('categories/');
         fields =
           renderInputField('sku', 'Mã SKU', record.sku) +
-          renderInputField('name', 'Tên biến thể sản phẩm', record.name) +
-          renderInputField('model_id', 'Mẫu sản phẩm (để trống cho hàng chưa phân loại)', record.model_id, 'text', false,
-            models.filter(model => model.active || model.id === record.model_id).map(model => [model.id, `${model.brand_name} · ${model.name}`]), !!record.model_id) +
+          renderInputField('name', 'Tên sản phẩm', record.name) +
           renderInputField(
             'category_id',
             'Nhóm hàng',
@@ -446,21 +382,7 @@
             ? renderInputField('cost_price', 'Giá vốn (VND)', record.cost_price ?? 0, 'number')
             : '') +
           activeField() +
-          renderInputField('condition', 'Tình trạng hàng', record.condition || 'NEW', 'text', true,
-            [['NEW', 'Mới'], ['USED', 'Đã qua sử dụng'], ['DISPLAY', 'Trưng bày']]) +
-          '<div class="form-group full"><label>Thuộc tính của SKU</label><p class="s2-hint">Ví dụ: Màu sắc — Đen; Bộ nhớ — 128GB; RAM — 8GB. Thương hiệu được lấy từ mẫu sản phẩm.</p><div id="s2Attributes"></div><button type="button" class="outline-button" id="s2AddAttribute">+ Thêm thuộc tính</button></div>' +
           renderInputField('image', 'Ảnh sản phẩm', '', 'file', false);
-      } else if (endpoint === 'brands') {
-        fields = renderInputField('code', 'Mã thương hiệu', record.code) +
-          renderInputField('name', 'Tên thương hiệu', record.name) + activeField();
-      } else if (endpoint === 'product-models') {
-        const [categories, brands] = await Promise.all([apiRequest('categories/'), apiRequest('brands/')]);
-        fields = renderInputField('code', 'Mã mẫu sản phẩm', record.code) +
-          renderInputField('name', 'Tên mẫu sản phẩm', record.name) +
-          renderInputField('category_id', 'Danh mục', record.category_id, 'text', true,
-            categories.map(category => [category.id, formatCategoryPath(category, categories)])) +
-          renderInputField('brand_id', 'Thương hiệu', record.brand_id, 'text', true,
-            brands.filter(brand => brand.active || brand.id === record.brand_id).map(brand => [brand.id, brand.name])) + activeField();
       } else if (endpoint === 'categories') {
         const categories = await apiRequest('categories/');
         fields =
@@ -541,27 +463,6 @@
           help.textContent = hint;
           dialog.form.elements[name].closest('.form-group').append(help);
         }
-        const modelInput = dialog.form.elements.model_id;
-        const categoryInput = dialog.form.elements.category_id;
-        const setModelCategory = () => {
-          const model = models.find(item => String(item.id) === modelInput.value);
-          categoryInput.disabled = !!model;
-          if (model) {
-            categoryInput.value = String(model.category_id);
-            if (!dialog.form.elements.name.value) dialog.form.elements.name.value = model.name;
-          }
-        };
-        modelInput.onchange = setModelCategory;
-        setModelCategory();
-        const addAttribute = (name = '', value = '') => {
-          const row = document.createElement('div');
-          row.className = 's2-attribute-line';
-          row.innerHTML = `<label>Tên thuộc tính<input name="attribute_name" maxlength="60" value="${escapeHtml(name)}" placeholder="Màu sắc, RAM..."></label><label>Giá trị<input name="attribute_value" maxlength="250" value="${escapeHtml(value)}" placeholder="Đen, 8GB..."></label><button type="button" aria-label="Xóa thuộc tính">×</button>`;
-          row.querySelector('button').onclick = () => row.remove();
-          document.getElementById('s2Attributes').append(row);
-        };
-        Object.entries(record.attributes || {}).forEach(([name, value]) => addAttribute(name, value));
-        document.getElementById('s2AddAttribute').onclick = () => addAttribute();
       }
       const addLine = (line = {}) => {
         const div = document.createElement('div');
@@ -577,7 +478,6 @@
       dialog.form.onsubmit = async (event) => {
         event.preventDefault();
         const button = dialog.form.querySelector('[type="submit"]');
-        if (button.disabled) return;
         button.disabled = true;
         const error = document.getElementById('s2FormError');
         error.textContent = '';
@@ -586,25 +486,9 @@
           const file = data.image;
           delete data.image;
           if ('active' in data) data.active = data.active === 'true';
-          for (const key of ['category_id', 'parent_id', 'product_id', 'customer_group_id', 'brand_id', 'model_id'])
+          for (const key of ['category_id', 'parent_id', 'product_id', 'customer_group_id'])
             if (key in data) data[key] = data[key] ? Number(data[key]) : null;
           if (endpoint === 'product-units' && record.id) data.product_id = record.product_id;
-          if (endpoint === 'products') {
-            if (record.model_id) data.model_id = record.model_id;
-            const attributes = new Map(), names = new Set();
-            for (const row of dialog.form.querySelectorAll('.s2-attribute-line')) {
-              const name = row.querySelector('[name="attribute_name"]').value.trim();
-              const value = row.querySelector('[name="attribute_value"]').value.trim();
-              if (!name && !value) continue;
-              if (!name || !value) throw new Error('Điền đủ tên và giá trị của từng thuộc tính.');
-              if (names.has(name.toLocaleLowerCase('vi'))) throw new Error('Tên thuộc tính không được trùng nhau.');
-              names.add(name.toLocaleLowerCase('vi'));
-              attributes.set(name, value);
-            }
-            data.attributes = Object.fromEntries(attributes);
-            delete data.attribute_name;
-            delete data.attribute_value;
-          }
           if (endpoint === 'price-lists') {
             data.lines = [...dialog.form.querySelectorAll('.s2-price-line')].map((line) => ({
               product_id: Number(line.querySelector('[name="line_product"]').value),

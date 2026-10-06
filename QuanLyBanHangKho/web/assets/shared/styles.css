@@ -2523,7 +2523,9 @@ td a {
   max-height: 92vh;
   overflow: auto;
   background: #fff;
-  border-radius: 20px;
+  border-radius: 12px;
+  font-family: Inter, 'Be Vietnam Pro', Arial, sans-serif;
+  color: #202223;
   box-shadow: 0 30px 80px rgba(37, 22, 10, 0.24);
   transform: translateY(15px);
   transition: 0.2s;
@@ -2545,11 +2547,13 @@ td a {
   font-weight: 700;
 }
 .form-dialog > header h2 {
-  font-size: 22px;
-  margin: 6px 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0 0 6px;
 }
 .form-dialog > header p {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
   margin: 0;
 }
@@ -2577,8 +2581,12 @@ td a {
   grid-column: 1/-1;
 }
 .form-group label {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 .form-group label b {
   color: #d84335;
@@ -2587,11 +2595,15 @@ td a {
 .form-group select,
 .form-group textarea {
   width: 100%;
-  border: 1px solid #dfd3c8;
-  border-radius: 10px;
+  border: 1px solid #c9cccf;
+  border-radius: 6px;
   background: #fff;
-  padding: 11px 12px;
-  font-size: 12px;
+  padding: 9px 12px;
+  min-height: 40px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
   outline: 0;
 }
 .form-group textarea {
@@ -2605,8 +2617,8 @@ td a {
   box-shadow: 0 0 0 3px rgba(244, 122, 0, 0.1);
 }
 .form-group small {
-  font-size: 8px;
-  color: #9b8d82;
+  font-size: 13px;
+  color: #61666b;
 }
 .form-group .field-error {
   color: #c53d33;
@@ -2621,19 +2633,23 @@ td a {
   display: block;
 }
 .form-dialog form > footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
   display: flex;
   justify-content: flex-end;
   gap: 9px;
   padding: 18px 26px;
   border-top: 1px solid var(--line);
-  background: #fffcf9;
+  background: #f6f6f7;
 }
 .form-dialog form > footer button {
   height: 42px;
   padding: 0 19px;
-  border-radius: 10px;
-  font-size: 12px;
-  font-weight: 600;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
 }
 .form-dialog .orange-button {
   border: 0;
@@ -2642,13 +2658,13 @@ td a {
 }
 .form-section-title {
   grid-column: 1/-1;
-  font-size: 12px;
-  color: var(--orange-dark);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  border-bottom: 1px solid #f0e6dd;
+  font-size: 14px;
+  color: #202223;
+  font-weight: 600;
+  letter-spacing: 0;
+  border-bottom: 1px solid #e1e3e5;
   padding-bottom: 8px;
-  margin-top: 4px;
+  margin: 8px 0 0;
 }
 @media (max-width: 620px) {
   .form-modal {
@@ -2679,3 +2695,8 @@ td a {
     flex: 1;
   }
 }
+.s2-product-identity { display:flex; align-items:center; gap:8px; min-width:180px; }
+.s2-product-identity strong { font-size:14px; font-weight:500; }
+.s2-product-identity small, .s2-cell-note { display:block; color:#61666b; font-size:12px; margin-top:4px; }
+.form-dialog .form-group label { font-size:13px; }
+.form-dialog input[type='file']::file-selector-button { border:1px solid #c9cccf; border-radius:4px; padding:4px 8px; background:#f6f6f7; color:#202223; font:inherit; margin-right:8px; }

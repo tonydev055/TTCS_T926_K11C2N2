@@ -29,7 +29,7 @@ function manageDialogFocus(modal, close) {
     if (previous?.isConnected) previous.focus();
   };
 }
-function openFormDialog(title, body, submitLabel = 'Lưu dữ liệu') {
+function openFormDialog(title, body, submitLabel = 'Lưu thay đổi') {
   document.getElementById('s2Dialog')?.remove();
   const modal = document.createElement('div');
   modal.id = 's2Dialog';
@@ -38,7 +38,6 @@ function openFormDialog(title, body, submitLabel = 'Lưu dữ liệu') {
     <div class="form-dialog" role="dialog" aria-modal="true" aria-labelledby="s2DialogTitle">
       <header>
         <div>
-          <span>THÔNG TIN</span>
           <h2 id="s2DialogTitle">${escapeHtml(title)}</h2>
           <p>Trường có dấu * là bắt buộc.</p>
         </div>
@@ -48,7 +47,7 @@ function openFormDialog(title, body, submitLabel = 'Lưu dữ liệu') {
         <div class="form-fields">${body}</div>
         <p class="s2-form-error" id="s2FormError" role="alert"></p>
         <footer>
-          <button type="button" class="outline-button" id="s2Cancel">Đóng</button>
+          <button type="button" class="outline-button" id="s2Cancel">${submitLabel ? 'Hủy' : 'Đóng'}</button>
           ${submitLabel ? `<button type="submit" class="orange-button">${submitLabel}</button>` : ''}
         </footer>
       </form>

@@ -95,15 +95,13 @@
     },
     columns: {
       products: [
-        ['sku', 'SKU'],
         ['name', 'Sản phẩm'],
         ['model_name', 'Mẫu sản phẩm'],
         ['brand_name', 'Thương hiệu'],
         ['attributes', 'Cấu hình / biến thể'],
         ['condition', 'Tình trạng hàng'],
         ['category_name', 'Nhóm hàng'],
-        ['base_unit', 'Đơn vị cơ sở'],
-        ['packaging', 'Đóng gói'],
+        ['base_unit', 'Đơn vị / Quy cách'],
         ['cost_price', 'Giá vốn'],
         ['active', 'Trạng thái']
       ],
@@ -171,7 +169,7 @@
       'price-lists': 'Giá bán, giá sàn và thời gian hiệu lực theo nhóm khách hàng.',
       suppliers: 'Nguồn hàng, liên hệ và điều khoản thanh toán.'
     };
-    moduleContent.innerHTML = `<section class="module-head"><div><span class="eyebrow">DANH MỤC HÀNG HÓA</span><h2>${catalogState.labels[endpoint]}</h2><p>${descriptions[endpoint]}</p></div><div class="module-actions">${endpoint === 'products' && writable ? '<button class="outline-button" id="s2Import">⇧ Nhập Excel</button>' : ''}${writable ? '<button class="orange-button" id="s2Create">+ Thêm mới</button>' : ''}</div></section><div class="s2-tabs" role="tablist">${tabs.map((key) => `<button role="tab" aria-selected="${key === endpoint}" tabindex="${key === endpoint ? 0 : -1}" data-catalog="${key}" class="${key === endpoint ? 'selected' : ''}">${catalogState.labels[key]}</button>`).join('')}</div>${filters.model_id ? '<div class="catalog-filter-note">Đang xem SKU của một mẫu sản phẩm. <button class="text-button" id="s2ClearModel">Xem tất cả SKU</button></div>' : ''}<div class="catalog-layout ${hasTree ? '' : 'catalog-layout-flat'}">${hasTree ? '<aside class="catalog-tree-panel"><h3>Cây danh mục</h3><div id="s2CategoryTree" aria-label="Danh mục sản phẩm"></div></aside>' : ''}<section class="inventory-panel"><div class="inventory-toolbar"><label class="search-control"><span>⌕</span><input type="search" id="s2Search" placeholder="Tìm mã, tên hoặc thông tin..."></label><select id="s2Status" class="filter-select"><option value="">Tất cả trạng thái</option><option value="true">Đang hoạt động</option><option value="false">Ngừng hoạt động</option></select>${['products','product-models'].includes(endpoint) ? '<select id="s2Brand" class="filter-select" aria-label="Lọc thương hiệu"><option value="">Tất cả thương hiệu</option></select>' : ''}${endpoint === 'products' ? '<select id="s2Attribute" class="filter-select" aria-label="Lọc thuộc tính"><option value="">Tất cả thuộc tính</option></select><select id="s2AttributeValue" class="filter-select" aria-label="Giá trị thuộc tính" disabled><option value="">Tất cả giá trị</option></select>' : ''}<button class="outline-button" id="s2Reload">↻ Tải lại</button><span id="s2Count" class="filter-result"></span></div><div id="s2Table" class="table-scroll" aria-live="polite"><p class="s2-empty">Đang tải dữ liệu...</p></div><div class="inventory-footer"><span id="s2Footer"></span><div id="s2Pages" class="pagination"></div></div></section></div>`;
+    moduleContent.innerHTML = `<section class="module-head"><div><span class="eyebrow">DANH MỤC HÀNG HÓA</span><h2>${catalogState.labels[endpoint]}</h2><p>${descriptions[endpoint]}</p></div><div class="module-actions">${endpoint === 'products' && writable ? '<button class="outline-button" id="s2Import">⇧ Nhập Excel</button>' : ''}${writable ? `<button class="orange-button" id="s2Create">${endpoint === 'products' ? '+ Thêm sản phẩm' : '+ Thêm mới'}</button>` : ''}</div></section><div class="s2-tabs" role="tablist">${tabs.map((key) => `<button role="tab" aria-selected="${key === endpoint}" tabindex="${key === endpoint ? 0 : -1}" data-catalog="${key}" class="${key === endpoint ? 'selected' : ''}">${catalogState.labels[key]}</button>`).join('')}</div>${filters.model_id ? '<div class="catalog-filter-note">Đang xem SKU của một mẫu sản phẩm. <button class="text-button" id="s2ClearModel">Xem tất cả SKU</button></div>' : ''}<div class="catalog-layout ${hasTree ? '' : 'catalog-layout-flat'}">${hasTree ? '<aside class="catalog-tree-panel"><h3>Cây danh mục</h3><div id="s2CategoryTree" aria-label="Danh mục sản phẩm"></div></aside>' : ''}<section class="inventory-panel"><div class="inventory-toolbar"><label class="search-control"><span>⌕</span><input type="search" id="s2Search" placeholder="Tìm mã, tên hoặc thông tin..."></label><select id="s2Status" class="filter-select"><option value="">Tất cả trạng thái</option><option value="true">Đang hoạt động</option><option value="false">Ngừng hoạt động</option></select>${['products','product-models'].includes(endpoint) ? '<select id="s2Brand" class="filter-select" aria-label="Lọc thương hiệu"><option value="">Tất cả thương hiệu</option></select>' : ''}${endpoint === 'products' ? '<select id="s2Attribute" class="filter-select" aria-label="Lọc thuộc tính"><option value="">Tất cả thuộc tính</option></select><select id="s2AttributeValue" class="filter-select" aria-label="Giá trị thuộc tính" disabled><option value="">Tất cả giá trị</option></select>' : ''}<button class="outline-button" id="s2Reload">↻ Tải lại</button><span id="s2Count" class="filter-result"></span></div><div id="s2Table" class="table-scroll" aria-live="polite"><p class="s2-empty">Đang tải dữ liệu...</p></div><div class="inventory-footer"><span id="s2Footer"></span><div id="s2Pages" class="pagination"></div></div></section></div>`;
     const host = document.getElementById('s2Table');
     moduleContent
       .querySelectorAll('[data-catalog]')
@@ -227,6 +225,11 @@
         if (key === 'factor') return `× ${number(value)}`;
         return value == null ? '—' : String(value);
       };
+      const renderCell = (row, key) => {
+        if (endpoint === 'products' && key === 'name') return `<div class="s2-product-identity">${row.has_image ? `<img class="s2-product-thumb" src="api/products/${row.id}/thumbnail?v=${encodeURIComponent(row.updated_at || request)}" alt="">` : ''}<div><strong>${escapeHtml(row.name)}</strong><small>${escapeHtml(row.sku)}</small></div></div>`;
+        if (endpoint === 'products' && key === 'base_unit') return `${escapeHtml(row.base_unit)}${row.packaging ? `<small class="s2-cell-note">${escapeHtml(row.packaging)}</small>` : ''}`;
+        return escapeHtml(display(row, key));
+      };
       let call = 0;
       const renderCatalogRows = async () => {
         const requestId = ++call;
@@ -266,7 +269,7 @@
           ? `<table class="feature-table s2-table"><thead><tr>${columns.map(([, label]) => `<th>${label}</th>`).join('')}<th>Thao tác</th></tr></thead><tbody>${filtered
               .map(
                 (row) =>
-                  `<tr>${columns.map(([key]) => `<td>${key === 'name' && row.has_image ? `<img class="s2-product-thumb" src="api/products/${row.id}/thumbnail?v=${encodeURIComponent(row.updated_at || request)}" alt="">` : ''}${escapeHtml(display(row, key))}</td>`).join('')}<td><div class="s2-row-actions">${endpoint === 'product-models' ? `<button class="row-action" data-variants="${row.id}">Xem SKU</button>` : ''}${endpoint === 'price-lists' ? `<button class="row-action" data-details="${row.id}">Chi tiết</button>` : ''}${writable ? `${endpoint === 'price-lists' ? `<button class="row-action" data-version="${row.id}">Phiên bản mới</button>` : ''}${!row.locked ? `<button class="row-action" data-edit="${row.id}">Sửa</button><button class="row-action" data-delete="${row.id}">Xóa</button>` : ''}` : ''}</div></td></tr>`
+                  `<tr>${columns.map(([key]) => `<td>${renderCell(row, key)}</td>`).join('')}<td><div class="s2-row-actions">${endpoint === 'product-models' ? `<button class="row-action" data-variants="${row.id}">Xem SKU</button>` : ''}${endpoint === 'price-lists' ? `<button class="row-action" data-details="${row.id}">Chi tiết</button>` : ''}${writable ? `${endpoint === 'price-lists' ? `<button class="row-action" data-version="${row.id}">Phiên bản mới</button>` : ''}${!row.locked ? `<button class="row-action" data-edit="${row.id}">Sửa</button><button class="row-action" data-delete="${row.id}">Xóa</button>` : ''}` : ''}</div></td></tr>`
               )
               .join('')}</tbody></table>`
           : `<div class="s2-empty"><strong>${rows.length ? 'Không có kết quả phù hợp' : 'Chưa có dữ liệu'}</strong><p>${writable ? 'Thêm bản ghi đầu tiên hoặc điều chỉnh bộ lọc.' : 'Dữ liệu sẽ xuất hiện sau khi được khai báo.'}</p></div>`;
@@ -445,7 +448,7 @@
           renderInputField('condition', 'Tình trạng hàng', record.condition || 'NEW', 'text', true,
             [['NEW', 'Mới'], ['USED', 'Đã qua sử dụng'], ['DISPLAY', 'Trưng bày']]) +
           '<div class="form-group full"><label>Thuộc tính của SKU</label><p class="s2-hint">Ví dụ: Màu sắc — Đen; Bộ nhớ — 128GB; RAM — 8GB. Thương hiệu được lấy từ mẫu sản phẩm.</p><div id="s2Attributes"></div><button type="button" class="outline-button" id="s2AddAttribute">+ Thêm thuộc tính</button></div>' +
-          renderInputField('image', 'Ảnh JPG/PNG, tối đa 2 MB', '', 'file', false);
+          renderInputField('image', 'Ảnh sản phẩm', '', 'file', false);
       } else if (endpoint === 'brands') {
         fields = renderInputField('code', 'Mã thương hiệu', record.code) +
           renderInputField('name', 'Tên thương hiệu', record.name) + activeField();
@@ -527,10 +530,16 @@
       }
       if (revision !== viewRevision) return;
       const dialog = openFormDialog(
-        `${version ? 'Tạo phiên bản mới' : record.id ? 'Chỉnh sửa' : 'Thêm'} · ${catalogState.labels[endpoint]}`,
-        fields
+        `${version ? 'Tạo phiên bản mới' : record.id ? 'Sửa' : 'Thêm'} ${catalogState.labels[endpoint].toLocaleLowerCase('vi')}`,
+        fields,
+        endpoint === 'products' ? 'Lưu sản phẩm' : 'Lưu thay đổi'
       );
       if (endpoint === 'products') {
+        for (const [name, hint] of [['base_unit', 'Ví dụ: Chiếc, hộp, kg.'], ['packaging', 'Ví dụ: Hộp 10 chiếc.'], ['image', 'JPG hoặc PNG, tối đa 2 MB.']]) {
+          const help = document.createElement('small');
+          help.textContent = hint;
+          dialog.form.elements[name].closest('.form-group').append(help);
+        }
         const modelInput = dialog.form.elements.model_id;
         const categoryInput = dialog.form.elements.category_id;
         const setModelCategory = () => {

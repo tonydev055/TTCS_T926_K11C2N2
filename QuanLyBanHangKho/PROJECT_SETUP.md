@@ -4,7 +4,7 @@ Gửi email thật qua Gmail SMTP: xem [SMTP_SETUP.md](SMTP_SETUP.md). Chạy th
 
 ## Thành phần đã hoàn thiện
 
-- Đăng nhập, đăng ký và phân quyền theo vai trò.
+- Đăng nhập, đăng ký và phân quyền theo vai trò; quản trị viên có thể chỉnh sửa ma trận quyền trực tiếp trên giao diện.
 - Khóa tạm thời sau 5 lần đăng nhập sai và khóa/mở khóa bởi quản trị viên.
 - Quên mật khẩu, hộp thư thử nghiệm KhoMail và giao diện đặt lại mật khẩu.
 - Trang Người dùng lấy dữ liệu thật từ PostgreSQL, có tìm kiếm, lọc và phân trang.
@@ -33,7 +33,7 @@ Chạy `node --test test/frontend/real-data.test.cjs` từ thư mục dự án. 
 
 ## Khởi tạo database
 
-Database mới: chạy `database/sprint1.sql`, rồi `database/sprint2.sql` trong database `quanlybanhangkho` bằng pgAdmin hoặc `psql -v ON_ERROR_STOP=1`. Database đã có Sprint 1: chỉ chạy migration Sprint 2. Không có dữ liệu sản phẩm/đơn hàng mẫu được thêm bởi Sprint 2.
+Database mới: chạy `database/sprint1.sql`, `database/sprint2.sql`, rồi `database/role-permissions.sql` trong database `quanlybanhangkho` bằng pgAdmin hoặc `psql -v ON_ERROR_STOP=1`. Database đang sử dụng cũng cần chạy `database/role-permissions.sql` một lần để bật chức năng chỉnh sửa phân quyền. Không có dữ liệu sản phẩm/đơn hàng mẫu được thêm bởi Sprint 2.
 
 ## Triển khai
 

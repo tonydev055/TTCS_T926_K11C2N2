@@ -43,6 +43,10 @@ public class PhanQuyenSelfTest {
             PhanQuyen.matrix().get("CUSTOMER").contains("profile.self"),
             "Ma trận phải có quyền hồ sơ cá nhân dùng chung"
         );
+        check(
+            PhanQuyen.knownPermissions().contains("admin.roles"),
+            "Danh sách quyền chỉnh sửa phải chứa quyền quản lý phân quyền"
+        );
     }
 
     private static void check(boolean value, String message) {

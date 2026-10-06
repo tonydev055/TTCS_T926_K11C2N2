@@ -1,6 +1,8 @@
 package security;
 
+import java.sql.*;
 import java.util.*;
+import util.KetNoiDB;
 
 public final class PhanQuyen {
 
@@ -14,7 +16,7 @@ public final class PhanQuyen {
         "CUSTOMER"
     );
 
-    private static final Map<String, Set<String>> ROLE_PERMISSIONS = Map.of(
+    private static final Map<String, Set<String>> DEFAULT_ROLE_PERMISSIONS = Map.of(
         "ADMIN",
         Set.of(
             "admin.users",
@@ -84,34 +86,150 @@ public final class PhanQuyen {
         Set.of("products.read", "orders.self", "shipments.self", "invoices.self", "returns.self")
     );
 
+    private static final Set<String> KNOWN_PERMISSIONS;
+    private static volatile Map<String, Set<String>> configuredPermissions;
+
+    static {
+        Set<String> permissions = new TreeSet<>();
+        DEFAULT_ROLE_PERMISSIONS.values().forEach(permissions::addAll);
+        permissions.add("profile.self");
+        KNOWN_PERMISSIONS = Collections.unmodifiableSet(permissions);
+    }
+
     private PhanQuyen() {}
 
     public static boolean allows(Collection<String> roles, String permission) {
         if (permission == null || permission.isBlank()) return false;
         if (permission.equals("profile.self")) return roles
             .stream()
-            .anyMatch(ROLE_PERMISSIONS::containsKey);
+            .anyMatch(ROLE_ORDER::contains);
+        Map<String, Set<String>> matrix = effectivePermissions();
         for (String role : roles)
-            if (ROLE_PERMISSIONS.getOrDefault(role, Set.of()).contains(permission)) return true;
+            if (matrix.getOrDefault(role, Set.of()).contains(permission)) return true;
         return false;
     }
 
     public static Set<String> permissions(Collection<String> roles) {
         Set<String> out = new LinkedHashSet<>();
-        for (String role : roles) out.addAll(ROLE_PERMISSIONS.getOrDefault(role, Set.of()));
+        Map<String, Set<String>> matrix = effectivePermissions();
+        for (String role : roles) out.addAll(matrix.getOrDefault(role, Set.of()));
         return out;
     }
 
-    /** Read-only snapshot used by the administration permission matrix. */
     public static Map<String, List<String>> matrix() {
+        Map<String, Set<String>> effective = effectivePermissions();
         Map<String, List<String>> out = new LinkedHashMap<>();
         for (String role : ROLE_ORDER) {
-            List<String> permissions = new ArrayList<>(ROLE_PERMISSIONS.getOrDefault(role, Set.of()));
+            List<String> permissions = new ArrayList<>(effective.getOrDefault(role, Set.of()));
             permissions.add("profile.self");
             Collections.sort(permissions);
             out.put(role, List.copyOf(permissions));
         }
         return Collections.unmodifiableMap(out);
+    }
+
+    public static Set<String> knownPermissions() {
+        return KNOWN_PERMISSIONS;
+    }
+
+    public static synchronized void updateRole(
+        String role,
+        Collection<String> permissions,
+        long actor
+    ) throws SQLException {
+        if (!ROLE_ORDER.contains(role)) throw new IllegalArgumentException("Vai trò không tồn tại");
+        Set<String> requested = new TreeSet<>(permissions);
+        requested.remove("profile.self");
+        if (!KNOWN_PERMISSIONS.containsAll(requested)) throw new IllegalArgumentException(
+            "Danh sách quyền chứa giá trị không hợp lệ"
+        );
+        if (role.equals("ADMIN") && !requested.contains("admin.roles")) throw new IllegalArgumentException(
+            "Không thể gỡ quyền chỉnh sửa phân quyền khỏi Quản trị hệ thống"
+        );
+        try (Connection c = KetNoiDB.getConnection()) {
+            c.setAutoCommit(false);
+            try {
+                long roleId;
+                try (PreparedStatement p = c.prepareStatement("SELECT id FROM roles WHERE code=? FOR UPDATE")) {
+                    p.setString(1, role);
+                    try (ResultSet rs = p.executeQuery()) {
+                        if (!rs.next()) throw new IllegalArgumentException("Vai trò không tồn tại");
+                        roleId = rs.getLong(1);
+                    }
+                }
+                try (PreparedStatement p = c.prepareStatement("SELECT set_config('app.actor_id',?,true)")) {
+                    p.setString(1, String.valueOf(actor));
+                    p.executeQuery();
+                }
+                try (PreparedStatement p = c.prepareStatement("DELETE FROM role_permissions WHERE role_id=?")) {
+                    p.setLong(1, roleId);
+                    p.executeUpdate();
+                }
+                try (PreparedStatement p = c.prepareStatement(
+                    "INSERT INTO role_permissions(role_id,permission_code) VALUES(?,?)"
+                )) {
+                    for (String permission : requested) {
+                        p.setLong(1, roleId);
+                        p.setString(2, permission);
+                        p.addBatch();
+                    }
+                    p.executeBatch();
+                }
+                c.commit();
+            } catch (SQLException | RuntimeException e) {
+                c.rollback();
+                throw e;
+            } finally {
+                c.setAutoCommit(true);
+            }
+        }
+        configuredPermissions = loadConfiguredPermissions();
+    }
+
+    private static Map<String, Set<String>> effectivePermissions() {
+        Map<String, Set<String>> current = configuredPermissions;
+        if (current != null) return current;
+        synchronized (PhanQuyen.class) {
+            if (configuredPermissions == null) {
+                try {
+                    configuredPermissions = loadConfiguredPermissions();
+                } catch (SQLException e) {
+                    configuredPermissions = immutableCopy(DEFAULT_ROLE_PERMISSIONS);
+                }
+            }
+            return configuredPermissions;
+        }
+    }
+
+    private static Map<String, Set<String>> loadConfiguredPermissions() throws SQLException {
+        Map<String, Set<String>> loaded = new LinkedHashMap<>();
+        for (String role : ROLE_ORDER) loaded.put(role, new LinkedHashSet<>());
+        try (
+            Connection c = KetNoiDB.getConnection();
+            PreparedStatement p = c.prepareStatement(
+                "SELECT r.code,rp.permission_code FROM roles r LEFT JOIN role_permissions rp ON rp.role_id=r.id " +
+                "WHERE r.code=ANY(?) ORDER BY r.id,rp.permission_code"
+            )
+        ) {
+            p.setArray(1, c.createArrayOf("varchar", ROLE_ORDER.toArray()));
+            try (ResultSet rs = p.executeQuery()) {
+                while (rs.next()) {
+                    String permission = rs.getString(2);
+                    if (permission != null && KNOWN_PERMISSIONS.contains(permission)) {
+                        loaded.get(rs.getString(1)).add(permission);
+                    }
+                }
+            }
+        }
+        return immutableCopy(loaded);
+    }
+
+    private static Map<String, Set<String>> immutableCopy(Map<String, Set<String>> source) {
+        Map<String, Set<String>> copy = new LinkedHashMap<>();
+        for (String role : ROLE_ORDER) {
+            copy.put(role, Collections.unmodifiableSet(new LinkedHashSet<>(source.getOrDefault(role, Set.of()))));
+        }
+        return Collections.unmodifiableMap(copy);
     }
 
     public static String permissionFor(String uri, String method) {

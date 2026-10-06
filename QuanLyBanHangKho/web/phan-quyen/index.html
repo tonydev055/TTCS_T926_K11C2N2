@@ -31,11 +31,53 @@
     font-weight: 800;
   }
   .permission-denied { color: #c8c8c8; }
+  .permission-role-head {
+    min-width: 150px;
+  }
+  .permission-role-head span {
+    display: block;
+    margin-bottom: 7px;
+  }
+  .permission-role-action {
+    border: 1px solid #d8dee8;
+    border-radius: 7px;
+    padding: 5px 9px;
+    color: #334155;
+    background: #fff;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .permission-role-action.primary {
+    border-color: #f97316;
+    color: #fff;
+    background: #f97316;
+  }
+  .permission-role-action:disabled { cursor: wait; opacity: .65; }
+  .permission-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: #f97316;
+    cursor: pointer;
+  }
+  .permission-checkbox:disabled { cursor: not-allowed; }
+  .permission-edit-note {
+    margin: 12px 16px 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .permission-edit-error {
+    min-height: 20px;
+    margin: 8px 16px 0;
+    color: #c2410c;
+    font-size: 13px;
+    font-weight: 700;
+  }
 </style>
 <script>
   const permissionLabels = {
     'admin.users': 'Quản lý người dùng',
-    'admin.roles': 'Xem vai trò và quyền',
+    'admin.roles': 'Quản lý vai trò và quyền',
     'admin.audit': 'Xem nhật ký hệ thống',
     'admin.settings': 'Quản lý cấu hình',
     'catalog.read': 'Xem danh mục dùng chung',
@@ -71,12 +113,64 @@
 
   async function renderPermissionMatrix() {
     const revision = viewRevision;
-    moduleContent.innerHTML = `<section class="module-head"><div><h2>Ma trận phân quyền</h2><p>Đối chiếu quyền hiệu lực của từng vai trò trong hệ thống.</p></div></section><section class="inventory-panel"><div id="permissionMatrix" class="table-scroll"><p class="s2-empty">Đang tải ma trận phân quyền...</p></div></section>`;
+    moduleContent.innerHTML = `<section class="module-head"><div><h2>Ma trận phân quyền</h2><p>Xem và chỉnh sửa quyền hiệu lực của từng vai trò trong hệ thống.</p></div></section><section class="inventory-panel"><p class="permission-edit-note">Quyền hồ sơ cá nhân luôn được giữ. Quản trị hệ thống luôn giữ quyền chỉnh sửa phân quyền để tránh tự khóa hệ thống.</p><p id="permissionEditError" class="permission-edit-error" role="alert"></p><div id="permissionMatrix" class="table-scroll"><p class="s2-empty">Đang tải ma trận phân quyền...</p></div></section>`;
     const host = document.getElementById('permissionMatrix');
     try {
-      const data = await apiRequest('role-permissions');
+      let data = await apiRequest('role-permissions');
       if (revision !== viewRevision || !host.isConnected) return;
-      host.innerHTML = `<table class="feature-table permission-matrix"><thead><tr><th>Chức năng / quyền</th>${data.roles.map((role) => `<th>${escapeHtml(roleConfigs[role]?.label || role)}</th>`).join('')}</tr></thead><tbody>${data.permissions.map((permission) => `<tr><td>${escapeHtml(permissionLabels[permission] || permission)}<span class="permission-code">${escapeHtml(permission)}</span></td>${data.roles.map((role) => `<td aria-label="${data.matrix[role].includes(permission) ? 'Có quyền' : 'Không có quyền'}">${data.matrix[role].includes(permission) ? '<span class="permission-granted">✓</span>' : '<span class="permission-denied">—</span>'}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+      let editingRole = null;
+      let saving = false;
+      const draw = () => {
+        host.innerHTML = `<table class="feature-table permission-matrix"><thead><tr><th>Chức năng / quyền</th>${data.roles.map((role) => `<th class="permission-role-head"><span>${escapeHtml(roleConfigs[role]?.label || role)}</span>${editingRole === role ? `<button type="button" class="permission-role-action primary" data-permission-action="save" data-role="${escapeHtml(role)}">Lưu</button> <button type="button" class="permission-role-action" data-permission-action="cancel">Hủy</button>` : `<button type="button" class="permission-role-action" data-permission-action="edit" data-role="${escapeHtml(role)}">Sửa</button>`}</th>`).join('')}</tr></thead><tbody>${data.permissions.map((permission) => `<tr><td>${escapeHtml(permissionLabels[permission] || permission)}<span class="permission-code">${escapeHtml(permission)}</span></td>${data.roles.map((role) => {
+          const granted = data.matrix[role].includes(permission);
+          const locked = permission === 'profile.self' || (role === 'ADMIN' && permission === 'admin.roles');
+          return editingRole === role
+            ? `<td><input class="permission-checkbox" type="checkbox" data-permission="${escapeHtml(permission)}" ${granted ? 'checked' : ''} ${locked ? 'disabled title="Quyền bắt buộc"' : ''} aria-label="${escapeHtml(permissionLabels[permission] || permission)}"></td>`
+            : `<td aria-label="${granted ? 'Có quyền' : 'Không có quyền'}">${granted ? '<span class="permission-granted">✓</span>' : '<span class="permission-denied">—</span>'}</td>`;
+        }).join('')}</tr>`).join('')}</tbody></table>`;
+      };
+      draw();
+      host.onclick = async (event) => {
+        const button = event.target.closest('[data-permission-action]');
+        if (!button || saving) return;
+        const action = button.dataset.permissionAction;
+        const errorHost = document.getElementById('permissionEditError');
+        if (action === 'edit') {
+          editingRole = button.dataset.role;
+          errorHost.textContent = '';
+          draw();
+          return;
+        }
+        if (action === 'cancel') {
+          editingRole = null;
+          errorHost.textContent = '';
+          draw();
+          return;
+        }
+        if (action !== 'save' || !editingRole) return;
+        saving = true;
+        button.disabled = true;
+        errorHost.textContent = '';
+        try {
+          const permissions = [...host.querySelectorAll('input[data-permission]:checked')]
+            .map((input) => input.dataset.permission)
+            .filter((permission) => permission !== 'profile.self');
+          const changedRole = editingRole;
+          data = await apiRequest('role-permissions', jsonRequestOptions('PUT', { role: changedRole, permissions }));
+          editingRole = null;
+          draw();
+          showToast(`Đã cập nhật quyền cho ${roleConfigs[changedRole]?.label || changedRole}`, 'success');
+          if ((currentUser.roles || [currentUser.role]).includes(changedRole)) {
+            const refreshedUser = await apiRequest('auth/me');
+            if (revision === viewRevision) openApp(refreshedUser);
+          }
+        } catch (error) {
+          errorHost.textContent = error.message || 'Không thể lưu cấu hình phân quyền';
+          button.disabled = false;
+        } finally {
+          saving = false;
+        }
+      };
     } catch (error) {
       if (host.isConnected) host.innerHTML = `<p class="s2-empty">${escapeHtml(error.message)}</p>`;
     }

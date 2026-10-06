@@ -137,9 +137,11 @@ test('permission matrix renders backend grants and denies unsafe HTML',async()=>
   const html=app.elements.get('permissionMatrix').innerHTML;
   assert.match(html,/Quản trị hệ thống/);
   assert.match(html,/Đại lý/);
-  assert.match(html,/Xem vai trò và quyền/);
+  assert.match(html,/Quản lý vai trò và quyền/);
   assert.match(html,/permission-granted/);
   assert.match(html,/permission-denied/);
+  assert.match(html,/data-permission-action="edit"/);
+  assert.match(html,/>Sửa</);
 });
 
 test('product thumbnail URL changes when its image version changes',async()=>{

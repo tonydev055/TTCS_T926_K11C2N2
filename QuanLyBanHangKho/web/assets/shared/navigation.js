@@ -12,6 +12,11 @@ function openApp(user = {}) {
   const displayName = user.fullName || user.email || 'Người dùng';
   document.querySelector('.user-chip strong').textContent = displayName;
   document.querySelector('.user-chip small').textContent = config.label;
+  const workAreas = user.warehouses?.length
+    ? user.warehouses.join(', ')
+    : user.territory || 'Toàn hệ thống';
+  const contextBadge = document.getElementById('workContextBadge');
+  if (contextBadge) contextBadge.querySelector('strong').textContent = workAreas;
   document.querySelector('.avatar').textContent = user.fullName
     ? displayName
         .split(' ')
@@ -32,7 +37,14 @@ function openView(view) {
   if (currentUser.requiresPasswordChange) view = 'Đổi mật khẩu';
   const menu =
     typeof getAvailableMenu === 'function' ? getAvailableMenu() : roleConfigs[activeRole].menu;
-  if (!menu.includes(view)) return;
+  if (!menu.includes(view)) {
+    viewRevision++;
+    document.getElementById('breadcrumb').textContent = 'Không đủ quyền';
+    document.getElementById('pageTitle').textContent = 'Truy cập bị từ chối';
+    renderAccessError(view);
+    closeSidebar();
+    return;
+  }
   viewRevision++;
   document
     .querySelectorAll('.nav-item')
@@ -52,9 +64,11 @@ function openView(view) {
 }
 
 function buildNavigation(menu) {
-  const warehouseControl = new Set(['Lô & hạn dùng', 'Kiểm kê', 'Nhà cung cấp', 'Báo cáo kho']);
-  const main = menu.filter((item) => !warehouseControl.has(item));
-  const control = menu.filter((item) => warehouseControl.has(item));
+  const accountItems = new Set(['Người dùng', 'Vai trò & quyền', 'Nhật ký hệ thống', 'Nhập người dùng Excel']);
+  const personalItems = new Set(['Hồ sơ cá nhân', 'Đổi mật khẩu']);
+  const main = menu.filter((item) => !accountItems.has(item) && !personalItems.has(item));
+  const control = menu.filter((item) => accountItems.has(item));
+  const personal = menu.filter((item) => personalItems.has(item));
   const iconMap = {
     'Tổng quan': '▦',
     'Tồn kho': '▤',
@@ -87,6 +101,9 @@ function buildNavigation(menu) {
     'Danh mục dùng chung': '▤',
     'Nhật ký hệ thống': '◷',
     'Cấu hình': '⚙'
+    ,'Hồ sơ cá nhân': '♙'
+    ,'Đổi mật khẩu': '⌁'
+    ,'Nhập người dùng Excel': '⇧'
   };
   const items = (values) =>
     values
@@ -96,7 +113,7 @@ function buildNavigation(menu) {
       )
       .join('');
   document.querySelector('.nav-list').innerHTML =
-    `<p class="nav-label">CHỨC NĂNG</p>${items(main)}${control.length ? `<p class="nav-label">KIỂM SOÁT</p>${items(control)}` : ''}`;
+    `<p class="nav-label">NGHIỆP VỤ</p>${items(main)}${control.length ? `<p class="nav-label">QUẢN TRỊ & KIỂM SOÁT</p>${items(control)}` : ''}${personal.length ? `<p class="nav-label">TÀI KHOẢN</p>${items(personal)}` : ''}`;
   document
     .querySelectorAll('.nav-item')
     .forEach((item) => item.addEventListener('click', () => openView(item.dataset.view)));

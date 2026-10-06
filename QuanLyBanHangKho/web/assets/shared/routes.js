@@ -1,12 +1,20 @@
 function getAvailableMenu() {
-  const roles = currentUser.roles || [activeRole];
-  const menu = [...new Set(roles.flatMap((role) => roleConfigs[role]?.menu || []))];
-  if (hasPermission('products.read') && !menu.includes('Sản phẩm & bảng giá'))
-    menu.splice(1, 0, 'Sản phẩm & bảng giá');
-  if (hasPermission('suppliers.read') && !menu.includes('Nhà cung cấp')) menu.push('Nhà cung cấp');
+  const menu = ['Tổng quan'];
+  if (hasPermission('admin.users')) menu.push('Người dùng');
+  if (hasPermission('admin.roles')) menu.push('Vai trò & quyền');
+  if (hasPermission('products.read')) menu.push('Sản phẩm & bảng giá');
+  if (hasPermission('suppliers.read')) menu.push('Nhà cung cấp');
+  if (hasPermission('admin.audit')) menu.push('Nhật ký hệ thống');
   if (hasPermission('admin.users')) menu.push('Nhập người dùng Excel');
   menu.push('Hồ sơ cá nhân', 'Đổi mật khẩu');
-  return menu;
+  return [...new Set(menu)];
+}
+
+function renderAccessError(view, message = 'Bạn chưa được cấp quyền sử dụng chức năng này.') {
+  dashboardContent.classList.add('is-hidden');
+  moduleContent.classList.remove('is-hidden');
+  moduleContent.innerHTML = `<section class="access-state"><div class="access-state-icon">!</div><span class="eyebrow">KHÔNG THỂ TRUY CẬP</span><h2>${escapeHtml(view || 'Chức năng')}</h2><p>${escapeHtml(message)}</p><button class="orange-button" id="accessBackHome">Về trang tổng quan</button></section>`;
+  document.getElementById('accessBackHome').onclick = () => openView('Tổng quan');
 }
 function renderFeatureView(view) {
   if (view === 'Đổi mật khẩu') {
@@ -21,10 +29,6 @@ function renderFeatureView(view) {
     renderCatalog('suppliers');
     return true;
   }
-  if (view === 'Danh mục dùng chung') {
-    renderCatalog('categories');
-    return true;
-  }
   if (view === 'Hồ sơ cá nhân') {
     renderProfile();
     return true;
@@ -35,6 +39,10 @@ function renderFeatureView(view) {
   }
   if (view === 'Nhập người dùng Excel') {
     renderExcelImport('users');
+    return true;
+  }
+  if (view === 'Vai trò & quyền') {
+    renderPermissionMatrix();
     return true;
   }
   return false;

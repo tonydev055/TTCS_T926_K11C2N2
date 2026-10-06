@@ -63,7 +63,10 @@ public class NhatKyServlet extends CoSoServlet {
             args.add((page - 1) * 50);
             var rows = TruyVanDB.rows(
                 c,
-                "SELECT a.*,u.full_name actor_name FROM audit_logs a LEFT JOIN users u ON u.id=a.actor_user_id" +
+                "SELECT a.*,u.full_name actor_name," +
+                    "CASE WHEN a.object_type='products' AND a.object_id ~ '^[0-9]+$' " +
+                    "THEN (SELECT p.name FROM products p WHERE p.id=a.object_id::bigint) END object_name " +
+                    "FROM audit_logs a LEFT JOIN users u ON u.id=a.actor_user_id" +
                     where +
                     " ORDER BY a.id DESC LIMIT ? OFFSET ?",
                 args.toArray()

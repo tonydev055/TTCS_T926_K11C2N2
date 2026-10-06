@@ -4,6 +4,16 @@ import java.util.*;
 
 public final class PhanQuyen {
 
+    private static final List<String> ROLE_ORDER = List.of(
+        "ADMIN",
+        "SALES_MANAGER",
+        "SALES_REP",
+        "WH_MANAGER",
+        "WAREHOUSE",
+        "ACCOUNTANT",
+        "CUSTOMER"
+    );
+
     private static final Map<String, Set<String>> ROLE_PERMISSIONS = Map.of(
         "ADMIN",
         Set.of(
@@ -92,9 +102,22 @@ public final class PhanQuyen {
         return out;
     }
 
+    /** Read-only snapshot used by the administration permission matrix. */
+    public static Map<String, List<String>> matrix() {
+        Map<String, List<String>> out = new LinkedHashMap<>();
+        for (String role : ROLE_ORDER) {
+            List<String> permissions = new ArrayList<>(ROLE_PERMISSIONS.getOrDefault(role, Set.of()));
+            permissions.add("profile.self");
+            Collections.sort(permissions);
+            out.put(role, List.copyOf(permissions));
+        }
+        return Collections.unmodifiableMap(out);
+    }
+
     public static String permissionFor(String uri, String method) {
         boolean read = method.equals("GET");
         if (uri.contains("/api/profile")) return "profile.self";
+        if (uri.contains("/api/role-permissions")) return "admin.roles";
         if (uri.contains("/api/audit")) return "admin.audit";
         if (
             uri.contains("/api/imports/users") || uri.contains("/api/templates/users")

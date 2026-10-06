@@ -116,11 +116,22 @@
     catalogState.endpoint = endpoint;
     catalogState.page = 1;
     const writable = hasPermission(catalogState.permissions[endpoint]);
-    const tabs =
-      endpoint === 'suppliers'
-        ? ['suppliers']
-        : ['products', 'categories', 'product-units', 'customer-groups', 'price-lists'];
-    moduleContent.innerHTML = `<section class="module-head"><div><span class="eyebrow">DANH MỤC</span><h2>${catalogState.labels[endpoint]}</h2></div><div class="module-actions">${endpoint === 'products' && writable ? '<button class="outline-button" id="s2Import">Nhập Excel</button>' : ''}${writable ? '<button class="orange-button" id="s2Create">+ Thêm mới</button>' : ''}</div></section><div class="s2-tabs">${tabs.map((key) => `<button data-catalog="${key}" class="${key === endpoint ? 'selected' : ''}">${catalogState.labels[key]}</button>`).join('')}</div><section class="inventory-panel"><div class="inventory-toolbar"><label class="search-control"><span>⌕</span><input type="search" id="s2Search" placeholder="Tìm mã, tên hoặc thông tin..."></label><select id="s2Status" class="filter-select"><option value="">Tất cả trạng thái</option><option value="true">Đang hoạt động</option><option value="false">Ngừng hoạt động</option></select><button class="outline-button" id="s2Reload">Tải lại</button><span id="s2Count" class="filter-result"></span></div><div id="s2Table" class="table-scroll" aria-live="polite"><p class="s2-empty">Đang tải dữ liệu...</p></div><div class="inventory-footer"><span id="s2Footer"></span><div id="s2Pages" class="pagination"></div></div></section>`;
+    const tabs = endpoint === 'suppliers' ? ['suppliers'] : [
+      'products',
+      ...(hasPermission('products.write') || hasPermission('catalog.read') ? ['categories'] : []),
+      ...(hasPermission('units.write') ? ['product-units'] : []),
+      ...(hasPermission('prices.write') ? ['customer-groups'] : []),
+      'price-lists'
+    ];
+    const descriptions = {
+      products: 'SKU, hình ảnh, quy cách đóng gói và trạng thái kinh doanh.',
+      categories: 'Cấu trúc nhóm hàng nhiều cấp dùng chung toàn hệ thống.',
+      'product-units': 'Quy đổi đơn vị về đơn vị cơ sở của từng SKU.',
+      'customer-groups': 'Phân nhóm khách hàng để áp dụng đúng chính sách giá.',
+      'price-lists': 'Giá bán, giá sàn và thời gian hiệu lực theo nhóm khách hàng.',
+      suppliers: 'Nguồn hàng, liên hệ và điều khoản thanh toán.'
+    };
+    moduleContent.innerHTML = `<section class="module-head"><div><span class="eyebrow">DANH MỤC HÀNG HÓA</span><h2>${catalogState.labels[endpoint]}</h2><p>${descriptions[endpoint]}</p></div><div class="module-actions">${endpoint === 'products' && writable ? '<button class="outline-button" id="s2Import">⇧ Nhập Excel</button>' : ''}${writable ? '<button class="orange-button" id="s2Create">+ Thêm mới</button>' : ''}</div></section><div class="s2-tabs" role="tablist">${tabs.map((key) => `<button role="tab" data-catalog="${key}" class="${key === endpoint ? 'selected' : ''}">${catalogState.labels[key]}</button>`).join('')}</div><section class="inventory-panel"><div class="inventory-toolbar"><label class="search-control"><span>⌕</span><input type="search" id="s2Search" placeholder="Tìm mã, tên hoặc thông tin..."></label><select id="s2Status" class="filter-select"><option value="">Tất cả trạng thái</option><option value="true">Đang hoạt động</option><option value="false">Ngừng hoạt động</option></select><button class="outline-button" id="s2Reload">↻ Tải lại</button><span id="s2Count" class="filter-result"></span></div><div id="s2Table" class="table-scroll" aria-live="polite"><p class="s2-empty">Đang tải dữ liệu...</p></div><div class="inventory-footer"><span id="s2Footer"></span><div id="s2Pages" class="pagination"></div></div></section>`;
     const host = document.getElementById('s2Table');
     moduleContent
       .querySelectorAll('[data-catalog]')
@@ -170,7 +181,7 @@
               .slice((catalogState.page - 1) * 20, catalogState.page * 20)
               .map(
                 (row) =>
-                  `<tr>${columns.map(([key]) => `<td>${key === 'name' && row.has_image ? `<img class="s2-product-thumb" src="api/products/${row.id}/thumbnail" alt="">` : ''}${escapeHtml(display(row, key))}</td>`).join('')}<td><div class="s2-row-actions">${endpoint === 'price-lists' ? `<button class="row-action" data-details="${row.id}">Chi tiết</button>` : ''}${writable ? `${endpoint === 'price-lists' ? `<button class="row-action" data-version="${row.id}">Phiên bản mới</button>` : ''}${!row.locked ? `<button class="row-action" data-edit="${row.id}">Sửa</button><button class="row-action" data-delete="${row.id}">Xóa</button>` : ''}` : ''}</div></td></tr>`
+                  `<tr>${columns.map(([key]) => `<td>${key === 'name' && row.has_image ? `<img class="s2-product-thumb" src="api/products/${row.id}/thumbnail?v=${encodeURIComponent(row.updated_at || request)}" alt="">` : ''}${escapeHtml(display(row, key))}</td>`).join('')}<td><div class="s2-row-actions">${endpoint === 'price-lists' ? `<button class="row-action" data-details="${row.id}">Chi tiết</button>` : ''}${writable ? `${endpoint === 'price-lists' ? `<button class="row-action" data-version="${row.id}">Phiên bản mới</button>` : ''}${!row.locked ? `<button class="row-action" data-edit="${row.id}">Sửa</button><button class="row-action" data-delete="${row.id}">Xóa</button>` : ''}` : ''}</div></td></tr>`
               )
               .join('')}</tbody></table>`
           : `<div class="s2-empty"><strong>${rows.length ? 'Không có kết quả phù hợp' : 'Chưa có dữ liệu'}</strong><p>${writable ? 'Thêm bản ghi đầu tiên hoặc điều chỉnh bộ lọc.' : 'Dữ liệu sẽ xuất hiện sau khi được khai báo.'}</p></div>`;

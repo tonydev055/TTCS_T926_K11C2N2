@@ -1,0 +1,84 @@
+<!-- Loaded by the application shell: ../index.html -->
+<style>
+  .permission-matrix th,
+  .permission-matrix td {
+    text-align: center;
+    white-space: nowrap;
+  }
+  .permission-matrix th:first-child,
+  .permission-matrix td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    text-align: left;
+    background: var(--surface, #fff);
+  }
+  .permission-code {
+    display: block;
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .permission-granted {
+    display: inline-grid;
+    width: 24px;
+    height: 24px;
+    place-items: center;
+    border-radius: 50%;
+    color: #17643a;
+    background: #dff5e8;
+    font-weight: 800;
+  }
+  .permission-denied { color: #c8c8c8; }
+</style>
+<script>
+  const permissionLabels = {
+    'admin.users': 'Quản lý người dùng',
+    'admin.roles': 'Xem vai trò và quyền',
+    'admin.audit': 'Xem nhật ký hệ thống',
+    'admin.settings': 'Quản lý cấu hình',
+    'catalog.read': 'Xem danh mục dùng chung',
+    'products.read': 'Xem sản phẩm',
+    'products.write': 'Cập nhật sản phẩm',
+    'products.cost': 'Xem giá vốn',
+    'units.write': 'Quản lý đơn vị tính',
+    'suppliers.read': 'Xem nhà cung cấp',
+    'suppliers.write': 'Cập nhật nhà cung cấp',
+    'prices.write': 'Quản lý bảng giá',
+    'inventory.read': 'Xem tồn kho',
+    'inventory.write': 'Cập nhật tồn kho',
+    'warehouses.manage': 'Quản lý kho',
+    'customers.read': 'Xem khách hàng',
+    'customers.assigned': 'Xem khách hàng phụ trách',
+    'orders.read': 'Xem đơn hàng',
+    'orders.approve': 'Duyệt đơn hàng',
+    'orders.own': 'Quản lý đơn hàng cá nhân',
+    'orders.self': 'Xem đơn hàng của đại lý',
+    'reports.sales': 'Xem báo cáo kinh doanh',
+    'reports.inventory': 'Xem báo cáo kho',
+    'payments.route': 'Thu tiền theo tuyến',
+    'payments.write': 'Ghi nhận thanh toán',
+    'targets.own': 'Xem chỉ tiêu cá nhân',
+    'shipments.write': 'Quản lý giao hàng',
+    'shipments.self': 'Xem giao hàng của đại lý',
+    'invoices.write': 'Quản lý hóa đơn',
+    'invoices.self': 'Xem hóa đơn của đại lý',
+    'receivables.read': 'Xem công nợ',
+    'returns.self': 'Quản lý trả hàng của đại lý',
+    'profile.self': 'Quản lý hồ sơ cá nhân'
+  };
+
+  async function renderPermissionMatrix() {
+    const revision = viewRevision;
+    moduleContent.innerHTML = `<section class="module-head"><div><h2>Ma trận phân quyền</h2><p>Đối chiếu quyền hiệu lực của từng vai trò trong hệ thống.</p></div></section><section class="inventory-panel"><div id="permissionMatrix" class="table-scroll"><p class="s2-empty">Đang tải ma trận phân quyền...</p></div></section>`;
+    const host = document.getElementById('permissionMatrix');
+    try {
+      const data = await apiRequest('role-permissions');
+      if (revision !== viewRevision || !host.isConnected) return;
+      host.innerHTML = `<table class="feature-table permission-matrix"><thead><tr><th>Chức năng / quyền</th>${data.roles.map((role) => `<th>${escapeHtml(roleConfigs[role]?.label || role)}</th>`).join('')}</tr></thead><tbody>${data.permissions.map((permission) => `<tr><td>${escapeHtml(permissionLabels[permission] || permission)}<span class="permission-code">${escapeHtml(permission)}</span></td>${data.roles.map((role) => `<td aria-label="${data.matrix[role].includes(permission) ? 'Có quyền' : 'Không có quyền'}">${data.matrix[role].includes(permission) ? '<span class="permission-granted">✓</span>' : '<span class="permission-denied">—</span>'}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    } catch (error) {
+      if (host.isConnected) host.innerHTML = `<p class="s2-empty">${escapeHtml(error.message)}</p>`;
+    }
+  }
+</script>

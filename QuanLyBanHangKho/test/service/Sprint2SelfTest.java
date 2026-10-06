@@ -409,6 +409,24 @@ public class Sprint2SelfTest {
                     !PhanQuyen.allows(List.of("ADMIN"), "products.cost"),
                     "Admin does not receive cost exception"
                 );
+                check(
+                    PhanQuyen.allows(
+                        List.of("ADMIN"),
+                        PhanQuyen.permissionFor("/api/role-permissions", "GET")
+                    ),
+                    "Admin may view the role permission matrix"
+                );
+                check(
+                    !PhanQuyen.allows(
+                        List.of("WH_MANAGER"),
+                        PhanQuyen.permissionFor("/api/role-permissions", "GET")
+                    ),
+                    "Non-admin cannot view the role permission matrix"
+                );
+                check(
+                    PhanQuyen.matrix().get("CUSTOMER").contains("profile.self"),
+                    "Permission matrix includes shared profile permission"
+                );
                 List<TepExcelService.Row> importRows = List.of(
                     new TepExcelService.Row(
                         2,

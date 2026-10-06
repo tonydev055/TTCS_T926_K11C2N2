@@ -25,6 +25,24 @@ public class PhanQuyenSelfTest {
             PhanQuyen.allows(List.of("ACCOUNTANT"), "receivables.read"),
             "Kế toán được xem công nợ"
         );
+        check(
+            PhanQuyen.allows(
+                List.of("ADMIN"),
+                PhanQuyen.permissionFor("/api/role-permissions", "GET")
+            ),
+            "ADMIN được xem ma trận phân quyền"
+        );
+        check(
+            !PhanQuyen.allows(
+                List.of("WAREHOUSE"),
+                PhanQuyen.permissionFor("/api/role-permissions", "GET")
+            ),
+            "Nhân viên kho không được xem ma trận phân quyền"
+        );
+        check(
+            PhanQuyen.matrix().get("CUSTOMER").contains("profile.self"),
+            "Ma trận phải có quyền hồ sơ cá nhân dùng chung"
+        );
     }
 
     private static void check(boolean value, String message) {

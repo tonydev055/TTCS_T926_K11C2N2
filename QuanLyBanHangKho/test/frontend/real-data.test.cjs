@@ -89,7 +89,7 @@ test('unsupported modules explicitly show unavailable data',async()=>{
 test('Sprint 1-2 menus retain authorized features and exclude later workflows',()=>{
   const app=setup();
   for (const role of ['ADMIN','SALES_MANAGER','SALES_REP','WH_MANAGER','WAREHOUSE','ACCOUNTANT','CUSTOMER']) {
-    const permissions=role==='ADMIN'?['admin.users','products.read','suppliers.read']:role==='WAREHOUSE'||role==='WH_MANAGER'?['products.read','suppliers.read']:['products.read'];
+    const permissions=role==='ADMIN'?['admin.users','admin.roles','admin.audit','catalog.read','products.read','suppliers.read']:role==='WAREHOUSE'||role==='WH_MANAGER'?['products.read','suppliers.read']:['products.read'];
     app.run(`activeRole=${JSON.stringify(role)};currentUser={roles:[activeRole],permissions:${JSON.stringify(permissions)}}`);
     const menu=Array.from(app.run('getAvailableMenu()'));
     assert.ok(menu.includes('Hồ sơ cá nhân'));
@@ -97,15 +97,57 @@ test('Sprint 1-2 menus retain authorized features and exclude later workflows',(
     assert.ok(menu.includes('Sản phẩm & bảng giá'));
     assert.equal(menu.includes('Nhập người dùng Excel'),role==='ADMIN');
     assert.equal(menu.includes('Nhật ký hệ thống'),role==='ADMIN');
-    for (const removed of ['Đơn hàng','Tồn kho','Nhập kho','Xuất kho','Kiểm kê','Thanh toán','Vai trò & quyền','Cấu hình']) assert.ok(!menu.includes(removed));
+    assert.equal(menu.includes('Vai trò & quyền'),role==='ADMIN');
+    for (const removed of ['Đơn hàng','Tồn kho','Nhập kho','Xuất kho','Kiểm kê','Thanh toán','Danh mục dùng chung','Cấu hình']) assert.ok(!menu.includes(removed));
   }
 });
 
 test('all extracted feature entry points load from index without missing scripts',()=>{
   const app=setup();
-  for(const name of ['renderCatalog','renderProfile','renderAuditLog','renderExcelImport','renderUsersModule','renderRealHome','openForgotPassword']) {
+  for(const name of ['renderCatalog','renderProfile','renderAuditLog','renderExcelImport','renderPermissionMatrix','renderUsersModule','renderRealHome','openForgotPassword']) {
     assert.equal(app.run(`typeof ${name}`),'function',name);
   }
+});
+
+test('permission matrix renders backend grants and denies unsafe HTML',async()=>{
+  const app=setup();
+  app.run("currentUser={permissions:['admin.roles']}");
+  app.context.fetch=async()=>({ok:true,json:async()=>({
+    roles:['ADMIN','CUSTOMER'],permissions:['admin.roles','unsafe.permission'],
+    matrix:{ADMIN:['admin.roles','unsafe.permission'],CUSTOMER:[]}
+  })});
+  await app.run('renderPermissionMatrix()');
+  const html=app.elements.get('permissionMatrix').innerHTML;
+  assert.match(html,/Quản trị hệ thống/);
+  assert.match(html,/Đại lý/);
+  assert.match(html,/Xem vai trò và quyền/);
+  assert.match(html,/permission-granted/);
+  assert.match(html,/permission-denied/);
+});
+
+test('product thumbnail URL changes when its image version changes',async()=>{
+  const app=setup();
+  app.run("currentUser={permissions:['products.read']}");
+  const products=[{id:7,sku:'SP-01',name:'Sản phẩm',category_id:1,category_name:'Nhóm',base_unit:'Cái',packaging:'',active:true,has_image:true,updated_at:'2026-10-05 10:00:00'}];
+  app.context.fetch=async(url)=>({ok:true,json:async()=>url==='api/products/'?products:[{id:1,name:'Nhóm'}]});
+  await app.run("renderCatalog('products')");
+  assert.match(app.elements.get('s2Table').innerHTML,/thumbnail\?v=2026-10-05%2010%3A00%3A00/);
+  products[0].updated_at='2026-10-05 10:01:00';
+  await app.run("renderCatalog('products')");
+  assert.match(app.elements.get('s2Table').innerHTML,/thumbnail\?v=2026-10-05%2010%3A01%3A00/);
+});
+
+test('audit log shows product name next to the object id',async()=>{
+  const app=setup();
+  app.context.FormData=class { *[Symbol.iterator](){} };
+  app.context.fetch=async(url)=>({ok:true,json:async()=>url.includes('filters')
+    ? {users:[],types:[]}
+    : {items:[{created_at:'2026-10-05',actor_name:'Quản trị',action:'UPDATE',object_type:'products',object_id:'7',object_name:'Bánh quy bơ 200g',old_value:{},new_value:{}}],total:1,page:1,size:50}});
+  await app.run('renderAuditLog()');
+  await new Promise((resolve)=>setTimeout(resolve,0));
+  const html=app.elements.get('s2AuditRows').innerHTML;
+  assert.match(html,/Bánh quy bơ 200g/);
+  assert.match(html,/Sản phẩm #7/);
 });
 
 test('profile renders escaped user data and connects save and avatar handlers',async()=>{

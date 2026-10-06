@@ -20,7 +20,7 @@ const roleConfigs = {
   ACCOUNTANT: { label: 'Kế toán công nợ', menu: ['Tổng quan', 'Sản phẩm & bảng giá'] },
   ADMIN: {
     label: 'Quản trị hệ thống',
-    menu: ['Tổng quan', 'Người dùng', 'Danh mục dùng chung', 'Nhật ký hệ thống']
+    menu: ['Tổng quan', 'Người dùng', 'Nhật ký hệ thống']
   }
 };
 let activeRole = 'WH_MANAGER';

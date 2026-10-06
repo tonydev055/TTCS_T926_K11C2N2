@@ -173,11 +173,11 @@
       Object.entries(roleConfigs).map(([code, item]) => [code, item.label])
     );
     let page = 1;
-    const size = 5;
+    const size = 20;
     let debounce;
     let requestId = 0;
     const revision = viewRevision;
-    moduleContent.innerHTML = `<section class="module-head"><div><p>Quản lý tài khoản, trạng thái hoạt động </p></div><div class="module-actions"><button class="orange-button" id="createRealUser">+ Tạo người dùng</button></div></section><section class="operation-summary compact-summary"><article><span class="op-icon orange">▦</span><div><small>Tổng tài khoản</small><strong id="userStatTotal">—</strong><em>Dữ liệu toàn hệ thống</em></div></article><article><span class="op-icon blue">✓</span><div><small>Đang hoạt động</small><strong id="userStatActive">—</strong><em>Có thể đăng nhập</em></div></article><article><span class="op-icon purple">⌁</span><div><small>Cần đổi mật khẩu</small><strong id="userStatPassword">—</strong><em>Yêu cầu khi đăng nhập</em></div></article><article><span class="op-icon red">!</span><div><small>Đang bị khóa</small><strong id="userStatLocked">—</strong><em>Khóa tay hoặc tạm thời</em></div></article></section><section class="inventory-panel"><div class="inventory-toolbar"><label class="search-control"><span>⌕</span><input id="realUserSearch" type="search" placeholder="Tìm tên, tài khoản, email hoặc số điện thoại..."></label><select id="realUserStatus" class="filter-select"><option value="">Tất cả trạng thái</option><option value="active">Hoạt động</option><option value="locked">Đã khóa</option></select><span id="realUserResult" class="filter-result"></span></div><div class="table-scroll"><table class="feature-table role-module-table"><thead><tr><th>Tài khoản</th><th>Họ tên</th><th>Vai trò</th><th>Kho / địa bàn</th><th>Lần đăng nhập cuối</th><th>Trạng thái</th><th></th></tr></thead><tbody id="realUserRows"></tbody></table></div><div class="inventory-footer"><span id="realUserFooter">Đang tải dữ liệu...</span><div id="realUserPagination" class="pagination"></div></div></section>`;
+    moduleContent.innerHTML = `<section class="module-head"><div><span class="eyebrow">QUẢN TRỊ HỆ THỐNG</span><h2>Người dùng</h2><p>Tìm kiếm, gán phạm vi làm việc và kiểm soát trạng thái tài khoản.</p></div><div class="module-actions"><button class="orange-button" id="createRealUser">+ Tạo người dùng</button></div></section><section class="operation-summary compact-summary"><article><span class="op-icon orange">▦</span><div><small>Tổng tài khoản</small><strong id="userStatTotal">—</strong><em>Dữ liệu toàn hệ thống</em></div></article><article><span class="op-icon blue">✓</span><div><small>Đang hoạt động</small><strong id="userStatActive">—</strong><em>Có thể đăng nhập</em></div></article><article><span class="op-icon purple">⌁</span><div><small>Cần đổi mật khẩu</small><strong id="userStatPassword">—</strong><em>Yêu cầu khi đăng nhập</em></div></article><article><span class="op-icon red">!</span><div><small>Đang bị khóa</small><strong id="userStatLocked">—</strong><em>Khóa tay hoặc tạm thời</em></div></article></section><section class="inventory-panel"><div class="inventory-toolbar"><label class="search-control"><span>⌕</span><input id="realUserSearch" type="search" placeholder="Tìm tên, tài khoản, email hoặc số điện thoại..."></label><select id="realUserRole" class="filter-select"><option value="">Tất cả vai trò</option>${Object.entries(roleLabels).map(([code,label]) => `<option value="${code}">${label}</option>`).join('')}</select><select id="realUserStatus" class="filter-select"><option value="">Tất cả trạng thái</option><option value="active">Hoạt động</option><option value="locked">Đã khóa</option></select><span id="realUserResult" class="filter-result"></span></div><div class="table-scroll"><table class="feature-table role-module-table"><thead><tr><th>Tài khoản</th><th>Họ tên</th><th>Vai trò</th><th>Kho / địa bàn</th><th>Lần đăng nhập cuối</th><th>Trạng thái</th><th></th></tr></thead><tbody id="realUserRows"></tbody></table></div><div class="inventory-footer"><span id="realUserFooter">Đang tải dữ liệu...</span><div id="realUserPagination" class="pagination"></div></div></section>`;
     const formatDate = (value) =>
       value
         ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(
@@ -188,12 +188,13 @@
       if (revision !== viewRevision) return;
       const request = ++requestId;
       const search = document.getElementById('realUserSearch').value.trim(),
-        status = document.getElementById('realUserStatus').value;
+        status = document.getElementById('realUserStatus').value,
+        role = document.getElementById('realUserRole').value;
       document.getElementById('realUserRows').innerHTML =
         '<tr><td colspan="7" style="text-align:center;padding:38px;color:#8c7d72">Đang tải dữ liệu...</td></tr>';
       try {
         const response = await fetch(
-          `api/users/?page=${page}&size=${size}&search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}`
+          `api/users/?page=${page}&size=${size}&search=${encodeURIComponent(search)}&role=${encodeURIComponent(role)}&status=${encodeURIComponent(status)}`
         );
         const payload = await response.json();
         if (revision !== viewRevision || request !== requestId) return;
@@ -309,6 +310,10 @@
       }, 300);
     });
     document.getElementById('realUserStatus').addEventListener('change', () => {
+      page = 1;
+      load();
+    });
+    document.getElementById('realUserRole').addEventListener('change', () => {
       page = 1;
       load();
     });

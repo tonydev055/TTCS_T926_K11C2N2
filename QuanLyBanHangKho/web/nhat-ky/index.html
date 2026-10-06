@@ -11,6 +11,10 @@
     border: 1px solid var(--line);
     border-radius: 8px;
   }
+  .audit-object strong,
+  .audit-object small { display: block; }
+  .audit-object strong { color: var(--app-navy, #15283f); }
+  .audit-object small { margin-top: 4px; color: var(--muted); font-size: 10px; }
 </style>
 <script>
   async function renderAuditLog() {
@@ -29,7 +33,11 @@
         const data = await apiRequest(`audit/?${params}`);
         if (revision !== viewRevision || call !== request || !host.isConnected) return;
         host.innerHTML = data.items.length
-          ? `<table class="feature-table s2-table"><thead><tr><th>Thời điểm</th><th>Người thực hiện</th><th>Thao tác</th><th>Đối tượng</th><th>Trước / Sau</th></tr></thead><tbody>${data.items.map((row) => `<tr><td>${escapeHtml(row.created_at)}</td><td>${escapeHtml(row.actor_name || 'Hệ thống')}</td><td>${escapeHtml(row.action)}</td><td>${escapeHtml(row.object_type)} #${escapeHtml(row.object_id)}</td><td><details><summary>Xem thay đổi</summary><strong>Trước</strong><pre>${escapeHtml(JSON.stringify(row.old_value, null, 2))}</pre><strong>Sau</strong><pre>${escapeHtml(JSON.stringify(row.new_value, null, 2))}</pre></details></td></tr>`).join('')}</tbody></table>`
+          ? `<table class="feature-table s2-table"><thead><tr><th>Thời điểm</th><th>Người thực hiện</th><th>Thao tác</th><th>Đối tượng</th><th>Trước / Sau</th></tr></thead><tbody>${data.items.map((row) => {
+              const productName = row.object_name || row.new_value?.name || row.old_value?.name;
+              const typeLabel = row.object_type === 'products' ? 'Sản phẩm' : row.object_type;
+              return `<tr><td>${escapeHtml(row.created_at)}</td><td>${escapeHtml(row.actor_name || 'Hệ thống')}</td><td>${escapeHtml(row.action)}</td><td class="audit-object"><strong>${escapeHtml(productName || typeLabel)}</strong><small>${escapeHtml(typeLabel)} #${escapeHtml(row.object_id)}</small></td><td><details><summary>Xem thay đổi</summary><strong>Trước</strong><pre>${escapeHtml(JSON.stringify(row.old_value, null, 2))}</pre><strong>Sau</strong><pre>${escapeHtml(JSON.stringify(row.new_value, null, 2))}</pre></details></td></tr>`;
+            }).join('')}</tbody></table>`
           : '<p class="s2-empty">Chưa có nhật ký phù hợp.</p>';
         document.getElementById('s2AuditPages').innerHTML =
           `<span>${number(data.total)} bản ghi · Trang ${page}</span><div class="pagination"><button id="s2AuditPrev" ${page === 1 ? 'disabled' : ''}>‹</button><button id="s2AuditNext" ${page * 50 >= data.total ? 'disabled' : ''}>›</button></div>`;

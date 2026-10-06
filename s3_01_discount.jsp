@@ -329,10 +329,72 @@
 
     <div class="content-area">
 
-      <div id="contentPlaceholder" class="card">
-        <div class="card-body">
-          <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">Khai báo chính sách chiết khấu</h2>
-          <p style="font-size: 13.5px; color: var(--text-secondary);">Giao diện và styles hệ thống đã hoàn tất. Đang tiếp tục xây dựng các thành phần bảng và biểu mẫu.</p>
+      <!-- ══ VIEW: DANH SÁCH ══ -->
+      <div id="vList">
+        <div>
+          <h1 class="page-title">Chiết khấu theo số lượng</h1>
+          <p class="page-sub">Thiết lập mức ưu đãi theo SKU hoặc nhóm hàng.</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tab-bar">
+          <button class="tab-btn active" id="tBtnPolicy" onclick="switchTab('policy')">Chính sách</button>
+          <button class="tab-btn" id="tBtnCheck" onclick="switchTab('check')">Kiểm tra áp dụng</button>
+        </div>
+
+        <!-- Info -->
+        <div class="info-banner">
+          <span style="font-size:14px;flex-shrink:0">ℹ</span>
+          <span>Khi nhiều chính sách cùng áp dụng, chọn mức chiết khấu <strong>có lợi nhất</strong> cho khách hàng. Không cộng dồn.</span>
+        </div>
+
+        <!-- ── Sub: Danh sách chính sách ── -->
+        <div id="sPolicyList">
+          <div class="card">
+            <div class="card-body">
+              <!-- Toolbar -->
+              <div class="toolbar">
+                <div class="toolbar-left">
+                  <div class="field-wrap grow">
+                    <span class="field-label">Tìm kiếm</span>
+                    <input id="searchInput" type="text" class="fc" placeholder="Tên chính sách, SKU...">
+                  </div>
+                  <div class="field-wrap">
+                    <span class="field-label">Phạm vi</span>
+                    <select id="filterScope" class="fc" style="min-width:140px">
+                      <option value="">Tất cả</option>
+                      <option value="SKU">SKU</option>
+                      <option value="GROUP">Nhóm hàng</option>
+                    </select>
+                  </div>
+                </div>
+                <button class="btn btn-primary" onclick="openAdd()">+ Thêm chính sách</button>
+              </div>
+
+              <!-- Table -->
+              <div class="table-wrap">
+                <table class="tbl" id="policyTable">
+                  <thead>
+                    <tr>
+                      <th>Chính sách</th>
+                      <th>Phạm vi áp dụng</th>
+                      <th>Bậc số lượng</th>
+                      <th>Chiết khấu</th>
+                      <th>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tBody"></tbody>
+                </table>
+                <div class="empty-state hidden" id="emptyState">
+                  <div class="empty-icon">📋</div>
+                  <div class="empty-title">Chưa có chính sách nào</div>
+                  <div class="empty-desc">Nhấn <strong>+ Thêm chính sách</strong> để tạo mới.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         </div>
       </div>
     </div>

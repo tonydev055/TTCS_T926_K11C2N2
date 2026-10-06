@@ -11,6 +11,8 @@ public class DanhMucService {
 
     public static final Set<String> TABLES = Set.of(
         "products",
+        "brands",
+        "product_models",
         "categories",
         "product_units",
         "suppliers",
@@ -98,6 +100,7 @@ public class DanhMucService {
         var query = listQuery(table, cost, customer, actor);
         var rows = TruyVanDB.rows(c, query.sql(), query.params());
         addPriceLines(c, table, customer, rows);
+        addProductAttributes(c, table, rows);
         return rows;
     }
 
@@ -106,10 +109,10 @@ public class DanhMucService {
     private ListQuery listQuery(String table, boolean cost, boolean customer, long actor) {
         if (!TABLES.contains(table)) throw new IllegalArgumentException("Chức năng không tồn tại");
         if (table.equals("products")) return new ListQuery(
-            "SELECT p.id,p.sku,p.name,p.category_id,c.name category_name,p.base_unit,p.packaging,p.active,p.updated_at,(p.image IS NOT NULL) has_image" +
+            "SELECT p.id,p.sku,p.name,p.category_id,c.name category_name,p.base_unit,p.packaging,p.active,p.updated_at,p.model_id,p.condition,m.name model_name,m.brand_id,b.name brand_name,(p.image IS NOT NULL) has_image" +
                 (cost ? ",p.cost_price" : "") +
-                " FROM products p JOIN categories c ON c.id=p.category_id " +
-                (customer ? "WHERE p.active=true " : "") +
+                " FROM products p JOIN categories c ON c.id=p.category_id LEFT JOIN product_models m ON m.id=p.model_id LEFT JOIN brands b ON b.id=m.brand_id " +
+                (customer ? "WHERE p.active=true AND (m.id IS NULL OR m.active) " : "") +
                 "ORDER BY p.id DESC", new Object[] {}
         );
         if (table.equals("product_units")) return new ListQuery(
@@ -128,6 +131,15 @@ public class DanhMucService {
         if (customer && table.equals("customer_groups")) return new ListQuery(
             "SELECT g.* FROM customer_groups g JOIN users u ON u.customer_group_id=g.id WHERE u.id=?",
             new Object[] { actor }
+        );
+        if (table.equals("product_models")) return new ListQuery(
+            "SELECT m.*,c.name category_name,b.name brand_name,(SELECT count(*) FROM products p WHERE p.model_id=m.id) variant_count " +
+            "FROM product_models m JOIN categories c ON c.id=m.category_id JOIN brands b ON b.id=m.brand_id " +
+            (customer ? "WHERE m.active AND EXISTS(SELECT 1 FROM products p WHERE p.model_id=m.id AND p.active) " : "") +
+            "ORDER BY m.id DESC", new Object[] {}
+        );
+        if (table.equals("brands")) return new ListQuery(
+            "SELECT * FROM brands " + (customer ? "WHERE active " : "") + "ORDER BY name,id", new Object[] {}
         );
         return new ListQuery("SELECT * FROM " + table + " ORDER BY id DESC", new Object[] {});
     }
@@ -150,11 +162,17 @@ public class DanhMucService {
 
     public Map<String, Object> page(Connection c, String table, boolean cost, boolean customer,
         long actor, int page, int size, String search, String status) throws SQLException {
+        return page(c, table, cost, customer, actor, page, size, search, status, null, null, null);
+    }
+
+    public Map<String, Object> page(Connection c, String table, boolean cost, boolean customer,
+        long actor, int page, int size, String search, String status, Long category, Long brand, Long model) throws SQLException {
         if (page < 1 || size < 1 || size > 100) throw new IllegalArgumentException("Phân trang không hợp lệ");
         if (!Set.of("", "true", "false").contains(status)) throw new IllegalArgumentException("Trạng thái không hợp lệ");
         var query = listQuery(table, cost, customer, actor);
         String columns = switch (table) {
-            case "products" -> "sku,name,category_name,base_unit,packaging";
+            case "products" -> "sku,name,category_name,brand_name,model_name,base_unit,packaging";
+            case "product_models" -> "code,name,category_name,brand_name";
             case "product_units" -> "sku,product_name,name,factor";
             case "suppliers" -> "code,name,tax_code,contact_name,phone,payment_terms";
             case "price_lists" -> "name,group_name,valid_from,valid_to,version";
@@ -163,9 +181,17 @@ public class DanhMucService {
         List<Object> params = new ArrayList<>(Arrays.asList(query.params()));
         String source = " FROM (" + query.sql() + ") records WHERE strpos(lower(concat_ws(' '," + columns + ")), lower(?)) > 0";
         params.add(search.trim());
-        if (!status.isEmpty() && Set.of("products", "suppliers", "price_lists", "product_units").contains(table)) {
+        if (!status.isEmpty() && Set.of("products", "product_models", "brands", "suppliers", "price_lists", "product_units").contains(table)) {
             source += " AND active=?";
             params.add(Boolean.valueOf(status));
+        }
+        if (Set.of("products", "product_models").contains(table)) {
+            if (category != null) {
+                source += " AND category_id IN (WITH RECURSIVE descendants AS (SELECT id FROM categories WHERE id=? UNION SELECT c.id FROM categories c JOIN descendants d ON c.parent_id=d.id) SELECT id FROM descendants)";
+                params.add(category);
+            }
+            if (brand != null) { source += " AND brand_id=?"; params.add(brand); }
+            if (model != null && table.equals("products")) { source += " AND model_id=?"; params.add(model); }
         }
         long total = ((Number) TruyVanDB.one(c, "SELECT count(*) total" + source, params.toArray()).get("total")).longValue();
         int lastPage = (int) Math.max(1, (total + size - 1) / size);
@@ -175,7 +201,36 @@ public class DanhMucService {
         params.add((long) (page - 1) * size);
         var items = TruyVanDB.rows(c, "SELECT *" + source + " ORDER BY " + order + " LIMIT ? OFFSET ?", params.toArray());
         addPriceLines(c, table, customer, items);
+        addProductAttributes(c, table, items);
         return Map.of("items", items, "total", total, "page", page, "size", size);
+    }
+
+    private void addProductAttributes(Connection c, String table, List<Map<String, Object>> rows) throws SQLException {
+        if (!table.equals("products") || rows.isEmpty()) return;
+        Map<Long, Map<String, String>> attributes = new HashMap<>();
+        for (var row : rows) {
+            var values = new LinkedHashMap<String, String>();
+            attributes.put(TruyVanDB.id(row), values);
+            row.put("attributes", values);
+        }
+        String placeholders = String.join(",", Collections.nCopies(rows.size(), "?"));
+        for (var value : TruyVanDB.rows(c, "SELECT product_id,name,value FROM product_attributes WHERE product_id IN (" + placeholders + ") ORDER BY name",
+            rows.stream().map(row -> row.get("id")).toArray())) {
+            attributes.get(((Number) value.get("product_id")).longValue()).put(value.get("name").toString(), value.get("value").toString());
+        }
+    }
+
+    public static Map<String, String> validateAttributes(Object raw) {
+        if (!(raw instanceof Map<?, ?> values) || values.size() > 30) throw new IllegalArgumentException("Thuộc tính phải có tối đa 30 cặp tên và giá trị");
+        Map<String, String> result = new LinkedHashMap<>();
+        Set<String> names = new HashSet<>();
+        for (var entry : values.entrySet()) {
+            if (!(entry.getKey() instanceof String name) || !(entry.getValue() instanceof String value)) throw new IllegalArgumentException("Tên và giá trị thuộc tính phải là văn bản");
+            name = name.trim(); value = value.trim();
+            if (name.isEmpty() || name.length() > 60 || value.isEmpty() || value.length() > 250 || !names.add(name.toLowerCase(Locale.ROOT))) throw new IllegalArgumentException("Thuộc tính bị trùng hoặc không hợp lệ");
+            result.put(name, value);
+        }
+        return result;
     }
 
     public long save(Connection c, String table, Long id, Map<String, Object> data, boolean cost)
@@ -188,7 +243,19 @@ public class DanhMucService {
             case "products" -> {
                 values.put("sku", text(data, "sku", true, 80).toUpperCase(Locale.ROOT));
                 values.put("name", text(data, "name", true, 200));
-                long category = integer(data, "category_id");
+                Long modelId = data.containsKey("model_id")
+                    ? (data.get("model_id") == null ? null : integer(data, "model_id"))
+                    : old == null || old.get("model_id") == null ? null : ((Number) old.get("model_id")).longValue();
+                var model = modelId == null ? null : require(c, "product_models", modelId);
+                long category = model == null ? integer(data, "category_id") : ((Number) model.get("category_id")).longValue();
+                if (model != null && !Boolean.TRUE.equals(model.get("active")) && (old == null || !Objects.equals(old.get("model_id"), modelId))) throw new IllegalArgumentException("Mẫu sản phẩm đã ngừng hoạt động");
+                if (old != null && old.get("model_id") != null && !Objects.equals(old.get("model_id"), modelId)) throw new IllegalArgumentException("Không chuyển SKU đã gắn mẫu sang mẫu khác; hãy tạo SKU mới");
+                values.put("model_id", modelId);
+                String condition = data.containsKey("condition") ? text(data, "condition", true, 20)
+                    : old == null ? "NEW" : old.get("condition").toString();
+                if (!Set.of("NEW", "USED", "DISPLAY").contains(condition)) throw new IllegalArgumentException("Tình trạng hàng không hợp lệ");
+                values.put("condition", condition);
+                if (data.containsKey("attributes")) validateAttributes(data.get("attributes"));
                 require(c, "categories", category);
                 values.put("category_id", category);
                 String base = text(data, "base_unit", true, 40);
@@ -205,6 +272,22 @@ public class DanhMucService {
                 );
                 if (cost) values.put("cost_price", decimal(data, "cost_price", false, 2));
                 values.put("updated_at", Timestamp.valueOf(java.time.LocalDateTime.now()));
+            }
+            case "brands" -> {
+                values.put("code", text(data, "code", true, 40).toUpperCase(Locale.ROOT));
+                values.put("name", text(data, "name", true, 150));
+                values.put("active", active(data));
+            }
+            case "product_models" -> {
+                long category = integer(data, "category_id"), brand = integer(data, "brand_id");
+                require(c, "categories", category);
+                var brandRow = require(c, "brands", brand);
+                if (!Boolean.TRUE.equals(brandRow.get("active")) && (old == null || !Objects.equals(old.get("brand_id"), brand))) throw new IllegalArgumentException("Thương hiệu đã ngừng hoạt động");
+                values.put("code", text(data, "code", true, 80).toUpperCase(Locale.ROOT));
+                values.put("name", text(data, "name", true, 200));
+                values.put("category_id", category);
+                values.put("brand_id", brand);
+                values.put("active", active(data));
             }
             case "categories" -> {
                 values.put("code", text(data, "code", true, 40).toUpperCase(Locale.ROOT));
@@ -279,6 +362,12 @@ public class DanhMucService {
             default -> throw new IllegalArgumentException("Chức năng không tồn tại");
         }
         long saved = write(c, table, id, values);
+        if (table.equals("product_models")) TruyVanDB.update(c, "UPDATE products SET category_id=?,updated_at=CURRENT_TIMESTAMP WHERE model_id=? AND category_id<>?", values.get("category_id"), saved, values.get("category_id"));
+        if (table.equals("products") && data.containsKey("attributes")) {
+            var attributes = validateAttributes(data.get("attributes"));
+            TruyVanDB.update(c, "DELETE FROM product_attributes WHERE product_id=?", saved);
+            for (var attribute : attributes.entrySet()) TruyVanDB.update(c, "INSERT INTO product_attributes(product_id,name,value) VALUES(?,?,?)", saved, attribute.getKey(), attribute.getValue());
+        }
         if (table.equals("products") && id == null) TruyVanDB.update(
             c,
             "INSERT INTO product_units(product_id,name,factor) VALUES(?,?,1)",

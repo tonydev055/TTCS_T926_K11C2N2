@@ -19,11 +19,14 @@ if($Test){
   if($LASTEXITCODE -ne 0){throw 'Test compilation failed'}
   & "$JavaHome/bin/java.exe" -cp "$classes;$testClasses;$(Join-Path $projectRoot 'web/WEB-INF/lib/*')" service.Sprint2SelfTest
   if($LASTEXITCODE -ne 0){throw 'Sprint 2 tests failed'}
+  & "$JavaHome/bin/java.exe" -cp "$classes;$testClasses;$(Join-Path $projectRoot 'web/WEB-INF/lib/*')" service.TechnologyCatalogSelfTest
+  if($LASTEXITCODE -ne 0){throw 'Technology catalog tests failed; apply database/technology-catalog.sql first'}
   & "$JavaHome/bin/java.exe" -cp "$classes;$testClasses;$(Join-Path $projectRoot 'web/WEB-INF/lib/*')" service.SmtpSelfTest
   if($LASTEXITCODE -ne 0){throw 'SMTP tests failed; run database/smtp.sql first'}
   & "$JavaHome/bin/java.exe" -cp "$classes;$testClasses" security.PhanQuyenSelfTest
   if($LASTEXITCODE -ne 0){throw 'Permission tests failed'}
-  & node --test (Join-Path $projectRoot 'test/frontend/real-data.test.cjs')
+  $frontendTests=Get-ChildItem (Join-Path $projectRoot 'test/frontend') -Filter '*.test.cjs' | ForEach-Object FullName
+  & node --test $frontendTests
   if($LASTEXITCODE -ne 0){throw 'Frontend tests failed'}
 }
 Copy-Item -Path (Join-Path $projectRoot 'web/*') -Destination (Join-Path $projectRoot 'build/web') -Recurse -Force

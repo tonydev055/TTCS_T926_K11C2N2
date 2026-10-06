@@ -13,6 +13,8 @@ import util.*;
     urlPatterns = {
         "/api/products/*",
         "/api/categories/*",
+        "/api/brands/*",
+        "/api/product-models/*",
         "/api/product-units/*",
         "/api/suppliers/*",
         "/api/price-lists/*",
@@ -76,7 +78,8 @@ public class DanhMucServlet extends CoSoServlet {
                 int size = Integer.parseInt(Objects.requireNonNullElse(q.getParameter("size"), "20"));
                 var result = service.page(c, table, cost(q), customer(q), actor(q), page, size,
                     Objects.requireNonNullElse(q.getParameter("search"), ""),
-                    Objects.requireNonNullElse(q.getParameter("status"), ""));
+                    Objects.requireNonNullElse(q.getParameter("status"), ""),
+                    optionalId(q, "category_id"), optionalId(q, "brand_id"), optionalId(q, "model_id"));
                 PhanHoiJsonUtil.send(r, 200, XuLyJson.stringify(result));
                 return;
             }
@@ -100,6 +103,14 @@ public class DanhMucServlet extends CoSoServlet {
 
     protected void doPost(HttpServletRequest q, HttpServletResponse r) throws IOException {
         mutate(q, r, false);
+    }
+
+    private Long optionalId(HttpServletRequest q, String name) {
+        String value = q.getParameter(name);
+        if (value == null || value.isBlank()) return null;
+        long id = Long.parseLong(value);
+        if (id < 1) throw new IllegalArgumentException("Bộ lọc không hợp lệ");
+        return id;
     }
 
     protected void doPut(HttpServletRequest q, HttpServletResponse r) throws IOException {

@@ -1,3 +1,7 @@
+function readViewFromUrl() {
+  try { return decodeURIComponent((window.location.hash || '').slice(1)) || 'Tổng quan'; }
+  catch (_) { return 'Tổng quan'; }
+}
 function openApp(user = {}) {
   currentUser = user;
   loginView.classList.add('is-hidden');
@@ -30,10 +34,11 @@ function openApp(user = {}) {
     'khoFlowSession',
     JSON.stringify({ fullName: displayName, role: activeRole })
   );
-  openView('Tổng quan');
+  const requested = readViewFromUrl();
+  openView(getAvailableMenu().includes(requested) ? requested : 'Tổng quan', true);
 }
 
-function openView(view) {
+function openView(view, replaceUrl = false) {
   if (currentUser.requiresPasswordChange) view = 'Đổi mật khẩu';
   const menu =
     typeof getAvailableMenu === 'function' ? getAvailableMenu() : roleConfigs[activeRole].menu;
@@ -46,6 +51,15 @@ function openView(view) {
     return;
   }
   viewRevision++;
+  if (typeof activeFormContext !== 'undefined' && activeFormContext) closeEntityForm();
+  document.getElementById('s2Dialog')?.remove();
+  if (document.body) document.body.style.overflow = '';
+  if (window.history) {
+    const hash = '#' + encodeURIComponent(view);
+    if (window.location.hash !== hash) {
+      window.history[replaceUrl ? 'replaceState' : 'pushState'](null, '', hash);
+    }
+  }
   const feature = {
     'Tổng quan': 'tong-quan', 'Người dùng': 'nguoi-dung',
     'Sản phẩm & bảng giá': 'danh-muc', 'Nhà cung cấp': 'danh-muc',
@@ -156,3 +170,6 @@ document.getElementById('openSidebar').addEventListener('click', () => {
 });
 document.getElementById('closeSidebar').addEventListener('click', closeSidebar);
 sidebarOverlay.addEventListener('click', closeSidebar);
+window.addEventListener?.('popstate', () => {
+  if (Object.keys(currentUser).length) openView(readViewFromUrl(), true);
+});

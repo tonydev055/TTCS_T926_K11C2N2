@@ -47,6 +47,23 @@ test('empty API data renders no invented rows or totals',async()=>{
   assert.equal(app.elements.get('recordCount').textContent,'0 kết quả / 0 bản ghi');
 });
 
+test('navigation writes URLs and restores the previous view', () => {
+  const app = setup();
+  const entries = [];
+  app.context.window.location.hash = '#';
+  app.context.window.history = {
+    pushState: (_, __, hash) => { entries.push(hash); app.context.window.location.hash = hash; },
+    replaceState: (_, __, hash) => { app.context.window.location.hash = hash; }
+  };
+  app.run("currentUser={permissions:[]};openView('Đổi mật khẩu')");
+  assert.equal(decodeURIComponent(entries[0]), '#Đổi mật khẩu');
+  assert.equal(app.run('readViewFromUrl()'), 'Đổi mật khẩu');
+  app.context.window.location.hash = '#' + encodeURIComponent('Hồ sơ cá nhân');
+  app.run('openView(readViewFromUrl(), true)');
+  assert.equal(entries.length, 1);
+  assert.equal(app.elements.get('pageTitle').textContent, 'Hồ sơ cá nhân');
+});
+
 test('API errors remain errors instead of becoming empty successful results',async()=>{
   for(const [status,message,expected] of [[500,'ERROR: relation "products" does not exist',/chưa được khởi tạo/],[403,'',/chưa được cấp quyền/],[401,'',/hết hạn/]]) {
     const app=setup();

@@ -872,12 +872,164 @@ function savePolicy() {
   buildCheckDropdown();
 }
 
+/* ─── Thuật toán Best-of ──────────────────────────────────────────
+   Quy tắc: Chọn chính sách cho mức giảm giá (VNĐ) CAO NHẤT.
+   Không cộng dồn. (Best-of, non-cumulative)
+─────────────────────────────────────────────────────────────────── */
+
+function bestOf(skuId, qty, unitPrice) {
+  const sku = SKUS.find(s => s.id === skuId);
+  if (!sku) return [];
+
+  const results = [];
+
+  store.forEach(p => {
+    if (!p.active) return;
+    const matches = (p.scope === 'SKU'   && p.tid === skuId)
+                 || (p.scope === 'GROUP' && p.tid === sku.gid);
+    if (!matches) return;
+
+    const applicable = p.tiers.filter(t => t.q <= qty);
+    if (!applicable.length) return;
+
+    const bestTier = applicable.reduce((b, t) => t.q > b.q ? t : b);
+    const dpu = p.dtype === 'PERCENT'
+      ? unitPrice * (bestTier.v / 100)
+      : bestTier.v;
+
+    results.push({ p, tier: bestTier, dpu, total: dpu * qty });
+  });
+
+  if (!results.length) return [];
+
+  const maxTotal = Math.max(...results.map(r => r.total));
+  results.forEach(r => { r.isBest = r.total === maxTotal });
+  return results;
+}
+
+/* ─── Tab Kiểm tra: build dropdown SKU ──────────────────────────── */
+
+function buildCheckDropdown() {
+  const sel = document.getElementById('ckSku');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">-- Chọn sản phẩm --</option>';
+  SKUS.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.id; o.textContent = s.name;
+    sel.appendChild(o);
+  });
+  if (cur) sel.value = cur;
+
+  if (SKUS.length === 0) {
+    const o = document.createElement('option');
+    o.value = ''; o.disabled = true;
+    o.textContent = '(Chưa có dữ liệu SKU — cần kết nối backend)';
+    sel.appendChild(o);
+  }
+}
+
+/* ─── Tab Kiểm tra: chạy kiểm tra ───────────────────────────────── */
+
+function runCheck() {
+  const skuId = document.getElementById('ckSku').value;
+  const qty   = parseInt(document.getElementById('ckQty').value, 10);
+  const price = parseFloat(document.getElementById('ckPrice').value);
+  const banner = document.getElementById('ckBanner');
+  const result = document.getElementById('ckResult');
+
+  function warn(msg) {
+    banner.innerHTML = '⚠ ' + msg;
+    banner.style.cssText = 'color:#dc2626;background:var(--danger-bg);border-bottom-color:var(--danger-border)';
+    banner.classList.add('show');
+    result.classList.add('hidden');
+  }
+
+  if (!skuId)                    return warn('Vui lòng chọn sản phẩm.');
+  if (isNaN(qty) || qty < 1)    return warn('Số lượng phải ≥ 1.');
+  if (isNaN(price) || price <= 0) return warn('Đơn giá phải lớn hơn 0.');
+
+  banner.style.cssText = '';
+  const results = bestOf(skuId, qty, price);
+
+  if (!results.length) {
+    banner.innerHTML = 'ℹ Không có chính sách chiết khấu nào áp dụng cho sản phẩm và số lượng này.';
+    banner.classList.add('show');
+    result.classList.add('hidden');
+    return;
+  }
+
+  const best = results.find(r => r.isBest);
+  banner.innerHTML = `✓ Đã chọn: <strong>${esc(best.p.name)}</strong> — giảm <strong>${fvnd(best.dpu)}&nbsp;đ / chiếc</strong>.`;
+  banner.classList.add('show');
+  result.classList.remove('hidden');
+
+  /* Compare table */
+  const tbody = document.getElementById('cmpBody');
+  tbody.innerHTML = '';
+  results.forEach(r => {
+    const tierDesc = `Từ ${r.tier.q} · ${r.p.dtype === 'PERCENT' ? r.tier.v + '%' : fvnd(r.tier.v) + '/chiếc'}`;
+    const resultCell = r.isBest
+      ? `<span class="badge-best">✓ Có lợi nhất</span>`
+      : `<span class="txt-muted">Không chọn</span>`;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${esc(r.p.name)}</td><td>${esc(tierDesc)}</td><td>${fvnd(r.dpu)}&nbsp;đ</td><td>${resultCell}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  /* Summary */
+  const total   = qty * price;
+  const disc    = best.total;
+  const payment = total - disc;
+  document.getElementById('ckSummary').innerHTML = `
+    <div class="sum-cell"><span class="sum-label">Tạm tính</span><span class="sum-value">${fvnd(total)}&nbsp;đ</span></div>
+    <div class="sum-cell"><span class="sum-label">Chiết khấu</span><span class="sum-value c-accent">${fvnd(disc)}&nbsp;đ</span></div>
+    <div class="sum-cell"><span class="sum-label">Thanh toán</span><span class="sum-value c-success">${fvnd(payment)}&nbsp;đ</span></div>
+  `;
+}
+
+/* ─── Utilities ──────────────────────────────────────────────────── */
+
+function fvnd(n) {
+  return Math.round(n).toLocaleString('vi-VN');
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function showToast(type, msg, ms = 3200) {
+  const wrap  = document.getElementById('toastWrap');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${type === 'success' ? '✓' : '✕'}</span><span>${msg}</span>`;
+  wrap.appendChild(toast);
+  setTimeout(() => {
+    toast.style.animation = 'tOut .22s ease both';
+    setTimeout(() => toast.remove(), 230);
+  }, ms);
+}
+
+/* ─── Init ───────────────────────────────────────────────────────── */
+
 (function init() {
   document.getElementById('searchInput').addEventListener('input', renderTable);
   document.getElementById('filterScope').addEventListener('change', renderTable);
+
+  /* TODO BACKEND: Nếu dùng API fetch thay vì JSP inject:
+     fetch('/api/skus').then(r=>r.json()).then(d=>{SKUS=d;buildCheckDropdown();onScopeChange()});
+     fetch('/api/groups').then(r=>r.json()).then(d=>{GROUPS=d});
+     fetch('/api/discount-policies').then(r=>r.json()).then(d=>{
+       store=d; nextId=Math.max(...d.map(p=>p.id))+1; renderTable();
+     });
+  */
+
   onScopeChange();
   renderTable();
+  buildCheckDropdown();
 })();
-</script>
-</body>
-</html>
+  </script>
+  </body>
+
+  </html>

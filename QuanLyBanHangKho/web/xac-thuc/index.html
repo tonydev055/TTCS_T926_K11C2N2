@@ -87,11 +87,17 @@ document.getElementById('togglePassword').addEventListener('click', () => {
 });
 
 document.getElementById('logoutButton').addEventListener('click', async () => {
-  try { await apiFetch('api/auth/logout', { method:'POST' }); } catch (_) {}
-  sessionStorage.removeItem('khoFlowSession');
-  appView.classList.add('is-hidden');
-  loginView.classList.remove('is-hidden');
-  passwordInput.value = '';
+  const button = document.getElementById('logoutButton');
+  if (button.disabled) return;
+  button.disabled = true;
+  try {
+    const response = await apiFetch('api/auth/logout', { method:'POST' });
+    if (!response.ok && response.status !== 401) throw new Error('Không thể đăng xuất. Vui lòng thử lại.');
+    expireSession();
+    loginError.textContent = '';
+  } catch (_) {
+    showToast('Không thể đăng xuất. Kiểm tra kết nối rồi thử lại.');
+  } finally { button.disabled = false; }
 });
 
 document.getElementById('openRegister').addEventListener('click', () => {

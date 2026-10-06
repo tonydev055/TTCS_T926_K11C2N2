@@ -761,7 +761,120 @@ function clrValErr(inp) {
   }
 }
 
+/* ─── Lưu chính sách (validate + store) ─────────────────────────── */
+
+function savePolicy() {
+  clearErrors();
+  let valid = true;
+
+  /* Validate tên */
+  const name = document.getElementById('fName').value.trim();
+  if (!name) {
+    document.getElementById('eName').classList.add('show');
+    document.getElementById('fName').classList.add('error');
+    valid = false;
+  }
+
+  /* Validate đối tượng */
+  const tid = document.getElementById('fTarget').value;
+  if (!tid) {
+    document.getElementById('eTarget').classList.add('show');
+    document.getElementById('fTarget').classList.add('error');
+    valid = false;
+  }
+
+  const scope = document.getElementById('fScope').value;
+  const dtype = document.getElementById('fType').value;
+
+  /* Validate bậc */
+  const tierRows = document.querySelectorAll('#tiersWrap .tier-row');
+  if (tierRows.length === 0) {
+    const e = document.getElementById('eTiers');
+    e.textContent = 'Cần ít nhất một bậc số lượng.';
+    e.classList.add('show');
+    valid = false;
+  }
+
+  const tiers = [];
+  let tierErr = null;
+
+  tierRows.forEach(row => {
+    const qi = row.querySelector('.tier-qty');
+    const vi = row.querySelector('.tier-val');
+    const q  = parseInt(qi.value, 10);
+    const v  = parseFloat(vi.value);
+
+    if (isNaN(q) || q < 1) {
+      qi.classList.add('error');
+      if (!tierErr) tierErr = 'Số lượng phải là số nguyên ≥ 1.';
+      valid = false;
+    }
+    if (isNaN(v) || v <= 0) {
+      vi.classList.add('error');
+      if (!tierErr) tierErr = 'Giá trị chiết khấu phải lớn hơn 0.';
+      valid = false;
+    }
+    if (dtype === 'PERCENT' && !isNaN(v) && v > 100) {
+      vi.classList.add('error');
+      tierErr = 'Dữ liệu chưa hợp lệ. Chiết khấu phần trăm phải lớn hơn 0 và không vượt quá 100%.';
+      valid = false;
+    }
+    if (!isNaN(q) && !isNaN(v)) tiers.push({ q, v });
+  });
+
+  if (tierErr) {
+    document.getElementById('tAlertMsg').textContent = tierErr;
+    document.getElementById('tAlert').classList.add('show');
+    if (dtype === 'PERCENT' && tierErr.includes('100')) {
+      const e = document.getElementById('eTiers');
+      e.textContent = 'Chiết khấu không được vượt quá 100%.';
+      e.classList.add('show');
+    }
+  }
+
+  if (!valid) return;
+
+  tiers.sort((a, b) => a.q - b.q);
+
+  /* Kiểm tra trùng bậc */
+  const qSet = new Set(tiers.map(t => t.q));
+  if (qSet.size !== tiers.length) {
+    document.getElementById('tAlertMsg').textContent = 'Các bậc số lượng không được trùng nhau.';
+    document.getElementById('tAlert').classList.add('show');
+    return;
+  }
+
+  /* Tìm tên đối tượng */
+  const allMaster = [...SKUS, ...GROUPS];
+  const targetItem = allMaster.find(it => it.id === tid);
+  const tname = targetItem ? targetItem.name : tid;
+
+  if (editId !== null) {
+    /* Cập nhật */
+    const idx = store.findIndex(s => s.id === editId);
+    if (idx !== -1) store[idx] = { ...store[idx], name, scope, tid, tname, dtype, tiers };
+
+    /* TODO BACKEND: gọi API PUT /api/discount-policies/{id} với payload trên */
+
+    showToast('success', 'Đã cập nhật chính sách!');
+  } else {
+    /* Thêm mới — id tạm thời, thực tế lấy từ DB response */
+    const newId = nextId++;
+    store.push({ id: newId, name, scope, tid, tname, dtype, active: true, tiers });
+
+    /* TODO BACKEND: gọi API POST /api/discount-policies, nhận id thật từ response */
+
+    showToast('success', 'Đã thêm chính sách mới!');
+  }
+
+  showView('vList');
+  renderTable();
+  buildCheckDropdown();
+}
+
 (function init() {
+  document.getElementById('searchInput').addEventListener('input', renderTable);
+  document.getElementById('filterScope').addEventListener('change', renderTable);
   onScopeChange();
   renderTable();
 })();

@@ -167,6 +167,12 @@ public class DanhMucService {
 
     public Map<String, Object> page(Connection c, String table, boolean cost, boolean customer,
         long actor, int page, int size, String search, String status, Long category, Long brand, Long model) throws SQLException {
+        return page(c, table, cost, customer, actor, page, size, search, status, category, brand, model, "", "");
+    }
+
+    public Map<String, Object> page(Connection c, String table, boolean cost, boolean customer,
+        long actor, int page, int size, String search, String status, Long category, Long brand, Long model,
+        String attributeName, String attributeValue) throws SQLException {
         if (page < 1 || size < 1 || size > 100) throw new IllegalArgumentException("Phân trang không hợp lệ");
         if (!Set.of("", "true", "false").contains(status)) throw new IllegalArgumentException("Trạng thái không hợp lệ");
         var query = listQuery(table, cost, customer, actor);
@@ -193,6 +199,13 @@ public class DanhMucService {
             if (brand != null) { source += " AND brand_id=?"; params.add(brand); }
             if (model != null && table.equals("products")) { source += " AND model_id=?"; params.add(model); }
         }
+        if (!attributeValue.isBlank() && attributeName.isBlank()) throw new IllegalArgumentException("Chọn tên thuộc tính trước khi lọc giá trị");
+        if (table.equals("products") && !attributeName.isBlank()) {
+            source += " AND EXISTS(SELECT 1 FROM product_attributes a WHERE a.product_id=records.id AND lower(a.name)=lower(?)";
+            params.add(attributeName.trim());
+            if (!attributeValue.isBlank()) { source += " AND lower(a.value)=lower(?)"; params.add(attributeValue.trim()); }
+            source += ")";
+        }
         long total = ((Number) TruyVanDB.one(c, "SELECT count(*) total" + source, params.toArray()).get("total")).longValue();
         int lastPage = (int) Math.max(1, (total + size - 1) / size);
         page = Math.min(page, lastPage);
@@ -203,6 +216,11 @@ public class DanhMucService {
         addPriceLines(c, table, customer, items);
         addProductAttributes(c, table, items);
         return Map.of("items", items, "total", total, "page", page, "size", size);
+    }
+
+    public List<Map<String, Object>> attributeOptions(Connection c, boolean customer, long actor) throws SQLException {
+        var query = listQuery("products", false, customer, actor);
+        return TruyVanDB.rows(c, "SELECT DISTINCT a.name,a.value FROM product_attributes a JOIN (" + query.sql() + ") p ON p.id=a.product_id ORDER BY a.name,a.value", query.params());
     }
 
     private void addProductAttributes(Connection c, String table, List<Map<String, Object>> rows) throws SQLException {

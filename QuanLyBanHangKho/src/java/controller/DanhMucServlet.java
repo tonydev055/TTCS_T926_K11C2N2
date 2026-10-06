@@ -51,6 +51,10 @@ public class DanhMucServlet extends CoSoServlet {
         try (Connection c = KetNoiDB.getConnection()) {
             String path = q.getPathInfo(),
                 table = table(q);
+            if (table.equals("products") && "/attribute-options".equals(path)) {
+                PhanHoiJsonUtil.send(r, 200, XuLyJson.stringify(service.attributeOptions(c, customer(q), actor(q))));
+                return;
+            }
             if (
                 table.equals("products") && path != null && path.matches("/\\d+/(image|thumbnail)")
             ) {
@@ -79,7 +83,9 @@ public class DanhMucServlet extends CoSoServlet {
                 var result = service.page(c, table, cost(q), customer(q), actor(q), page, size,
                     Objects.requireNonNullElse(q.getParameter("search"), ""),
                     Objects.requireNonNullElse(q.getParameter("status"), ""),
-                    optionalId(q, "category_id"), optionalId(q, "brand_id"), optionalId(q, "model_id"));
+                    optionalId(q, "category_id"), optionalId(q, "brand_id"), optionalId(q, "model_id"),
+                    Objects.requireNonNullElse(q.getParameter("attribute_name"), ""),
+                    Objects.requireNonNullElse(q.getParameter("attribute_value"), ""));
                 PhanHoiJsonUtil.send(r, 200, XuLyJson.stringify(result));
                 return;
             }

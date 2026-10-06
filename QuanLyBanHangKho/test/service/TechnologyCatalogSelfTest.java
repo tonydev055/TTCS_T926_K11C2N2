@@ -49,6 +49,8 @@ public class TechnologyCatalogSelfTest {
                 check(items.stream().allMatch(row -> "Hãng thử".equals(row.get("brand_name")) && "Mẫu thử".equals(row.get("model_name"))), "Read model and brand separately");
                 check(items.stream().noneMatch(row -> row.containsKey("cost_price")), "SKU response respects cost permissions");
                 check(items.stream().anyMatch(row -> ((Map<?, ?>) row.get("attributes")).get("Màu sắc").equals("Đen")), "Attributes returned as an object");
+                check(((Number) service.page(c, "products", false, false, actor, 1, 20, suffix, "", parent, brand, model, "Màu sắc", "Đen").get("total")).longValue() == 1, "Attribute filter returns only the matching variant");
+                check(service.attributeOptions(c, false, actor).stream().anyMatch(row -> row.get("name").equals("Màu sắc") && row.get("value").equals("Đen")), "Available filters are derived from real attributes");
                 black.put("attributes", Map.of("Màu sắc", "Đen", "Bộ nhớ", "256GB"));
                 service.save(c, "products", blackId, black, false);
                 check(TruyVanDB.rows(c, "SELECT * FROM product_attributes WHERE product_id=?", blackId).size() == 2, "Attribute edits replace rows without duplicating keys");

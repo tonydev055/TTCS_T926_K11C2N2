@@ -46,6 +46,28 @@ function openView(view) {
     return;
   }
   viewRevision++;
+  const feature = {
+    'Tổng quan': 'tong-quan', 'Người dùng': 'nguoi-dung',
+    'Sản phẩm & bảng giá': 'danh-muc', 'Nhà cung cấp': 'danh-muc',
+    'Vai trò & quyền': 'phan-quyen', 'Nhật ký hệ thống': 'nhat-ky',
+    'Nhập người dùng Excel': 'nhap-excel', 'Hồ sơ cá nhân': 'ho-so'
+  }[view];
+  if (typeof failedFeatures !== 'undefined' && failedFeatures.has(feature)) {
+    renderAccessError(view, 'Không tải được giao diện chức năng. Kiểm tra kết nối rồi thử lại.');
+    const button = document.getElementById('accessBackHome');
+    button.textContent = 'Thử lại';
+    button.onclick = async () => {
+      const revision = viewRevision;
+      button.disabled = true;
+      try {
+        const link = [...document.querySelectorAll('[data-feature]')].find((item) => item.getAttribute('href').startsWith(feature + '/'));
+        await loadFeature(link.getAttribute('href'));
+        if (revision === viewRevision) openView(view);
+      } catch (_) { button.disabled = false; }
+    };
+    closeSidebar();
+    return;
+  }
   document
     .querySelectorAll('.nav-item')
     .forEach((nav) => nav.classList.toggle('active', nav.dataset.view === view));

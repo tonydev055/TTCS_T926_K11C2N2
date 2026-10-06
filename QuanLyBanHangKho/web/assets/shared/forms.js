@@ -14,8 +14,17 @@ function manageDialogFocus(modal, close) {
     }
   };
   modal.addEventListener('keydown', onKey);
-  modal.querySelector('input:not([type="hidden"]),select,textarea')?.focus();
+  const focusFirst = () => {
+    if (modal.isConnected && modal.classList.contains('open') && !modal.contains(document.activeElement)) {
+      const field = modal.querySelector('input:not([type="hidden"]),select,textarea') || modal.querySelector('button');
+      field?.focus();
+    }
+  };
+  // Wait for visibility styles to apply before moving keyboard focus.
+  requestAnimationFrame(focusFirst);
+  const focusTimer = setTimeout(focusFirst, 220);
   return () => {
+    clearTimeout(focusTimer);
     modal.removeEventListener('keydown', onKey);
     if (previous?.isConnected) previous.focus();
   };

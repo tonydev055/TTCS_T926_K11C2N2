@@ -257,6 +257,8 @@ public final class PhanQuyen {
         if (uri.contains("/api/products") || uri.contains("/api/categories") || uri.contains("/api/brands") || uri.contains("/api/product-models")) return read
             ? "products.read"
             : "products.write";
+        if (uri.contains("/api/discount-policies/quote")) return "products.read";
+        if (uri.contains("/api/discount-policies")) return "prices.write";
         if (uri.contains("/api/discounts")) return read ? "products.read" : "prices.write";
         if (uri.contains("/api/customers")) return "customers.read";
         if (uri.contains("/api/orders")) return "orders.read";

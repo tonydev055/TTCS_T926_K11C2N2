@@ -253,6 +253,7 @@ public final class PhanQuyen {
             uri.contains("/api/inventory") || uri.contains("/api/stock-transactions")
         ) return method.equals("GET") ? "inventory.read" : "inventory.write";
         if (uri.contains("/api/suppliers")) return read ? "suppliers.read" : "suppliers.write";
+        if (uri.contains("/api/price-history")) return "prices.write";
         if (uri.contains("/api/price-lists")) return read ? "products.read" : "prices.write";
         if (uri.contains("/api/products") || uri.contains("/api/categories") || uri.contains("/api/brands") || uri.contains("/api/product-models")) return read
             ? "products.read"

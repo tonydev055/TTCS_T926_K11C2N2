@@ -477,6 +477,8 @@ public class DanhMucService {
                     ).get("v")
                 ).intValue() + 1;
         }
+        Long baselineId = id != null ? id : previous;
+        Map<Long, BigDecimal> previousPrices = priceSnapshot(c, baselineId);
         boolean enabled = active(data);
         if (
             enabled &&
@@ -531,7 +533,51 @@ public class DanhMucService {
                 line.get("price"),
                 line.get("floor_price")
             );
+        recordPriceHistory(c, saved, from, previousPrices, entries);
         return saved;
+    }
+
+    private Map<Long, BigDecimal> priceSnapshot(Connection c, Long priceListId) throws SQLException {
+        Map<Long, BigDecimal> prices = new LinkedHashMap<>();
+        if (priceListId == null) return prices;
+        for (var row : TruyVanDB.rows(
+            c,
+            "SELECT product_id,price FROM price_list_lines WHERE price_list_id=?",
+            priceListId
+        )) prices.put(((Number) row.get("product_id")).longValue(), (BigDecimal) row.get("price"));
+        return prices;
+    }
+
+    private void recordPriceHistory(Connection c, long priceListId, LocalDate effectiveAt,
+        Map<Long, BigDecimal> previousPrices, List<Map<String, Object>> entries) throws SQLException {
+        Map<Long, BigDecimal> currentPrices = new LinkedHashMap<>();
+        for (var line : entries) currentPrices.put(
+            ((Number) line.get("product_id")).longValue(),
+            (BigDecimal) line.get("price")
+        );
+        Set<Long> products = new LinkedHashSet<>(previousPrices.keySet());
+        products.addAll(currentPrices.keySet());
+        for (long productId : products) {
+            BigDecimal oldPrice = previousPrices.get(productId), newPrice = currentPrices.get(productId);
+            if (Objects.equals(oldPrice, newPrice) ||
+                oldPrice != null && newPrice != null && oldPrice.compareTo(newPrice) == 0) continue;
+            TruyVanDB.update(
+                c,
+                "INSERT INTO price_history(product_id,price_list_id,price_list_name,price_list_version," +
+                    "customer_group_name,old_price,new_price,changed_by_user_id,changed_by_name," +
+                    "changed_by_email,effective_at) " +
+                    "SELECT ?,pl.id,pl.name,pl.version,g.name,?,?,u.id," +
+                    "COALESCE(u.full_name,'Hệ thống'),u.email,? FROM price_lists pl " +
+                    "JOIN customer_groups g ON g.id=pl.customer_group_id " +
+                    "LEFT JOIN users u ON u.id=NULLIF(current_setting('app.actor_id',true),'')::BIGINT " +
+                    "WHERE pl.id=?",
+                productId,
+                oldPrice,
+                newPrice,
+                java.sql.Date.valueOf(effectiveAt),
+                priceListId
+            );
+        }
     }
 
     public void delete(Connection c, String table, long id) throws SQLException {

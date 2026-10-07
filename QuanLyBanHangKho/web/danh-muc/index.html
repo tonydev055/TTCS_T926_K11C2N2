@@ -42,6 +42,13 @@
     border: 0;
     border-radius: 8px;
   }
+  .s3-history-note { margin: 0 0 14px; padding: 11px 13px; border: 1px solid #fed7aa; border-radius: 10px; background: #fff7ed; color: #9a4500; font-size: 13px; }
+  .s3-history-product { margin: 0 0 16px; color: var(--muted); }
+  .s3-history-product strong { color: var(--ink); }
+  .s3-history-actor { display: flex; flex-direction: column; gap: 2px; }
+  .s3-history-actor small { color: var(--muted); overflow-wrap: anywhere; }
+  .s3-price-old { color: var(--muted); text-decoration: line-through; }
+  .s3-price-new { color: #166534; font-weight: 700; }
   .catalog-layout { display: grid; grid-template-columns: 235px minmax(0, 1fr); gap: 18px; align-items: start; }
   .catalog-layout-flat { grid-template-columns: minmax(0, 1fr); }
   .catalog-tree-panel { padding: 16px; background: #fff; border: 1px solid var(--app-border, var(--line)); border-radius: 16px; }
@@ -132,6 +139,7 @@
     let selectedCategory = '';
     const hasTree = ['products','categories'].includes(endpoint);
     const writable = hasPermission(catalogState.permissions[endpoint]);
+    const canViewPriceHistory = hasPermission('prices.write');
     const tabs = endpoint === 'suppliers' ? ['suppliers'] : [
       'products',
       ...(hasPermission('products.write') || hasPermission('catalog.read') ? ['categories'] : []),
@@ -226,7 +234,7 @@
           ? `<table class="feature-table s2-table"><thead><tr>${columns.map(([, label]) => `<th>${label}</th>`).join('')}<th>Thao tác</th></tr></thead><tbody>${filtered
               .map(
                 (row) =>
-                  `<tr>${columns.map(([key]) => `<td>${renderCell(row, key)}</td>`).join('')}<td><div class="s2-row-actions">${endpoint === 'price-lists' ? `<button class="row-action" data-details="${row.id}">Chi tiết</button>` : ''}${writable ? `${endpoint === 'price-lists' ? `<button class="row-action" data-version="${row.id}">Phiên bản mới</button>` : ''}${!row.locked ? `<button class="row-action" data-edit="${row.id}">Sửa</button><button class="row-action" data-delete="${row.id}">Xóa</button>` : ''}` : ''}</div></td></tr>`
+                  `<tr>${columns.map(([key]) => `<td>${renderCell(row, key)}</td>`).join('')}<td><div class="s2-row-actions">${endpoint === 'products' && canViewPriceHistory ? `<button class="row-action" data-price-history="${row.id}">Lịch sử giá</button>` : ''}${endpoint === 'price-lists' ? `<button class="row-action" data-details="${row.id}">Chi tiết</button>` : ''}${writable ? `${endpoint === 'price-lists' ? `<button class="row-action" data-version="${row.id}">Phiên bản mới</button>` : ''}${!row.locked ? `<button class="row-action" data-edit="${row.id}">Sửa</button><button class="row-action" data-delete="${row.id}">Xóa</button>` : ''}` : ''}</div></td></tr>`
               )
               .join('')}</tbody></table>`
           : `<div class="s2-empty"><strong>${rows.length ? 'Không có kết quả phù hợp' : 'Chưa có dữ liệu'}</strong><p>${writable ? 'Thêm bản ghi đầu tiên hoặc điều chỉnh bộ lọc.' : 'Dữ liệu sẽ xuất hiện sau khi được khai báo.'}</p></div>`;
@@ -264,6 +272,12 @@
               (button.onclick = () =>
                 showPriceListDetails(rows.find((row) => row.id === Number(button.dataset.details))))
           );
+        host.querySelectorAll('[data-price-history]').forEach((button) => {
+          button.onclick = () => {
+            window.priceHistorySelectedProductId = Number(button.dataset.priceHistory);
+            openView('Lịch sử thay đổi giá');
+          };
+        });
         host.querySelectorAll('[data-delete]').forEach(
           (button) =>
             (button.onclick = async () => {

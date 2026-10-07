@@ -4,6 +4,7 @@ function getAvailableMenu() {
   if (hasPermission('admin.roles')) menu.push('Vai trò & quyền');
   if (hasPermission('products.read')) menu.push('Sản phẩm & bảng giá');
   if (hasPermission('prices.write')) menu.push('Chính sách chiết khấu');
+  if (hasPermission('prices.write')) menu.push('Lịch sử thay đổi giá');
   if (hasPermission('suppliers.read')) menu.push('Nhà cung cấp');
   if (hasPermission('admin.audit')) menu.push('Nhật ký hệ thống');
   if (hasPermission('admin.users')) menu.push('Nhập người dùng Excel');
@@ -20,6 +21,10 @@ function renderAccessError(view, message = 'Bạn chưa được cấp quyền s
 function renderFeatureView(view) {
   if (view === 'Chính sách chiết khấu') {
     discountFeature.render();
+    return true;
+  }
+  if (view === 'Lịch sử thay đổi giá') {
+    priceHistoryFeature.render();
     return true;
   }
   if (view === 'Đổi mật khẩu') {

@@ -25,6 +25,8 @@ if($Test){
   if($LASTEXITCODE -ne 0){throw 'SMTP tests failed; run database/smtp.sql first'}
   & "$JavaHome/bin/java.exe" -cp "$classes;$testClasses" security.PhanQuyenSelfTest
   if($LASTEXITCODE -ne 0){throw 'Permission tests failed'}
+  & "$JavaHome/bin/java.exe" -cp "$classes;$testClasses;$(Join-Path $projectRoot 'web/WEB-INF/lib/*')" service.PriceHistorySelfTest
+  if($LASTEXITCODE -ne 0){throw 'S3-02 price history tests failed; apply database/sprint3-price-history.sql first'}
   $frontendTests=Get-ChildItem (Join-Path $projectRoot 'test/frontend') -Filter '*.test.cjs' | ForEach-Object FullName
   & node --test $frontendTests
   if($LASTEXITCODE -ne 0){throw 'Frontend tests failed'}

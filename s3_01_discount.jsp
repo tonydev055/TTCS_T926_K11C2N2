@@ -279,6 +279,17 @@
       .tier-row { grid-template-columns: 1fr 1fr }
       .tier-row > div:last-child { grid-column: 1 / -1 }
     }
+    /* Match spacing between sections in the shared application. */
+    #vList, #vForm { display: flex; flex-direction: column; gap: 22px }
+    #sCheck { display: flex; flex-direction: column; gap: 20px }
+    .tab-bar { gap: 8px; flex-wrap: wrap }
+    .policy-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap }
+    .policy-status { margin-right: 4px; white-space: nowrap; color: var(--text-secondary); font-size: 12px }
+    .policy-actions .btn { flex-shrink: 0 }
+    @media (max-width: 768px) {
+      #vList, #vForm { gap: 18px }
+      .card-body { padding: 20px 16px }
+    }
     /* The shared application owns navigation and the account header. */
     .sidebar, .top-bar { display: none }
     body, .app-layout { min-height: 0; background: transparent }
@@ -570,7 +581,7 @@ function renderTable() {
       <td><span class="badge ${badgeClass}">${scopeLabel} · ${esc(p.tname)}</span></td>
       <td class="tiers-qty">${esc(tierQty)}</td>
       <td class="tiers-val">${esc(tierVal)}</td>
-      <td><span>${p.active ? "Đang áp dụng" : "Đã tắt"}</span><button class="btn btn-edit" onclick="openEdit(${p.id})">Sửa</button><button class="btn btn-edit" onclick="togglePolicy(${p.id})">${p.active ? "Tắt" : "Bật"}</button><button class="btn btn-ghost-danger" onclick="deletePolicy(${p.id})">Xóa</button></td>
+      <td><div class="policy-actions"><span class="policy-status">${p.active ? "Đang áp dụng" : "Đã tắt"}</span><button class="btn btn-edit" onclick="openEdit(${p.id})">Sửa</button><button class="btn btn-edit" onclick="togglePolicy(${p.id})">${p.active ? "Tắt" : "Bật"}</button><button class="btn btn-ghost-danger" onclick="deletePolicy(${p.id})">Xóa</button></div></td>
     `;
     tbody.appendChild(tr);
   });

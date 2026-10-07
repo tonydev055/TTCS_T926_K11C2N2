@@ -63,6 +63,7 @@ function openView(view, replaceUrl = false) {
   const feature = {
     'Tổng quan': 'tong-quan', 'Người dùng': 'nguoi-dung',
     'Sản phẩm & bảng giá': 'danh-muc', 'Nhà cung cấp': 'danh-muc',
+    'Chính sách chiết khấu': 'chiet-khau',
     'Vai trò & quyền': 'phan-quyen', 'Nhật ký hệ thống': 'nhat-ky',
     'Nhập người dùng Excel': 'nhap-excel', 'Hồ sơ cá nhân': 'ho-so'
   }[view];

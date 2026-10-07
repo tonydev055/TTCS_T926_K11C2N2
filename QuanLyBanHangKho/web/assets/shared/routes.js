@@ -19,16 +19,7 @@ function renderAccessError(view, message = 'Bạn chưa được cấp quyền s
 }
 function renderFeatureView(view) {
   if (view === 'Chính sách chiết khấu') {
-    moduleContent.innerHTML = '<iframe title="Chính sách chiết khấu" src="s3_01_discount.jsp?embedded=1" style="display:block;width:100%;height:900px;border:0"></iframe>';
-    const frame = moduleContent.querySelector('iframe');
-    frame.onload = () => {
-      const resize = () => {
-        frame.style.height = Math.max(600, frame.contentDocument.body.scrollHeight + 24) + 'px';
-      };
-      resize();
-      const observer = new frame.contentWindow.ResizeObserver(resize);
-      observer.observe(frame.contentDocument.body);
-    };
+    discountFeature.render();
     return true;
   }
   if (view === 'Đổi mật khẩu') {

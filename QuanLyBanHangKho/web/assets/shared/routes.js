@@ -3,6 +3,7 @@ function getAvailableMenu() {
   if (hasPermission('admin.users')) menu.push('Người dùng');
   if (hasPermission('admin.roles')) menu.push('Vai trò & quyền');
   if (hasPermission('products.read')) menu.push('Sản phẩm & bảng giá');
+  if (hasPermission('prices.write')) menu.push('Chính sách chiết khấu');
   if (hasPermission('suppliers.read')) menu.push('Nhà cung cấp');
   if (hasPermission('admin.audit')) menu.push('Nhật ký hệ thống');
   if (hasPermission('admin.users')) menu.push('Nhập người dùng Excel');
@@ -17,6 +18,19 @@ function renderAccessError(view, message = 'Bạn chưa được cấp quyền s
   document.getElementById('accessBackHome').onclick = () => openView('Tổng quan');
 }
 function renderFeatureView(view) {
+  if (view === 'Chính sách chiết khấu') {
+    moduleContent.innerHTML = '<iframe title="Chính sách chiết khấu" src="s3_01_discount.jsp?embedded=1" style="display:block;width:100%;height:900px;border:0"></iframe>';
+    const frame = moduleContent.querySelector('iframe');
+    frame.onload = () => {
+      const resize = () => {
+        frame.style.height = Math.max(600, frame.contentDocument.body.scrollHeight + 24) + 'px';
+      };
+      resize();
+      const observer = new frame.contentWindow.ResizeObserver(resize);
+      observer.observe(frame.contentDocument.body);
+    };
+    return true;
+  }
   if (view === 'Đổi mật khẩu') {
     renderChangePassword();
     return true;

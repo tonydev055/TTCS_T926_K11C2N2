@@ -40,6 +40,7 @@ public final class PhanQuyen {
             "products.cost",
             "prices.write",
             "customers.read",
+            "customers.write",
             "orders.read",
             "orders.approve",
             "reports.sales"
@@ -77,6 +78,7 @@ public final class PhanQuyen {
         Set.of(
             "products.read",
             "customers.read",
+            "customers.write",
             "orders.read",
             "invoices.write",
             "payments.write",
@@ -85,6 +87,9 @@ public final class PhanQuyen {
         "CUSTOMER",
         Set.of("products.read", "orders.self", "shipments.self", "invoices.self", "returns.self")
     );
+
+    /** Quyền gộp cho /api/customers, không lưu trong ma trận. */
+    public static final String CUSTOMERS_ACCESS = "customers.access";
 
     private static final Set<String> KNOWN_PERMISSIONS;
     private static volatile Map<String, Set<String>> configuredPermissions;
@@ -103,6 +108,10 @@ public final class PhanQuyen {
         if (permission.equals("profile.self")) return roles
             .stream()
             .anyMatch(ROLE_ORDER::contains);
+        // Đại lý: xem toàn bộ (customers.read) hoặc chỉ đại lý mình phụ trách (customers.assigned).
+        // Phạm vi bản ghi và thao tác ghi được kiểm tra tiếp trong KhachHangService.
+        if (permission.equals(CUSTOMERS_ACCESS)) return
+            allows(roles, "customers.read") || allows(roles, "customers.assigned");
         Map<String, Set<String>> matrix = effectivePermissions();
         for (String role : roles)
             if (matrix.getOrDefault(role, Set.of()).contains(permission)) return true;
@@ -260,7 +269,7 @@ public final class PhanQuyen {
         if (path.equals("/api/discount-policies/quote")) return "products.read";
         if (under(path, "/api/discount-policies")) return "prices.write";
         if (under(path, "/api/discounts")) return read ? "products.read" : "prices.write";
-        if (under(path, "/api/customers")) return "customers.read";
+        if (under(path, "/api/customers")) return CUSTOMERS_ACCESS;
         if (under(path, "/api/orders")) return "orders.read";
         if (under(path, "/api/invoices")) return "invoices.write";
         if (under(path, "/api/payments")) return "payments.write";

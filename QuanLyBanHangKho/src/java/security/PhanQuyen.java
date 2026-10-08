@@ -43,6 +43,7 @@ public final class PhanQuyen {
             "customers.write",
             "customers.credit",
             "customers.assign",
+            "customers.lock",
             "orders.read",
             "orders.approve",
             "reports.sales"
@@ -82,6 +83,7 @@ public final class PhanQuyen {
             "customers.read",
             "customers.write",
             "customers.credit",
+            "customers.lock",
             "orders.read",
             "invoices.write",
             "payments.write",

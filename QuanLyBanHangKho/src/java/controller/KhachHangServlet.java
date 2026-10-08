@@ -22,6 +22,8 @@ import util.XuLyJson;
  * PUT /api/customers/{id}/assignment {sales_rep_id, reason}, GET /api/customers/{id}/assignment-history,
  * GET /api/customers/reps, POST /api/customers/transfer {from_user_id, to_user_id, reason, customer_ids?}
  * — phân công và chuyển giao đại lý (S3-06), cần customers.assign để ghi.
+ * POST /api/customers/{id}/lock {reason}, POST /api/customers/{id}/unlock {reason?},
+ * GET /api/customers/{id}/lock-history — khoá/mở giao dịch (S3-07), cần customers.lock để ghi.
  */
 @WebServlet("/api/customers/*")
 public class KhachHangServlet extends CoSoServlet {
@@ -85,6 +87,8 @@ public class KhachHangServlet extends CoSoServlet {
                 ok(r, XuLyJson.stringify(service.addresses(user(q), id(p[0]))));
             else if (p.length == 2 && p[1].equals("assignment-history"))
                 ok(r, XuLyJson.stringify(service.assignmentHistory(user(q), id(p[0]))));
+            else if (p.length == 2 && p[1].equals("lock-history"))
+                ok(r, XuLyJson.stringify(service.lockHistory(user(q), id(p[0]))));
             else if (p.length == 2 && p[1].equals("credit-history"))
                 ok(r, XuLyJson.stringify(service.creditHistory(user(q), id(p[0]))));
             else throw new NoSuchElementException("Endpoint không tồn tại");
@@ -101,6 +105,8 @@ public class KhachHangServlet extends CoSoServlet {
             if (p.length == 0) {
                 long id = service.create(user(q), input);
                 created(r, XuLyJson.stringify(Map.of("id", id, "message", "Đã lưu hồ sơ đại lý")));
+            } else if (p.length == 2 && (p[1].equals("lock") || p[1].equals("unlock"))) {
+                ok(r, XuLyJson.stringify(service.setTradingLock(user(q), id(p[0]), p[1].equals("lock"), input)));
             } else if (p.length == 1 && p[0].equals("transfer")) {
                 ok(r, XuLyJson.stringify(service.transfer(user(q), input)));
             } else if (p.length == 2 && p[1].equals("addresses")) {

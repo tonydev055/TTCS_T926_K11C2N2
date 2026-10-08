@@ -8,7 +8,7 @@ import security.PhanQuyen;
 import util.KetNoiDB;
 
 /**
- * Nghiệp vụ hồ sơ đại lý (S3-03).
+ * Nghiệp vụ hồ sơ đại lý (S3-03) và điểm giao hàng (S3-04).
  * Người có quyền customers.read thấy mọi đại lý; người chỉ có customers.assigned
  * (Nhân viên kinh doanh) chỉ thấy đại lý mình phụ trách.
  */
@@ -130,6 +130,125 @@ public class KhachHangService {
                 throw e;
             }
         }
+    }
+
+    // ----- S3-04: điểm giao hàng -----
+
+    public static final int MAX_ADDRESSES = 50;
+
+    public List<Map<String, Object>> addresses(NguoiThaoTac u, long customerId) throws SQLException {
+        try (Connection c = KetNoiDB.getConnection()) {
+            visible(c, u, customerId);
+            return db.addresses(c, customerId);
+        }
+    }
+
+    public long createAddress(NguoiThaoTac u, long customerId, Map<String, Object> data) throws SQLException {
+        try (Connection c = KetNoiDB.getConnection()) {
+            begin(c, u);
+            try {
+                lockForAddressWrite(c, u, customerId);
+                var values = validateAddress(data);
+                int count = db.activeAddressCount(c, customerId);
+                if (count >= MAX_ADDRESSES) throw new IllegalArgumentException("Mỗi đại lý có tối đa " + MAX_ADDRESSES + " điểm giao hàng");
+                boolean makeDefault = count == 0 || Boolean.TRUE.equals(data.get("is_default"));
+                long id = db.insertAddress(c, customerId, values, false);
+                if (makeDefault) db.setDefaultAddress(c, customerId, id);
+                c.commit();
+                return id;
+            } catch (SQLException | RuntimeException e) {
+                c.rollback();
+                throw e;
+            }
+        }
+    }
+
+    public void updateAddress(NguoiThaoTac u, long customerId, long addressId, Map<String, Object> data) throws SQLException {
+        try (Connection c = KetNoiDB.getConnection()) {
+            begin(c, u);
+            try {
+                lockForAddressWrite(c, u, customerId);
+                if (db.addressForUpdate(c, customerId, addressId) == null) throw new NoSuchElementException("Không tìm thấy điểm giao hàng");
+                db.updateAddress(c, addressId, validateAddress(data));
+                if (Boolean.TRUE.equals(data.get("is_default"))) db.setDefaultAddress(c, customerId, addressId);
+                c.commit();
+            } catch (SQLException | RuntimeException e) {
+                c.rollback();
+                throw e;
+            }
+        }
+    }
+
+    public void setDefaultAddress(NguoiThaoTac u, long customerId, long addressId) throws SQLException {
+        try (Connection c = KetNoiDB.getConnection()) {
+            begin(c, u);
+            try {
+                lockForAddressWrite(c, u, customerId);
+                if (db.addressForUpdate(c, customerId, addressId) == null) throw new NoSuchElementException("Không tìm thấy điểm giao hàng");
+                db.setDefaultAddress(c, customerId, addressId);
+                c.commit();
+            } catch (SQLException | RuntimeException e) {
+                c.rollback();
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Gỡ điểm giao. Điểm đã dùng trong đơn được giữ lại (ẩn khỏi danh sách) để đơn cũ vẫn tra cứu được.
+     * Nếu gỡ điểm mặc định, điểm còn lại cũ nhất trở thành mặc định.
+     */
+    public void deleteAddress(NguoiThaoTac u, long customerId, long addressId) throws SQLException {
+        try (Connection c = KetNoiDB.getConnection()) {
+            begin(c, u);
+            try {
+                lockForAddressWrite(c, u, customerId);
+                var old = db.addressForUpdate(c, customerId, addressId);
+                if (old == null) throw new NoSuchElementException("Không tìm thấy điểm giao hàng");
+                if (db.addressUsed(c, addressId)) db.deactivateAddress(c, addressId);
+                else db.deleteAddress(c, addressId);
+                if (Boolean.TRUE.equals(old.get("is_default"))) {
+                    Long next = db.firstActiveAddress(c, customerId);
+                    if (next != null) db.setDefaultAddress(c, customerId, next);
+                }
+                c.commit();
+            } catch (SQLException | RuntimeException e) {
+                c.rollback();
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Kiểm tra điểm giao cho đơn hàng: phải là điểm đang dùng của đúng đại lý.
+     * Database cũng chặn bằng khoá ngoại (orders.delivery_address_id, orders.agent_id).
+     */
+    public static void requireDeliveryAddress(Connection c, long customerId, long addressId) throws SQLException {
+        if (TruyVanDB.one(
+            c,
+            "SELECT 1 FROM customer_addresses WHERE id=? AND customer_id=? AND active",
+            addressId, customerId
+        ) == null) throw new IllegalArgumentException("Điểm giao hàng không thuộc đại lý của đơn");
+    }
+
+    /** Ghi điểm giao: người khai báo hồ sơ đại lý, hoặc nhân viên kinh doanh phụ trách đại lý đó. */
+    private void lockForAddressWrite(Connection c, NguoiThaoTac u, long customerId) throws SQLException {
+        var row = db.findForUpdate(c, customerId);
+        boolean owner = row != null && Objects.equals(toLong(row.get("sales_rep_id")), u.id()) && u.can("customers.assigned");
+        if (row == null || (!u.seesAll() && !owner)) throw new NoSuchElementException("Không tìm thấy đại lý");
+        if (!u.can("customers.write") && !owner)
+            throw new SecurityException("Bạn không có quyền cập nhật điểm giao hàng của đại lý này");
+    }
+
+    static Map<String, Object> validateAddress(Map<String, Object> data) {
+        Map<String, Object> v = new LinkedHashMap<>();
+        v.put("address", text(data, "address", "Địa chỉ giao hàng", true, 500));
+        v.put("recipient_name", text(data, "recipient_name", "Người nhận", true, 150));
+        v.put("phone", DanhMucService.phone(text(data, "phone", "Số điện thoại người nhận", true, 20), true));
+        v.put("directions", text(data, "directions", "Ghi chú đường đi", false, 1000));
+        Object isDefault = data.get("is_default");
+        if (isDefault != null && !(isDefault instanceof Boolean)) throw new IllegalArgumentException("Giá trị mặc định không hợp lệ");
+        return v;
     }
 
     Map<String, Object> validate(Connection c, Map<String, Object> data) throws SQLException {

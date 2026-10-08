@@ -41,6 +41,7 @@ public final class PhanQuyen {
             "prices.write",
             "customers.read",
             "customers.write",
+            "customers.credit",
             "orders.read",
             "orders.approve",
             "reports.sales"
@@ -79,6 +80,7 @@ public final class PhanQuyen {
             "products.read",
             "customers.read",
             "customers.write",
+            "customers.credit",
             "orders.read",
             "invoices.write",
             "payments.write",

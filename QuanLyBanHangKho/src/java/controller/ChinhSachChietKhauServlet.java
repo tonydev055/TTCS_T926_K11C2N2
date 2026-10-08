@@ -16,6 +16,9 @@ public class ChinhSachChietKhauServlet extends CoSoServlet {
         String path=q.getPathInfo();
         return path==null || path.equals("/") ? null : ChinhSachChietKhauService.positiveId(path.substring(1));
     }
+    private static long actor(HttpServletRequest q) {
+        return ((Number)q.getSession(false).getAttribute("userId")).longValue();
+    }
     private void failure(HttpServletResponse r,Exception e) throws IOException {
         if (e instanceof NoSuchElementException) error(r,404,e.getMessage());
         else if (e instanceof IllegalArgumentException) error(r,400,e.getMessage());
@@ -36,19 +39,19 @@ public class ChinhSachChietKhauServlet extends CoSoServlet {
             var input=XuLyJson.object(body(q));
             if ("/quote".equals(q.getPathInfo())) { ok(r,XuLyJson.stringify(db.quote(input))); return; }
             if (id(q)!=null) throw new IllegalArgumentException("Đường dẫn không hợp lệ");
-            created(r,XuLyJson.stringify(Map.of("id",db.save(null,input))));
+            created(r,XuLyJson.stringify(Map.of("id",db.save(null,input,actor(q)))));
         } catch (Exception e) { failure(r,e); }
     }
     protected void doPut(HttpServletRequest q,HttpServletResponse r) throws IOException {
         try {
             Long id=id(q); if (id==null) throw new IllegalArgumentException("Thiếu ID chính sách");
-            ok(r,XuLyJson.stringify(Map.of("id",db.save(id,XuLyJson.object(body(q))))));
+            ok(r,XuLyJson.stringify(Map.of("id",db.save(id,XuLyJson.object(body(q)),actor(q)))));
         } catch (Exception e) { failure(r,e); }
     }
     protected void doDelete(HttpServletRequest q,HttpServletResponse r) throws IOException {
         try {
             Long id=id(q); if (id==null) throw new IllegalArgumentException("Thiếu ID chính sách");
-            if (!db.delete(id)) throw new NoSuchElementException("Không tìm thấy chính sách");
+            if (!db.delete(id,actor(q))) throw new NoSuchElementException("Không tìm thấy chính sách");
             ok(r,"{\"deleted\":true}");
         } catch (Exception e) { failure(r,e); }
     }

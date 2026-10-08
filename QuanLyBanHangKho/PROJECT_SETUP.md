@@ -33,7 +33,7 @@ Chạy `node --test test/frontend/real-data.test.cjs` từ thư mục dự án. 
 
 ## Khởi tạo database
 
-Database mới: chạy `database/sprint1.sql`, `database/sprint2.sql`, `database/role-permissions.sql`, `database/sprint3.sql`, rồi `database/sprint3-price-history.sql` trong database `quanlybanhangkho` bằng pgAdmin hoặc `psql -v ON_ERROR_STOP=1`. Database đang sử dụng cũng cần chạy các migration chưa áp dụng một lần để bật chức năng tương ứng. `sprint3-price-history.sql` lưu lịch sử giá chỉ đọc; database chặn trực tiếp việc sửa hoặc xóa các bản ghi này. Không có dữ liệu sản phẩm/đơn hàng mẫu được thêm bởi Sprint 2.
+Database mới: chạy `database/sprint1.sql`, `database/sprint2.sql`, `database/role-permissions.sql`, `database/sprint3.sql`, `database/sprint3-price-history.sql`, rồi `database/sprint3-discount-audit.sql` trong database `quanlybanhangkho` bằng pgAdmin hoặc `psql -v ON_ERROR_STOP=1`. Database đang sử dụng cũng cần chạy các migration chưa áp dụng một lần để bật chức năng tương ứng. `sprint3-discount-audit.sql` ghi nhật ký thay đổi chính sách chiết khấu. `sprint3-price-history.sql` lưu lịch sử giá chỉ đọc; database chặn trực tiếp việc sửa hoặc xóa các bản ghi này. Không có dữ liệu sản phẩm/đơn hàng mẫu được thêm bởi Sprint 2.
 
 ## Triển khai
 

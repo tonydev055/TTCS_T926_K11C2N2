@@ -43,6 +43,17 @@
   #agentFeature .ag-grid dd { margin: 3px 0 0; color: #172033; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
   #agentFeature .ag-note { margin: 0; padding: 11px 14px; border: 1px solid #dbeafe; border-radius: 10px; background: #eff6ff; color: #1d4ed8; font-size: 13px; }
   #agentFeature .ag-back { align-self: flex-start; }
+  #agentFeature .ag-section-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  #agentFeature .ag-section-head h4 { margin: 0; }
+  #agentFeature .ag-addresses { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); align-items: start; gap: 12px; }
+  #agentFeature .ag-address { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border: 1px solid #e5eaf0; border-radius: 12px; background: #fcfdfe; }
+  #agentFeature .ag-address.default { border-color: #fcd9b0; background: #fffaf3; }
+  #agentFeature .ag-address strong { color: #172033; font-size: 14px; }
+  #agentFeature .ag-address span { color: #475569; font-size: 13px; }
+  #agentFeature .ag-address em { color: #7a8699; font-size: 12px; font-style: normal; }
+  #agentFeature .ag-default-tag { align-self: flex-start; padding: 2px 8px; border-radius: 999px; background: var(--orange-soft, #fff1df); color: var(--orange-dark, #d96500); font-size: 11px; font-weight: 700; }
+  #agentFeature .ag-address .ag-actions { margin-top: 6px; gap: 8px; }
+  #agentFeature .ag-address .ag-btn { min-height: 32px; padding: 0 10px; font-size: 12px; }
   @media (max-width: 720px) {
     #agentFeature .ag-toolbar,
     #agentFeature .ag-detail-head,
@@ -168,11 +179,100 @@ window.agentFeature = (() => {
         </dl>
         ${agent.has_transactions ? '<p class="ag-note" style="margin-top:14px">Đại lý đã phát sinh giao dịch nên không thể xoá. Khi không còn hợp tác, hãy chuyển trạng thái sang “Ngừng giao dịch”.</p>' : ''}
         </div>`;
+      document.getElementById('agDetail').insertAdjacentHTML('beforeend', '<div class="ag-section" id="agAddresses"><h4>Điểm giao hàng</h4><p class="ag-empty">Đang tải điểm giao hàng...</p></div>');
+      loadAddresses(agent, revision);
       document.getElementById('agEdit')?.addEventListener('click', () => openForm(agent, revision));
       document.getElementById('agDelete')?.addEventListener('click', () => confirmDelete(agent, revision));
     } catch (error) {
       if (alive(revision)) document.getElementById('agDetail').innerHTML = `<p class="ag-error" role="alert">${esc(error.message)}</p>`;
     }
+  }
+
+  // ----- S3-04: điểm giao hàng -----
+  const canEditAddresses = (agent) => hasPermission('customers.write') ||
+    (hasPermission('customers.assigned') && String(agent.sales_rep_id) === String(currentUser.id));
+
+  async function loadAddresses(agent, revision) {
+    const host = document.getElementById('agAddresses');
+    const editable = canEditAddresses(agent);
+    try {
+      const items = await apiRequest(`customers/${agent.id}/addresses`);
+      if (!alive(revision) || !host.isConnected) return;
+      host.innerHTML = `<div class="ag-section-head"><h4>Điểm giao hàng (${items.length})</h4>${editable ? '<button type="button" class="ag-btn primary" id="agAddAddress">+ Thêm điểm giao</button>' : ''}</div>
+        ${items.length ? `<div class="ag-addresses">${items.map((item) => `<article class="ag-address ${item.is_default ? 'default' : ''}">
+          ${item.is_default ? '<span class="ag-default-tag">★ Mặc định</span>' : ''}
+          <strong>${esc(item.address)}</strong>
+          <span>Người nhận: ${esc(item.recipient_name)} · ${esc(item.phone)}</span>
+          ${item.directions ? `<em>Đường đi: ${esc(item.directions)}</em>` : ''}
+          ${editable ? `<div class="ag-actions">
+            <button type="button" class="ag-btn" data-address-edit="${esc(item.id)}">Sửa</button>
+            ${item.is_default ? '' : `<button type="button" class="ag-btn" data-address-default="${esc(item.id)}">Đặt mặc định</button>`}
+            <button type="button" class="ag-btn danger" data-address-delete="${esc(item.id)}">Gỡ</button>
+          </div>` : ''}
+        </article>`).join('')}</div>` : `<div class="ag-empty"><strong>Chưa có điểm giao hàng</strong><span>${editable ? 'Thêm điểm giao để đơn hàng giao đúng kho của đại lý.' : 'Đại lý chưa khai báo điểm giao.'}</span></div>`}`;
+      document.getElementById('agAddAddress')?.addEventListener('click', () => openAddressForm(agent, null, revision));
+      const byId = (id) => items.find((item) => String(item.id) === id);
+      host.querySelectorAll('[data-address-edit]').forEach((button) => button.onclick = () => openAddressForm(agent, byId(button.dataset.addressEdit), revision));
+      host.querySelectorAll('[data-address-default]').forEach((button) => button.onclick = async () => {
+        button.disabled = true;
+        try {
+          await apiRequest(`customers/${agent.id}/addresses/${button.dataset.addressDefault}/default`, { method: 'POST' });
+          showToast('Đã đặt điểm giao mặc định');
+          loadAddresses(agent, revision);
+        } catch (error) { showRequestError(error); button.disabled = false; }
+      });
+      host.querySelectorAll('[data-address-delete]').forEach((button) => button.onclick = () => confirmAddressDelete(agent, byId(button.dataset.addressDelete), revision));
+    } catch (error) {
+      if (alive(revision) && host.isConnected) host.innerHTML = `<h4>Điểm giao hàng</h4><p class="ag-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  function openAddressForm(agent, address, revision) {
+    const body = [
+      `<div class="form-group full"><label>Địa chỉ giao hàng *<input name="address" value="${esc(address?.address || '')}" required maxlength="500"></label></div>`,
+      renderInputField('recipient_name', 'Người nhận', address?.recipient_name || ''),
+      renderInputField('phone', 'Số điện thoại người nhận', address?.phone || '', 'tel'),
+      `<div class="form-group full"><label>Ghi chú đường đi<textarea name="directions" maxlength="1000" placeholder="Ví dụ: vào cổng sau, gọi trước 15 phút">${esc(address?.directions || '')}</textarea></label></div>`,
+      address?.is_default ? '' : '<div class="form-group full"><label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="is_default" style="width:auto;min-height:auto"> Đặt làm điểm giao mặc định</label></div>'
+    ].join('');
+    const { form, close } = openFormDialog(address ? 'Sửa điểm giao hàng' : 'Thêm điểm giao hàng', body, 'Lưu điểm giao hàng');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      const data = {
+        address: form.address.value, recipient_name: form.recipient_name.value,
+        phone: form.phone.value, directions: form.directions.value,
+        is_default: Boolean(form.is_default?.checked)
+      };
+      try {
+        await apiRequest(address ? `customers/${agent.id}/addresses/${address.id}` : `customers/${agent.id}/addresses`, jsonRequestOptions(address ? 'PUT' : 'POST', data));
+        close();
+        showToast('Đã lưu điểm giao hàng');
+        if (alive(revision)) loadAddresses(agent, revision);
+      } catch (error) {
+        document.getElementById('s2FormError').textContent = error.message;
+        submit.disabled = false;
+      }
+    });
+  }
+
+  function confirmAddressDelete(agent, address, revision) {
+    const { form, close } = openFormDialog('Gỡ điểm giao hàng', `<p class="s2-hint" style="grid-column:1/-1">Gỡ điểm giao <strong>${esc(address.address)}</strong>? Điểm giao đã dùng trong đơn hàng vẫn được lưu để tra cứu đơn cũ.${address.is_default ? ' Điểm giao còn lại lâu nhất sẽ trở thành mặc định.' : ''}</p>`, 'Gỡ điểm giao');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      try {
+        await apiRequest(`customers/${agent.id}/addresses/${address.id}`, { method: 'DELETE' });
+        close();
+        showToast('Đã gỡ điểm giao hàng');
+        if (alive(revision)) loadAddresses(agent, revision);
+      } catch (error) {
+        document.getElementById('s2FormError').textContent = error.message;
+        submit.disabled = false;
+      }
+    });
   }
 
   function openForm(agent, revision) {

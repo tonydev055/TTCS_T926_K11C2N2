@@ -9,7 +9,7 @@ import util.KetNoiDB;
 
 /**
  * Nghiệp vụ hồ sơ đại lý (S3-03), điểm giao hàng (S3-04), hạn mức công nợ (S3-05)
- * và phân công nhân viên kinh doanh (S3-06).
+ * phân công nhân viên kinh doanh (S3-06) và khoá giao dịch (S3-07).
  * Người có quyền customers.read thấy mọi đại lý; người chỉ có customers.assigned
  * (Nhân viên kinh doanh) chỉ thấy đại lý mình phụ trách.
  */
@@ -67,6 +67,7 @@ public class KhachHangService {
             out.put("canWrite", u.can("customers.write"));
             out.put("canEditCredit", u.can("customers.credit"));
             out.put("canAssign", u.can("customers.assign"));
+            out.put("canLock", u.can("customers.lock"));
             return out;
         }
     }
@@ -77,6 +78,7 @@ public class KhachHangService {
             Map<String, Object> out = new LinkedHashMap<>(row);
             out.put("price_list", db.currentPriceList(c, ((Number) row.get("customer_group_id")).longValue()));
             out.put("has_transactions", db.hasTransactions(c, id));
+            out.put("open_orders", db.openOrderCount(c, id));
             return out;
         }
     }
@@ -410,6 +412,68 @@ public class KhachHangService {
     private static void requireAssign(NguoiThaoTac u) {
         if (!u.can("customers.assign"))
             throw new SecurityException("Chỉ Quản lý kinh doanh được phân công nhân viên phụ trách đại lý");
+    }
+
+    // ----- S3-07: khoá giao dịch -----
+
+    /** Khoá giao dịch (bắt buộc lý do) hoặc mở lại. Trả về số đơn đang dở để giao diện cảnh báo. */
+    public Map<String, Object> setTradingLock(NguoiThaoTac u, long customerId, boolean lock, Map<String, Object> data)
+        throws SQLException {
+        if (!u.can("customers.lock")) throw new SecurityException("Bạn không có quyền khoá hoặc mở giao dịch với đại lý");
+        String reason = text(data, "reason", lock ? "Lý do khoá" : "Ghi chú mở khoá", lock, 500);
+        try (Connection c = KetNoiDB.getConnection()) {
+            begin(c, u);
+            try {
+                var old = db.findForUpdate(c, customerId);
+                if (old == null) throw new NoSuchElementException("Không tìm thấy đại lý");
+                if (Boolean.TRUE.equals(old.get("trading_locked")) == lock)
+                    throw new IllegalArgumentException(lock ? "Đại lý đang bị khoá giao dịch" : "Đại lý đang được giao dịch bình thường");
+                db.setTradingLock(c, customerId, lock, reason, u.id());
+                db.insertLockHistory(c, customerId, lock ? "LOCK" : "UNLOCK", reason, u.id());
+                long open = db.openOrderCount(c, customerId);
+                c.commit();
+                Map<String, Object> out = new LinkedHashMap<>();
+                out.put("trading_locked", lock);
+                out.put("open_orders", open);
+                out.put("message", lock
+                    ? (open > 0
+                        ? "Đã khoá giao dịch. Đại lý còn " + open + " đơn đang xử lý; các đơn này vẫn xử lý tiếp nhưng sẽ có cảnh báo"
+                        : "Đã khoá giao dịch với đại lý")
+                    : "Đã mở lại giao dịch với đại lý");
+                return out;
+            } catch (SQLException | RuntimeException e) {
+                c.rollback();
+                throw e;
+            }
+        }
+    }
+
+    public List<Map<String, Object>> lockHistory(NguoiThaoTac u, long customerId) throws SQLException {
+        try (Connection c = KetNoiDB.getConnection()) {
+            visible(c, u, customerId);
+            return db.lockHistory(c, customerId);
+        }
+    }
+
+    /**
+     * Dùng khi tạo đơn mới (S3-09, cổng đại lý): chặn đại lý bị khoá hoặc ngừng giao dịch.
+     * Database cũng chặn bằng trigger orders_block_locked_customer.
+     */
+    public static void requireCanCreateOrder(Connection c, long customerId) throws SQLException {
+        var row = TruyVanDB.one(c, "SELECT code,status,trading_locked,lock_reason FROM customers WHERE id=?", customerId);
+        if (row == null) throw new NoSuchElementException("Không tìm thấy đại lý");
+        if (Boolean.TRUE.equals(row.get("trading_locked")))
+            throw new IllegalArgumentException("Đại lý đang bị khoá giao dịch (" + row.get("lock_reason") + "), không thể tạo đơn mới");
+        if (!"ACTIVE".equals(row.get("status")))
+            throw new IllegalArgumentException("Đại lý đã ngừng giao dịch, không thể tạo đơn mới");
+    }
+
+    /** Dùng khi xử lý đơn đang dở: trả về cảnh báo nếu đại lý đã bị khoá, null nếu bình thường. */
+    public static String orderWarning(Connection c, long customerId) throws SQLException {
+        var row = TruyVanDB.one(c, "SELECT trading_locked,lock_reason FROM customers WHERE id=?", customerId);
+        return row != null && Boolean.TRUE.equals(row.get("trading_locked"))
+            ? "Đại lý đang bị khoá giao dịch: " + row.get("lock_reason") + ". Kiểm tra kỹ trước khi xử lý tiếp đơn này"
+            : null;
     }
 
     Map<String, Object> validate(Connection c, Map<String, Object> data) throws SQLException {

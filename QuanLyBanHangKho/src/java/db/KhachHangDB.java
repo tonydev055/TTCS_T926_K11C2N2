@@ -9,9 +9,10 @@ public class KhachHangDB {
     private static final String SELECT =
         "SELECT k.id,k.code,k.name,k.tax_code,k.customer_group_id,g.code group_code,g.name group_name," +
         "k.region,k.phone,k.sales_rep_id,u.full_name sales_rep_name,u.email sales_rep_email," +
-        "k.status,k.credit_limit,k.credit_days,k.created_at,k.updated_at " +
+        "k.status,k.credit_limit,k.credit_days,k.trading_locked,k.lock_reason,k.locked_at," +
+        "lu.full_name locked_by_name,k.created_at,k.updated_at " +
         "FROM customers k JOIN customer_groups g ON g.id=k.customer_group_id " +
-        "LEFT JOIN users u ON u.id=k.sales_rep_id ";
+        "LEFT JOIN users u ON u.id=k.sales_rep_id LEFT JOIN users lu ON lu.id=k.locked_by ";
 
     /** Bộ lọc danh sách; {@code onlyRep} giới hạn đại lý của một nhân viên phụ trách. */
     public record Filter(String search, String region, Long groupId, Long salesRepId, String status, Long onlyRep) {}
@@ -293,6 +294,45 @@ public class KhachHangDB {
 
     public long countCustomersOfRep(Connection c, long repId) throws SQLException {
         var row = TruyVanDB.one(c, "SELECT count(*) total FROM customers WHERE sales_rep_id=?", repId);
+        return ((Number) row.get("total")).longValue();
+    }
+
+    // ----- S3-07: khoá giao dịch -----
+
+    public void setTradingLock(Connection c, long id, boolean locked, String reason, long actor) throws SQLException {
+        TruyVanDB.update(
+            c,
+            "UPDATE customers SET trading_locked=?,lock_reason=?,locked_at=?,locked_by=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            locked, locked ? reason : null, locked ? new Timestamp(System.currentTimeMillis()) : null,
+            locked ? actor : null, id
+        );
+    }
+
+    public void insertLockHistory(Connection c, long id, String action, String reason, long actor) throws SQLException {
+        TruyVanDB.update(
+            c,
+            "INSERT INTO customer_lock_history(customer_id,action,reason,changed_by,changed_by_name) " +
+                "SELECT ?,?,?,u.id,u.full_name FROM users u WHERE u.id=?",
+            id, action, reason, actor
+        );
+    }
+
+    public List<Map<String, Object>> lockHistory(Connection c, long id) throws SQLException {
+        return TruyVanDB.rows(
+            c,
+            "SELECT id,action,reason,changed_by_name,changed_at FROM customer_lock_history " +
+                "WHERE customer_id=? ORDER BY changed_at DESC,id DESC LIMIT 200",
+            id
+        );
+    }
+
+    /** Đơn chưa hoàn tất hoặc chưa huỷ của đại lý. */
+    public long openOrderCount(Connection c, long id) throws SQLException {
+        var row = TruyVanDB.one(
+            c,
+            "SELECT count(*) total FROM orders WHERE agent_id=? AND status NOT IN ('COMPLETED','CANCELLED')",
+            id
+        );
         return ((Number) row.get("total")).longValue();
     }
 }

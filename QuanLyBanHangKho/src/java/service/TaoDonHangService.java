@@ -36,7 +36,6 @@ public class TaoDonHangService {
         else throw new IllegalArgumentException("Danh sách dòng hàng không hợp lệ");
         if (raw.size() > MAX_LINES) throw new IllegalArgumentException("Một đơn tối đa " + MAX_LINES + " dòng hàng");
 
-        List<Map<String, Object>> policies = raw.isEmpty() ? List.of() : new ChinhSachChietKhauDB().findAll();
         List<Map<String, Object>> lines = new ArrayList<>();
         BigDecimal subtotal = BigDecimal.ZERO, discount = BigDecimal.ZERO, payable = BigDecimal.ZERO;
 
@@ -57,9 +56,8 @@ public class TaoDonHangService {
                     "số lượng quy đổi ra đơn vị cơ bản phải là số nguyên");
                 if (baseQty.compareTo(BigDecimal.valueOf(1_000_000_000L)) > 0) throw new IllegalArgumentException("Số lượng quá lớn");
                 int bq = baseQty.setScale(0, RoundingMode.UNNECESSARY).intValueExact();
-                long category = ((Number) info.get("category_id")).longValue();
 
-                var quote = ChinhSachChietKhauService.quote(policies, productId, category, bq, basePrice);
+                var quote = new ChinhSachChietKhauDB().quote(Map.of("productId", productId, "quantity", bq, "unitPrice", basePrice));
                 BigDecimal lineSubtotal = (BigDecimal) quote.get("subtotal");
                 BigDecimal lineDiscount = (BigDecimal) quote.get("discount");
                 BigDecimal linePayable = (BigDecimal) quote.get("payment");

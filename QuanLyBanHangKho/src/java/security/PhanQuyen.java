@@ -274,6 +274,8 @@ public final class PhanQuyen {
         if (path.equals("/api/discount-policies/quote")) return "products.read";
         if (under(path, "/api/discount-policies")) return "prices.write";
         if (under(path, "/api/discounts")) return read ? "products.read" : "prices.write";
+        if (under(path, "/api/sales-orders")) return "orders.own";
+        if (under(path, "/api/delivery-points")) return "customers.assigned";
         if (under(path, "/api/customers")) return CUSTOMERS_ACCESS;
         if (under(path, "/api/orders")) return "orders.read";
         if (under(path, "/api/invoices")) return "invoices.write";

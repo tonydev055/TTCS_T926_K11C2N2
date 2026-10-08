@@ -9,6 +9,8 @@ function getAvailableMenu() {
   if (hasPermission('suppliers.read')) menu.push('Nhà cung cấp');
   if (hasPermission('admin.audit')) menu.push('Nhật ký hệ thống');
   if (hasPermission('admin.users')) menu.push('Nhập người dùng Excel');
+  if (hasPermission('customers.assigned')) menu.push('Điểm giao hàng');
+  if (hasPermission('orders.own')) menu.push('Tạo đơn hàng');
   menu.push('Hồ sơ cá nhân', 'Đổi mật khẩu');
   return [...new Set(menu)];
 }
@@ -60,5 +62,11 @@ function renderFeatureView(view) {
     renderPermissionMatrix();
     return true;
   }
+  if (view === 'Điểm giao hàng') { 
+    deliveryPointFeature.render(); 
+    return true; }
+  if (view === 'Tạo đơn hàng') { 
+    salesOrderFeature.render(); 
+    return true; }
   return false;
 }

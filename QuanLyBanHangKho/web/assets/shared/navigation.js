@@ -63,7 +63,7 @@ function openView(view, replaceUrl = false) {
   const feature = {
     'Tổng quan': 'tong-quan', 'Người dùng': 'nguoi-dung',
     'Sản phẩm & bảng giá': 'danh-muc', 'Nhà cung cấp': 'danh-muc',
-    'Chính sách chiết khấu': 'chiet-khau', 'Lịch sử thay đổi giá': 'lich-su-gia', 'Đại lý': 'dai-ly',
+    'Chính sách chiết khấu': 'chiet-khau', 'Điểm giao hàng': 'diem-giao', 'Lịch sử thay đổi giá': 'lich-su-gia', 'Đại lý': 'dai-ly',
     'Vai trò & quyền': 'phan-quyen', 'Nhật ký hệ thống': 'nhat-ky',
     'Nhập người dùng Excel': 'nhap-excel', 'Hồ sơ cá nhân': 'ho-so'
   }[view];

@@ -275,6 +275,10 @@ public class XacThucServlet extends CoSoServlet {
                 rb +
                 ",\"warehouses\":" +
                 wb +
+                ",\"territory\":" +
+                (s.getAttribute("territory") == null
+                    ? "null"
+                    : "\"" + PhanHoiJsonUtil.esc(String.valueOf(s.getAttribute("territory"))) + "\"") +
                 ",\"permissions\":" +
                 pb +
                 ",\"requiresPasswordChange\":" +

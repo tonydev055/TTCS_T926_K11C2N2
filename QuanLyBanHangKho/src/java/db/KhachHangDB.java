@@ -241,4 +241,58 @@ public class KhachHangDB {
             customerId
         );
     }
+
+    // ----- S3-06: phân công nhân viên kinh doanh -----
+
+    public void setSalesRep(Connection c, long customerId, Long repId) throws SQLException {
+        TruyVanDB.update(c, "UPDATE customers SET sales_rep_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=?", repId, customerId);
+    }
+
+    public void insertAssignment(Connection c, long customerId, Long fromId, Long toId, String reason,
+        java.util.UUID batch, long actor) throws SQLException {
+        TruyVanDB.update(
+            c,
+            "INSERT INTO customer_assignment_history(customer_id,from_user_id,from_user_name,to_user_id,to_user_name,reason,transfer_batch,changed_by,changed_by_name) " +
+                "SELECT ?,?,(SELECT full_name FROM users WHERE id=?),?,(SELECT full_name FROM users WHERE id=?),?,?,a.id,a.full_name FROM users a WHERE a.id=?",
+            customerId, fromId, fromId, toId, toId, reason, batch, actor
+        );
+    }
+
+    public List<Map<String, Object>> assignmentHistory(Connection c, long customerId) throws SQLException {
+        return TruyVanDB.rows(
+            c,
+            "SELECT id,from_user_id,from_user_name,to_user_id,to_user_name,reason,transfer_batch::text transfer_batch,changed_by_name,changed_at " +
+                "FROM customer_assignment_history WHERE customer_id=? ORDER BY changed_at DESC,id DESC LIMIT 200",
+            customerId
+        );
+    }
+
+    /** Khoá và trả về ID các đại lý đang do một nhân viên phụ trách (có thể giới hạn theo danh sách chọn). */
+    public List<Long> customersOfRepForUpdate(Connection c, long repId, List<Long> only) throws SQLException {
+        List<Long> out = new ArrayList<>();
+        var rows = only == null
+            ? TruyVanDB.rows(c, "SELECT id FROM customers WHERE sales_rep_id=? ORDER BY id FOR UPDATE", repId)
+            : TruyVanDB.rows(c, "SELECT id FROM customers WHERE sales_rep_id=? AND id=ANY(?) ORDER BY id FOR UPDATE",
+                repId, c.createArrayOf("bigint", only.toArray()));
+        for (var row : rows) out.add(TruyVanDB.id(row));
+        return out;
+    }
+
+    /** Nhân viên đang hoặc từng được giao đại lý, kèm số đại lý và trạng thái tài khoản (cho màn chuyển giao). */
+    public List<Map<String, Object>> repWorkload(Connection c) throws SQLException {
+        return TruyVanDB.rows(
+            c,
+            "SELECT u.id,u.full_name,u.email,u.territory,(u.active AND (u.locked_until IS NULL OR u.locked_until<=CURRENT_TIMESTAMP)) active," +
+                "EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=u.id AND r.code='SALES_REP') is_sales_rep," +
+                "(SELECT count(*) FROM customers k WHERE k.sales_rep_id=u.id) customer_count " +
+                "FROM users u WHERE EXISTS(SELECT 1 FROM customers k WHERE k.sales_rep_id=u.id) " +
+                "OR EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=u.id AND r.code='SALES_REP') " +
+                "ORDER BY u.full_name"
+        );
+    }
+
+    public long countCustomersOfRep(Connection c, long repId) throws SQLException {
+        var row = TruyVanDB.one(c, "SELECT count(*) total FROM customers WHERE sales_rep_id=?", repId);
+        return ((Number) row.get("total")).longValue();
+    }
 }

@@ -19,6 +19,9 @@ import util.XuLyJson;
  * POST /api/customers/{id}/addresses/{addressId}/default — điểm giao hàng (S3-04).
  * PUT /api/customers/{id}/credit {credit_limit, credit_days, reason}, GET /api/customers/{id}/credit-history
  * — hạn mức công nợ (S3-05), cần customers.credit để sửa.
+ * PUT /api/customers/{id}/assignment {sales_rep_id, reason}, GET /api/customers/{id}/assignment-history,
+ * GET /api/customers/reps, POST /api/customers/transfer {from_user_id, to_user_id, reason, customer_ids?}
+ * — phân công và chuyển giao đại lý (S3-06), cần customers.assign để ghi.
  */
 @WebServlet("/api/customers/*")
 public class KhachHangServlet extends CoSoServlet {
@@ -76,9 +79,12 @@ public class KhachHangServlet extends CoSoServlet {
             String[] p = parts(q);
             if (p.length == 0) ok(r, XuLyJson.stringify(service.list(user(q), query(q))));
             else if (p.length == 1 && p[0].equals("masters")) ok(r, XuLyJson.stringify(service.masters(user(q))));
+            else if (p.length == 1 && p[0].equals("reps")) ok(r, XuLyJson.stringify(service.repWorkload(user(q))));
             else if (p.length == 1) ok(r, XuLyJson.stringify(service.detail(user(q), id(p[0]))));
             else if (p.length == 2 && p[1].equals("addresses"))
                 ok(r, XuLyJson.stringify(service.addresses(user(q), id(p[0]))));
+            else if (p.length == 2 && p[1].equals("assignment-history"))
+                ok(r, XuLyJson.stringify(service.assignmentHistory(user(q), id(p[0]))));
             else if (p.length == 2 && p[1].equals("credit-history"))
                 ok(r, XuLyJson.stringify(service.creditHistory(user(q), id(p[0]))));
             else throw new NoSuchElementException("Endpoint không tồn tại");
@@ -95,6 +101,8 @@ public class KhachHangServlet extends CoSoServlet {
             if (p.length == 0) {
                 long id = service.create(user(q), input);
                 created(r, XuLyJson.stringify(Map.of("id", id, "message", "Đã lưu hồ sơ đại lý")));
+            } else if (p.length == 1 && p[0].equals("transfer")) {
+                ok(r, XuLyJson.stringify(service.transfer(user(q), input)));
             } else if (p.length == 2 && p[1].equals("addresses")) {
                 long id = service.createAddress(user(q), id(p[0]), input);
                 created(r, XuLyJson.stringify(Map.of("id", id, "message", "Đã lưu điểm giao hàng")));
@@ -110,6 +118,11 @@ public class KhachHangServlet extends CoSoServlet {
     protected void doPut(HttpServletRequest q, HttpServletResponse r) throws IOException {
         try {
             String[] p = parts(q);
+            if (p.length == 2 && p[1].equals("assignment")) {
+                service.assign(user(q), id(p[0]), XuLyJson.object(body(q)));
+                ok(r, "{\"message\":\"Đã cập nhật người phụ trách\"}");
+                return;
+            }
             if (p.length == 2 && p[1].equals("credit")) {
                 service.updateCredit(user(q), id(p[0]), XuLyJson.object(body(q)));
                 ok(r, "{\"message\":\"Đã cập nhật hạn mức công nợ\"}");

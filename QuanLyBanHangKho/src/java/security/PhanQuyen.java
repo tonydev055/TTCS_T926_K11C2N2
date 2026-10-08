@@ -42,6 +42,7 @@ public final class PhanQuyen {
             "customers.read",
             "customers.write",
             "customers.credit",
+            "customers.assign",
             "orders.read",
             "orders.approve",
             "reports.sales"

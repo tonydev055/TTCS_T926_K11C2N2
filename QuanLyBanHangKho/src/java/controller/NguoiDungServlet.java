@@ -90,7 +90,11 @@ public class NguoiDungServlet extends CoSoServlet {
                     "lock".equals(x[2])
                 ) throw new IllegalArgumentException("Không thể tự khoá tài khoản của chính mình");
                 db.setLocked(id, "lock".equals(x[2]), YeuCauJson.text(b, "reason"));
-                ok(r, "{\"message\":\"Đã cập nhật trạng thái tài khoản\"}");
+                long customers = "lock".equals(x[2]) ? service.KhachHangService.assignedCustomerCount(id) : 0;
+                ok(r, customers > 0
+                    ? "{\"message\":\"Đã khoá tài khoản. Nhân viên đang phụ trách " + customers +
+                        " đại lý, cần chuyển giao cho nhân viên khác\",\"assignedCustomers\":" + customers + "}"
+                    : "{\"message\":\"Đã cập nhật trạng thái tài khoản\",\"assignedCustomers\":0}");
                 return;
             }
             String password = MatKhauUtil.DEFAULT_USER_PASSWORD,

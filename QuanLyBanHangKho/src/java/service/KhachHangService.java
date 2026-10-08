@@ -8,7 +8,7 @@ import security.PhanQuyen;
 import util.KetNoiDB;
 
 /**
- * Nghiệp vụ hồ sơ đại lý (S3-03) và điểm giao hàng (S3-04).
+ * Nghiệp vụ hồ sơ đại lý (S3-03), điểm giao hàng (S3-04) và hạn mức công nợ (S3-05).
  * Người có quyền customers.read thấy mọi đại lý; người chỉ có customers.assigned
  * (Nhân viên kinh doanh) chỉ thấy đại lý mình phụ trách.
  */
@@ -64,6 +64,7 @@ public class KhachHangService {
             out.put("salesReps", db.salesReps(c, u.onlyRep()));
             out.put("regions", db.regions(c, u.onlyRep()));
             out.put("canWrite", u.can("customers.write"));
+            out.put("canEditCredit", u.can("customers.credit"));
             return out;
         }
     }
@@ -249,6 +250,61 @@ public class KhachHangService {
         Object isDefault = data.get("is_default");
         if (isDefault != null && !(isDefault instanceof Boolean)) throw new IllegalArgumentException("Giá trị mặc định không hợp lệ");
         return v;
+    }
+
+    // ----- S3-05: hạn mức công nợ -----
+
+    public static final java.math.BigDecimal MAX_CREDIT_LIMIT = new java.math.BigDecimal("1000000000000");
+    public static final int MAX_CREDIT_DAYS = 365;
+
+    /** Đổi hạn mức tiền và số ngày nợ; bắt buộc lý do, ghi lịch sử và nhật ký trong cùng giao dịch. */
+    public void updateCredit(NguoiThaoTac u, long customerId, Map<String, Object> data) throws SQLException {
+        if (!u.can("customers.credit"))
+            throw new SecurityException("Chỉ Kế toán công nợ và Quản lý kinh doanh được sửa hạn mức công nợ");
+        java.math.BigDecimal limit = creditLimit(data.get("credit_limit"));
+        int days = creditDays(data.get("credit_days"));
+        String reason = text(data, "reason", "Lý do thay đổi", true, 500);
+        try (Connection c = KetNoiDB.getConnection()) {
+            begin(c, u);
+            try {
+                var old = db.findForUpdate(c, customerId);
+                if (old == null || (!u.seesAll() && !Objects.equals(toLong(old.get("sales_rep_id")), u.id())))
+                    throw new NoSuchElementException("Không tìm thấy đại lý");
+                if (((java.math.BigDecimal) old.get("credit_limit")).compareTo(limit) == 0 &&
+                    ((Number) old.get("credit_days")).intValue() == days)
+                    throw new IllegalArgumentException("Hạn mức và số ngày nợ không thay đổi");
+                db.insertCreditHistory(c, customerId, old, limit, days, reason, u.id());
+                db.updateCredit(c, customerId, limit, days);
+                c.commit();
+            } catch (SQLException | RuntimeException e) {
+                c.rollback();
+                throw e;
+            }
+        }
+    }
+
+    public List<Map<String, Object>> creditHistory(NguoiThaoTac u, long customerId) throws SQLException {
+        try (Connection c = KetNoiDB.getConnection()) {
+            visible(c, u, customerId);
+            return db.creditHistory(c, customerId);
+        }
+    }
+
+    static java.math.BigDecimal creditLimit(Object raw) {
+        try {
+            var v = new java.math.BigDecimal(Objects.toString(raw, "").trim());
+            if (v.signum() < 0 || v.stripTrailingZeros().scale() > 0 || v.compareTo(MAX_CREDIT_LIMIT) > 0) throw new NumberFormatException();
+            return v.setScale(2);
+        } catch (NumberFormatException | ArithmeticException e) {
+            throw new IllegalArgumentException("Hạn mức công nợ phải là số tiền nguyên (đồng) từ 0 đến 1.000 tỷ");
+        }
+    }
+
+    static int creditDays(Object raw) {
+        String s = Objects.toString(raw, "").trim();
+        if (!s.matches("[0-9]{1,3}") || Integer.parseInt(s) > MAX_CREDIT_DAYS)
+            throw new IllegalArgumentException("Số ngày nợ tối đa phải là số nguyên từ 0 đến " + MAX_CREDIT_DAYS);
+        return Integer.parseInt(s);
     }
 
     Map<String, Object> validate(Connection c, Map<String, Object> data) throws SQLException {

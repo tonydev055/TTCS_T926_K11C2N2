@@ -17,6 +17,8 @@ import util.XuLyJson;
  * POST /api/customers/, PUT /api/customers/{id}, DELETE /api/customers/{id} — cần customers.write.
  * GET|POST /api/customers/{id}/addresses, PUT|DELETE /api/customers/{id}/addresses/{addressId},
  * POST /api/customers/{id}/addresses/{addressId}/default — điểm giao hàng (S3-04).
+ * PUT /api/customers/{id}/credit {credit_limit, credit_days, reason}, GET /api/customers/{id}/credit-history
+ * — hạn mức công nợ (S3-05), cần customers.credit để sửa.
  */
 @WebServlet("/api/customers/*")
 public class KhachHangServlet extends CoSoServlet {
@@ -77,6 +79,8 @@ public class KhachHangServlet extends CoSoServlet {
             else if (p.length == 1) ok(r, XuLyJson.stringify(service.detail(user(q), id(p[0]))));
             else if (p.length == 2 && p[1].equals("addresses"))
                 ok(r, XuLyJson.stringify(service.addresses(user(q), id(p[0]))));
+            else if (p.length == 2 && p[1].equals("credit-history"))
+                ok(r, XuLyJson.stringify(service.creditHistory(user(q), id(p[0]))));
             else throw new NoSuchElementException("Endpoint không tồn tại");
         } catch (Exception e) {
             failure(r, e);
@@ -106,6 +110,11 @@ public class KhachHangServlet extends CoSoServlet {
     protected void doPut(HttpServletRequest q, HttpServletResponse r) throws IOException {
         try {
             String[] p = parts(q);
+            if (p.length == 2 && p[1].equals("credit")) {
+                service.updateCredit(user(q), id(p[0]), XuLyJson.object(body(q)));
+                ok(r, "{\"message\":\"Đã cập nhật hạn mức công nợ\"}");
+                return;
+            }
             if (p.length == 3 && p[1].equals("addresses")) {
                 service.updateAddress(user(q), id(p[0]), addressId(p[2]), XuLyJson.object(body(q)));
                 ok(r, "{\"message\":\"Đã lưu điểm giao hàng\"}");

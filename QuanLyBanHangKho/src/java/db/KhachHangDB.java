@@ -9,7 +9,7 @@ public class KhachHangDB {
     private static final String SELECT =
         "SELECT k.id,k.code,k.name,k.tax_code,k.customer_group_id,g.code group_code,g.name group_name," +
         "k.region,k.phone,k.sales_rep_id,u.full_name sales_rep_name,u.email sales_rep_email," +
-        "k.status,k.created_at,k.updated_at " +
+        "k.status,k.credit_limit,k.credit_days,k.created_at,k.updated_at " +
         "FROM customers k JOIN customer_groups g ON g.id=k.customer_group_id " +
         "LEFT JOIN users u ON u.id=k.sales_rep_id ";
 
@@ -210,5 +210,35 @@ public class KhachHangDB {
     public Long firstActiveAddress(Connection c, long customerId) throws SQLException {
         var row = TruyVanDB.one(c, "SELECT id FROM customer_addresses WHERE customer_id=? AND active ORDER BY id LIMIT 1", customerId);
         return row == null ? null : TruyVanDB.id(row);
+    }
+
+    // ----- S3-05: hạn mức công nợ -----
+
+    public void updateCredit(Connection c, long id, java.math.BigDecimal limit, int days) throws SQLException {
+        TruyVanDB.update(
+            c,
+            "UPDATE customers SET credit_limit=?,credit_days=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            limit, days, id
+        );
+    }
+
+    public void insertCreditHistory(Connection c, long customerId, Map<String, Object> old,
+        java.math.BigDecimal limit, int days, String reason, long actor) throws SQLException {
+        TruyVanDB.update(
+            c,
+            "INSERT INTO customer_credit_history(customer_id,old_limit,new_limit,old_days,new_days,reason,changed_by,changed_by_name) " +
+                "SELECT ?,?,?,?,?,?,u.id,u.full_name FROM users u WHERE u.id=?",
+            customerId, old.get("credit_limit"), limit, old.get("credit_days"), days, reason, actor
+        );
+    }
+
+    public List<Map<String, Object>> creditHistory(Connection c, long customerId) throws SQLException {
+        return TruyVanDB.rows(
+            c,
+            "SELECT h.id,h.old_limit,h.new_limit,h.old_days,h.new_days,h.reason,h.changed_by_name,u.email changed_by_email,h.changed_at " +
+                "FROM customer_credit_history h LEFT JOIN users u ON u.id=h.changed_by " +
+                "WHERE h.customer_id=? ORDER BY h.changed_at DESC,h.id DESC LIMIT 200",
+            customerId
+        );
     }
 }

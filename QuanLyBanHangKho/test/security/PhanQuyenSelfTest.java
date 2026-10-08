@@ -40,6 +40,23 @@ public class PhanQuyenSelfTest {
             "Nhân viên kho không được xem ma trận phân quyền"
         );
         check(
+            "admin.audit".equals(PhanQuyen.permissionFor("/api/audit/api/profile", "GET")),
+            "Tên endpoint chèn vào đường dẫn không được đổi quyền cần kiểm tra"
+        );
+        check(
+            "admin.users".equals(PhanQuyen.permissionFor("/api/users/api/profile", "GET")),
+            "Đường dẫn người dùng luôn cần quyền quản trị người dùng"
+        );
+        check(
+            PhanQuyen.permissionFor("/api/profiles-export", "GET") == null,
+            "Chỉ khớp trọn từng đoạn đường dẫn"
+        );
+        check(
+            "products.read".equals(PhanQuyen.permissionFor("/api/discount-policies/quote", "POST")) &&
+                "prices.write".equals(PhanQuyen.permissionFor("/api/discount-policies/quote/1", "POST")),
+            "Chỉ đúng endpoint báo giá chiết khấu dùng quyền xem sản phẩm"
+        );
+        check(
             PhanQuyen.matrix().get("CUSTOMER").contains("profile.self"),
             "Ma trận phải có quyền hồ sơ cá nhân dùng chung"
         );

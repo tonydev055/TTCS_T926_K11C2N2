@@ -18,7 +18,6 @@ public class XacThucFilter implements Filter {
         throws IOException, ServletException {
         HttpServletRequest q = (HttpServletRequest) a;
         HttpServletResponse r = (HttpServletResponse) b;
-        String uri = q.getRequestURI();
         String endpoint = q.getServletPath() + Objects.toString(q.getPathInfo(), "");
         if (
             Set.of("/api/health", "/api/auth/login", "/api/auth/register",
@@ -58,7 +57,7 @@ public class XacThucFilter implements Filter {
             }
             @SuppressWarnings("unchecked")
             List<String> roles = (List<String>) s.getAttribute("roles");
-            String permission = PhanQuyen.permissionFor(uri, q.getMethod());
+            String permission = PhanQuyen.permissionFor(endpoint, q.getMethod());
             if (permission == null || !PhanQuyen.allows(roles, permission)) {
                 PhanHoiJsonUtil.send(
                     r,

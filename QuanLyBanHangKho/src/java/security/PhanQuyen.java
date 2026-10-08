@@ -232,40 +232,43 @@ public final class PhanQuyen {
         return Collections.unmodifiableMap(copy);
     }
 
-    public static String permissionFor(String uri, String method) {
+    /**
+     * Quyền cần có cho một endpoint. Chỉ nhận đường dẫn đã được container chuẩn hoá
+     * (servletPath + pathInfo, không có context path, tham số ";" hay "..") và so khớp
+     * theo tiền tố từng đoạn, để không thể chèn tên endpoint khác vào URL để đổi quyền.
+     */
+    public static String permissionFor(String path, String method) {
+        if (path == null || method == null) return null;
         boolean read = method.equals("GET");
-        if (uri.contains("/api/profile")) return "profile.self";
-        if (uri.contains("/api/role-permissions")) return "admin.roles";
-        if (uri.contains("/api/audit")) return "admin.audit";
-        if (
-            uri.contains("/api/imports/users") || uri.contains("/api/templates/users")
-        ) return "admin.users";
-        if (
-            uri.contains("/api/imports/products") || uri.contains("/api/templates/products")
-        ) return "products.write";
-        if (uri.contains("/api/product-units")) return read ? "products.read" : "units.write";
-        if (uri.contains("/api/customer-groups")) return read ? "products.read" : "prices.write";
-        if (uri.contains("/api/users")) return "admin.users";
-        if (uri.contains("/api/warehouses")) return method.equals("GET")
-            ? "inventory.read"
-            : "warehouses.manage";
-        if (
-            uri.contains("/api/inventory") || uri.contains("/api/stock-transactions")
-        ) return method.equals("GET") ? "inventory.read" : "inventory.write";
-        if (uri.contains("/api/suppliers")) return read ? "suppliers.read" : "suppliers.write";
-        if (uri.contains("/api/price-history")) return "prices.write";
-        if (uri.contains("/api/price-lists")) return read ? "products.read" : "prices.write";
-        if (uri.contains("/api/products") || uri.contains("/api/categories") || uri.contains("/api/brands") || uri.contains("/api/product-models")) return read
-            ? "products.read"
-            : "products.write";
-        if (uri.contains("/api/discount-policies/quote")) return "products.read";
-        if (uri.contains("/api/discount-policies")) return "prices.write";
-        if (uri.contains("/api/discounts")) return read ? "products.read" : "prices.write";
-        if (uri.contains("/api/customers")) return "customers.read";
-        if (uri.contains("/api/orders")) return "orders.read";
-        if (uri.contains("/api/invoices")) return "invoices.write";
-        if (uri.contains("/api/payments")) return "payments.write";
-        if (uri.contains("/api/returns")) return "returns.self";
+        if (under(path, "/api/profile")) return "profile.self";
+        if (under(path, "/api/role-permissions")) return "admin.roles";
+        if (under(path, "/api/audit")) return "admin.audit";
+        if (under(path, "/api/imports/users") || under(path, "/api/templates/users")) return "admin.users";
+        if (under(path, "/api/imports/products") || under(path, "/api/templates/products")) return "products.write";
+        if (under(path, "/api/product-units")) return read ? "products.read" : "units.write";
+        if (under(path, "/api/customer-groups")) return read ? "products.read" : "prices.write";
+        if (under(path, "/api/users")) return "admin.users";
+        if (under(path, "/api/warehouses")) return read ? "inventory.read" : "warehouses.manage";
+        if (under(path, "/api/inventory") || under(path, "/api/stock-transactions"))
+            return read ? "inventory.read" : "inventory.write";
+        if (under(path, "/api/suppliers")) return read ? "suppliers.read" : "suppliers.write";
+        if (under(path, "/api/price-history")) return "prices.write";
+        if (under(path, "/api/price-lists")) return read ? "products.read" : "prices.write";
+        if (under(path, "/api/products") || under(path, "/api/categories") ||
+            under(path, "/api/brands") || under(path, "/api/product-models"))
+            return read ? "products.read" : "products.write";
+        if (path.equals("/api/discount-policies/quote")) return "products.read";
+        if (under(path, "/api/discount-policies")) return "prices.write";
+        if (under(path, "/api/discounts")) return read ? "products.read" : "prices.write";
+        if (under(path, "/api/customers")) return "customers.read";
+        if (under(path, "/api/orders")) return "orders.read";
+        if (under(path, "/api/invoices")) return "invoices.write";
+        if (under(path, "/api/payments")) return "payments.write";
+        if (under(path, "/api/returns")) return "returns.self";
         return null;
+    }
+
+    private static boolean under(String path, String base) {
+        return path.equals(base) || path.startsWith(base + "/");
     }
 }

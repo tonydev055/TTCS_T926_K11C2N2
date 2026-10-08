@@ -8,7 +8,8 @@ import security.PhanQuyen;
 import util.KetNoiDB;
 
 /**
- * Nghiệp vụ hồ sơ đại lý (S3-03), điểm giao hàng (S3-04) và hạn mức công nợ (S3-05).
+ * Nghiệp vụ hồ sơ đại lý (S3-03), điểm giao hàng (S3-04), hạn mức công nợ (S3-05)
+ * và phân công nhân viên kinh doanh (S3-06).
  * Người có quyền customers.read thấy mọi đại lý; người chỉ có customers.assigned
  * (Nhân viên kinh doanh) chỉ thấy đại lý mình phụ trách.
  */
@@ -65,6 +66,7 @@ public class KhachHangService {
             out.put("regions", db.regions(c, u.onlyRep()));
             out.put("canWrite", u.can("customers.write"));
             out.put("canEditCredit", u.can("customers.credit"));
+            out.put("canAssign", u.can("customers.assign"));
             return out;
         }
     }
@@ -85,7 +87,11 @@ public class KhachHangService {
             begin(c, u);
             try {
                 var values = validate(c, data);
+                Long rep = toLong(values.get("sales_rep_id"));
+                if (rep != null && !u.can("customers.assign"))
+                    throw new SecurityException("Chỉ Quản lý kinh doanh được phân công nhân viên phụ trách");
                 long id = db.insert(c, values);
+                if (rep != null) db.insertAssignment(c, id, null, rep, "Phân công khi tạo đại lý", null, u.id());
                 c.commit();
                 return id;
             } catch (SQLException | RuntimeException e) {
@@ -103,6 +109,8 @@ public class KhachHangService {
                 var old = db.findForUpdate(c, id);
                 if (old == null) throw new NoSuchElementException("Không tìm thấy đại lý");
                 var values = validate(c, data);
+                // Người phụ trách chỉ đổi qua API phân công (có lý do và lịch sử); sửa hồ sơ giữ nguyên.
+                values.put("sales_rep_id", old.get("sales_rep_id"));
                 if (!Objects.equals(old.get("code"), values.get("code")) && db.hasTransactions(c, id))
                     throw new IllegalArgumentException("Đại lý đã phát sinh giao dịch, không thể đổi mã đại lý");
                 db.update(c, id, values);
@@ -307,6 +315,103 @@ public class KhachHangService {
         return Integer.parseInt(s);
     }
 
+    // ----- S3-06: phân công nhân viên kinh doanh -----
+
+    /** Gán hoặc bỏ người phụ trách chính của một đại lý; bắt buộc lý do, ghi lịch sử. */
+    public void assign(NguoiThaoTac u, long customerId, Map<String, Object> data) throws SQLException {
+        requireAssign(u);
+        Long rep = optionalId(data.get("sales_rep_id"));
+        String reason = text(data, "reason", "Lý do phân công", true, 500);
+        try (Connection c = KetNoiDB.getConnection()) {
+            begin(c, u);
+            try {
+                var old = db.findForUpdate(c, customerId);
+                if (old == null) throw new NoSuchElementException("Không tìm thấy đại lý");
+                Long from = toLong(old.get("sales_rep_id"));
+                if (Objects.equals(from, rep)) throw new IllegalArgumentException("Đại lý đã do nhân viên này phụ trách");
+                if (rep != null && !db.isActiveSalesRep(c, rep))
+                    throw new IllegalArgumentException("Người phụ trách phải là Nhân viên kinh doanh đang hoạt động");
+                db.setSalesRep(c, customerId, rep);
+                db.insertAssignment(c, customerId, from, rep, reason, null, u.id());
+                c.commit();
+            } catch (SQLException | RuntimeException e) {
+                c.rollback();
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Chuyển giao hàng loạt đại lý từ một nhân viên (thường là người nghỉ việc) sang nhân viên khác.
+     * Không truyền customer_ids thì chuyển toàn bộ đại lý của người cũ. Mọi dòng chung một mã đợt chuyển giao.
+     */
+    public Map<String, Object> transfer(NguoiThaoTac u, Map<String, Object> data) throws SQLException {
+        requireAssign(u);
+        Long from = optionalId(data.get("from_user_id"));
+        Long to = optionalId(data.get("to_user_id"));
+        if (from == null || to == null) throw new IllegalArgumentException("Vui lòng chọn nhân viên bàn giao và nhân viên nhận");
+        if (from.equals(to)) throw new IllegalArgumentException("Nhân viên nhận phải khác nhân viên bàn giao");
+        String reason = text(data, "reason", "Lý do chuyển giao", true, 500);
+        List<Long> only = null;
+        if (data.get("customer_ids") != null) {
+            if (!(data.get("customer_ids") instanceof List<?> raw) || raw.isEmpty() || raw.size() > 5000)
+                throw new IllegalArgumentException("Danh sách đại lý chuyển giao không hợp lệ");
+            only = new ArrayList<>();
+            for (Object item : raw) only.add(optionalId(item));
+            if (only.contains(null)) throw new IllegalArgumentException("Danh sách đại lý chuyển giao không hợp lệ");
+        }
+        try (Connection c = KetNoiDB.getConnection()) {
+            begin(c, u);
+            try {
+                if (!db.isActiveSalesRep(c, to))
+                    throw new IllegalArgumentException("Nhân viên nhận phải là Nhân viên kinh doanh đang hoạt động");
+                var ids = db.customersOfRepForUpdate(c, from, only);
+                if (ids.isEmpty()) throw new IllegalArgumentException("Nhân viên bàn giao không còn đại lý nào để chuyển");
+                if (only != null && ids.size() != new HashSet<>(only).size())
+                    throw new IllegalArgumentException("Có đại lý không thuộc nhân viên bàn giao; hãy tải lại danh sách");
+                UUID batch = UUID.randomUUID();
+                for (long id : ids) {
+                    db.setSalesRep(c, id, to);
+                    db.insertAssignment(c, id, from, to, reason, batch, u.id());
+                }
+                c.commit();
+                Map<String, Object> out = new LinkedHashMap<>();
+                out.put("transferred", ids.size());
+                out.put("batch", batch.toString());
+                return out;
+            } catch (SQLException | RuntimeException e) {
+                c.rollback();
+                throw e;
+            }
+        }
+    }
+
+    public List<Map<String, Object>> assignmentHistory(NguoiThaoTac u, long customerId) throws SQLException {
+        try (Connection c = KetNoiDB.getConnection()) {
+            visible(c, u, customerId);
+            return db.assignmentHistory(c, customerId);
+        }
+    }
+
+    public List<Map<String, Object>> repWorkload(NguoiThaoTac u) throws SQLException {
+        requireAssign(u);
+        try (Connection c = KetNoiDB.getConnection()) {
+            return db.repWorkload(c);
+        }
+    }
+
+    /** Số đại lý một người dùng đang phụ trách, dùng để cảnh báo bàn giao khi khoá tài khoản (S1-10). */
+    public static long assignedCustomerCount(long userId) throws SQLException {
+        try (Connection c = KetNoiDB.getConnection()) {
+            return new KhachHangDB().countCustomersOfRep(c, userId);
+        }
+    }
+
+    private static void requireAssign(NguoiThaoTac u) {
+        if (!u.can("customers.assign"))
+            throw new SecurityException("Chỉ Quản lý kinh doanh được phân công nhân viên phụ trách đại lý");
+    }
+
     Map<String, Object> validate(Connection c, Map<String, Object> data) throws SQLException {
         Map<String, Object> v = new LinkedHashMap<>();
         String code = text(data, "code", "Mã đại lý", true, 40).toUpperCase(Locale.ROOT);
@@ -323,7 +428,7 @@ public class KhachHangService {
         v.put("customer_group_id", group);
         v.put("region", text(data, "region", "Khu vực", true, 150));
         v.put("phone", DanhMucService.phone(text(data, "phone", "Số điện thoại", false, 20), false));
-        Long rep = optionalId(data.get("sales_rep_id"));
+        Long rep = data.containsKey("sales_rep_id") ? optionalId(data.get("sales_rep_id")) : null;
         if (rep != null && !db.isActiveSalesRep(c, rep))
             throw new IllegalArgumentException("Người phụ trách phải là Nhân viên kinh doanh đang hoạt động");
         v.put("sales_rep_id", rep);

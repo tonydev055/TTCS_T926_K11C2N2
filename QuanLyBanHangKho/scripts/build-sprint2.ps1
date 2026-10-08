@@ -23,7 +23,7 @@ if($Test){
   if($LASTEXITCODE -ne 0){throw 'Technology catalog tests failed; apply database/technology-catalog.sql first'}
   & "$JavaHome/bin/java.exe" -cp "$classes;$testClasses;$(Join-Path $projectRoot 'web/WEB-INF/lib/*')" service.SmtpSelfTest
   if($LASTEXITCODE -ne 0){throw 'SMTP tests failed; run database/smtp.sql first'}
-  & "$JavaHome/bin/java.exe" -cp "$classes;$testClasses" security.PhanQuyenSelfTest
+  & "$JavaHome/bin/java.exe" -cp "$classes;$testClasses;$(Join-Path $projectRoot 'web/WEB-INF/lib/*')" security.PhanQuyenSelfTest
   if($LASTEXITCODE -ne 0){throw 'Permission tests failed'}
   & "$JavaHome/bin/java.exe" -cp "$classes;$testClasses;$(Join-Path $projectRoot 'web/WEB-INF/lib/*')" service.PriceHistorySelfTest
   if($LASTEXITCODE -ne 0){throw 'S3-02 price history tests failed; apply database/sprint3-price-history.sql first'}

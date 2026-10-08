@@ -43,6 +43,11 @@
   #agentFeature .ag-grid dd { margin: 3px 0 0; color: #172033; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
   #agentFeature .ag-note { margin: 0; padding: 11px 14px; border: 1px solid #dbeafe; border-radius: 10px; background: #eff6ff; color: #1d4ed8; font-size: 13px; }
   #agentFeature .ag-back { align-self: flex-start; }
+  #agentFeature .ag-mini-table { width: 100%; min-width: 560px; border-collapse: collapse; margin-top: 14px; }
+  #agentFeature .ag-mini-table th { padding: 9px 12px; background: #f4f7fa; color: #455468; text-align: left; font-size: 12px; font-weight: 700; }
+  #agentFeature .ag-mini-table td { padding: 10px 12px; border-top: 1px solid #edf1f5; color: #334155; font-size: 12px; vertical-align: top; }
+  #agentFeature .ag-mini-table small { display: block; color: #8490a2; font-size: 11px; }
+  #agentFeature .ag-muted { margin: 14px 0 0; color: #7a8699; font-size: 12px; }
   #agentFeature .ag-section-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
   #agentFeature .ag-section-head h4 { margin: 0; }
   #agentFeature .ag-addresses { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); align-items: start; gap: 12px; }
@@ -179,6 +184,16 @@ window.agentFeature = (() => {
         </dl>
         ${agent.has_transactions ? '<p class="ag-note" style="margin-top:14px">Đại lý đã phát sinh giao dịch nên không thể xoá. Khi không còn hợp tác, hãy chuyển trạng thái sang “Ngừng giao dịch”.</p>' : ''}
         </div>`;
+      document.getElementById('agDetail').insertAdjacentHTML('beforeend', `<div class="ag-section" id="agCredit">
+        <div class="ag-section-head"><h4>Hạn mức công nợ</h4>${masters.canEditCredit ? '<button type="button" class="ag-btn" id="agEditCredit">Điều chỉnh hạn mức</button>' : ''}</div>
+        <dl class="ag-grid">
+          <div><dt>Hạn mức tiền tối đa</dt><dd>${Number(agent.credit_limit) > 0 ? esc(formatMoney(agent.credit_limit)) : 'Không cho nợ'}</dd></div>
+          <div><dt>Số ngày nợ tối đa</dt><dd>${Number(agent.credit_days) > 0 ? `${esc(agent.credit_days)} ngày` : 'Thanh toán ngay'}</dd></div>
+        </dl>
+        <div id="agCreditHistory"><p class="ag-muted">Đang tải lịch sử thay đổi...</p></div>
+      </div>`);
+      document.getElementById('agEditCredit')?.addEventListener('click', () => openCreditForm(agent, revision));
+      loadCreditHistory(agent, revision);
       document.getElementById('agDetail').insertAdjacentHTML('beforeend', '<div class="ag-section" id="agAddresses"><h4>Điểm giao hàng</h4><p class="ag-empty">Đang tải điểm giao hàng...</p></div>');
       loadAddresses(agent, revision);
       document.getElementById('agEdit')?.addEventListener('click', () => openForm(agent, revision));
@@ -186,6 +201,51 @@ window.agentFeature = (() => {
     } catch (error) {
       if (alive(revision)) document.getElementById('agDetail').innerHTML = `<p class="ag-error" role="alert">${esc(error.message)}</p>`;
     }
+  }
+
+  // ----- S3-05: hạn mức công nợ -----
+  async function loadCreditHistory(agent, revision) {
+    const host = document.getElementById('agCreditHistory');
+    try {
+      const items = await apiRequest(`customers/${agent.id}/credit-history`);
+      if (!alive(revision) || !host.isConnected) return;
+      const money = (value) => Number(value) > 0 ? formatMoney(value) : 'Không cho nợ';
+      host.innerHTML = items.length ? `<div class="ag-table-wrap"><table class="ag-mini-table"><thead><tr><th>Thời điểm</th><th>Hạn mức</th><th>Số ngày nợ</th><th>Lý do</th><th>Người sửa</th></tr></thead><tbody>
+        ${items.map((item) => `<tr>
+          <td>${esc(new Date(item.changed_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }))}</td>
+          <td>${esc(money(item.old_limit))} → <strong>${esc(money(item.new_limit))}</strong></td>
+          <td>${esc(item.old_days)} → <strong>${esc(item.new_days)}</strong> ngày</td>
+          <td>${esc(item.reason)}</td>
+          <td>${esc(item.changed_by_name)}${item.changed_by_email ? `<small>${esc(item.changed_by_email)}</small>` : ''}</td>
+        </tr>`).join('')}
+      </tbody></table></div>` : '<p class="ag-muted">Chưa có thay đổi hạn mức nào.</p>';
+    } catch (error) {
+      if (alive(revision) && host.isConnected) host.innerHTML = `<p class="ag-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  function openCreditForm(agent, revision) {
+    const body = [
+      `<div class="form-group"><label>Hạn mức tiền tối đa (đồng) *<input name="credit_limit" type="number" min="0" step="1" max="1000000000000" value="${esc(Math.round(Number(agent.credit_limit) || 0))}" required></label></div>`,
+      `<div class="form-group"><label>Số ngày nợ tối đa *<input name="credit_days" type="number" min="0" max="365" step="1" value="${esc(agent.credit_days ?? 0)}" required></label></div>`,
+      '<div class="form-group full"><label>Lý do thay đổi *<textarea name="reason" maxlength="500" required placeholder="Ví dụ: tăng hạn mức theo doanh số quý 3"></textarea></label></div>',
+      '<p class="s2-hint" style="grid-column:1/-1">Đặt hạn mức 0 nếu đại lý phải thanh toán ngay. Mỗi lần thay đổi được ghi vào lịch sử và nhật ký hệ thống.</p>'
+    ].join('');
+    const { form, close } = openFormDialog(`Điều chỉnh hạn mức · ${agent.code}`, body, 'Lưu hạn mức');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      try {
+        await apiRequest(`customers/${agent.id}/credit`, jsonRequestOptions('PUT', Object.fromEntries(new FormData(form))));
+        close();
+        showToast('Đã cập nhật hạn mức công nợ');
+        if (alive(revision)) renderDetail(agent.id, revision);
+      } catch (error) {
+        document.getElementById('s2FormError').textContent = error.message;
+        submit.disabled = false;
+      }
+    });
   }
 
   // ----- S3-04: điểm giao hàng -----

@@ -3,7 +3,8 @@ package service;
 import java.math.*;
 import java.util.*;
 
-/** Highest eligible quantity tier per policy, then best monetary saving; never stack. */
+/** Highest eligible quantity tier per policy, then best monetary saving; never stack.
+ *  A GROUP policy covers its category and every descendant category. */
 public final class ChinhSachChietKhauService {
     private ChinhSachChietKhauService() {}
     public static BigDecimal decimal(Object value) {
@@ -44,7 +45,8 @@ public final class ChinhSachChietKhauService {
         tiers.sort(Comparator.comparingLong(t -> ((Number)t.get("q")).longValue()));
         return new LinkedHashMap<>(Map.of("name",name,"scope",scope,"tid",String.valueOf(tid),"dtype",dtype,"active",active,"tiers",tiers));
     }
-    public static Map<String,Object> quote(List<Map<String,Object>> policies, long product, long category,
+    /** {@code categories}: nhóm của sản phẩm và toàn bộ nhóm cha của nó. */
+    public static Map<String,Object> quote(List<Map<String,Object>> policies, long product, Set<Long> categories,
                                            int qty, BigDecimal price) {
         if (qty<1 || price.signum()<0 || price.scale()>2 || price.precision()-price.scale()>16)
             throw new IllegalArgumentException("Số lượng hoặc đơn giá không hợp lệ");
@@ -54,7 +56,7 @@ public final class ChinhSachChietKhauService {
         for (Map<String,Object> p : policies) {
             if (!Boolean.TRUE.equals(p.get("active"))) continue;
             long target = positiveId(p.get("tid"));
-            if (target != (p.get("scope").equals("SKU") ? product : category)) continue;
+            if (p.get("scope").equals("SKU") ? target != product : !categories.contains(target)) continue;
             Map<?,?> tier = null;
             for (Object item : (List<?>)p.get("tiers")) {
                 Map<?,?> t = (Map<?,?>)item;

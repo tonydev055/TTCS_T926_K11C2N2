@@ -72,7 +72,15 @@ public class ChinhSachChietKhauDB extends CoSoDB {
         if (qty>Integer.MAX_VALUE) throw new IllegalArgumentException("Số lượng quá lớn");
         var rows=query("SELECT category_id FROM products WHERE id=? AND active",product);
         if (rows.isEmpty()) throw new NoSuchElementException("Sản phẩm không tồn tại hoặc đã ngừng hoạt động");
-        return ChinhSachChietKhauService.quote(findAll(),product,((Number)rows.get(0).get("category_id")).longValue(),
+        // Chính sách của nhóm cha áp dụng cho sản phẩm thuộc mọi nhóm con bên dưới.
+        Set<Long> groups=new HashSet<>();
+        Object category=rows.get(0).get("category_id");
+        if (category!=null) for (var row:query(
+            "WITH RECURSIVE up(id,parent_id,depth) AS (SELECT id,parent_id,0 FROM categories WHERE id=? "+
+            "UNION ALL SELECT c.id,c.parent_id,up.depth+1 FROM categories c JOIN up ON c.id=up.parent_id WHERE up.depth<50) "+
+            "SELECT id FROM up",((Number)category).longValue()))
+            groups.add(((Number)row.get("id")).longValue());
+        return ChinhSachChietKhauService.quote(findAll(),product,groups,
             (int)qty,ChinhSachChietKhauService.decimal(input.get("unitPrice")));
     }
 }

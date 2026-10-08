@@ -68,12 +68,12 @@ async function loadMail(){
  count.textContent='Đang làm mới...';
  try{
   const response=await fetch('api/dev-mailbox?email='+encodeURIComponent(email),{cache:'no-store'});
-  if(!response.ok)throw new Error();
+  if(!response.ok){const data=await response.json().catch(()=>({}));const error=new Error(data.message||'');error.server=true;throw error;}
   const mails=await response.json();
   if(request!==requestId||email!==current)return;
   count.textContent=mails.length+' thư';
   list.innerHTML=mails.length?mails.map(mail=>`<article class="mail"><div class="mail-top"><span class="sender">KF</span><div class="mail-title"><h2>${escapeHtml(mail.subject)}</h2><small>KhoFlow System → ${escapeHtml(mail.recipient)}</small></div><time>${formatDate(mail.created_at)}</time></div><p class="mail-body">${escapeHtml(mail.body)}</p>${resetLink(mail.action_url)?`<a class="open-link" href="${escapeHtml(resetLink(mail.action_url))}">Đặt lại mật khẩu <span>→</span></a>`:''}</article>`).join(''):'<div class="empty"><b>Hộp thư đang trống</b><span>Chưa có thư gửi đến địa chỉ này.</span></div>';
- }catch(_){if(request!==requestId||email!==current)return;count.textContent='Không thể tải thư';list.innerHTML='<div class="empty"><b>Mất kết nối</b><span>Không thể kết nối tới hộp thư thử nghiệm.</span></div>';}
+ }catch(error){if(request!==requestId||email!==current)return;count.textContent='Không thể tải thư';list.innerHTML=error.server?`<div class="empty"><b>Không mở được hộp thư</b><span>${escapeHtml(error.message||'Máy chủ từ chối yêu cầu.')}</span></div>`:'<div class="empty"><b>Mất kết nối</b><span>Không thể kết nối tới hộp thư thử nghiệm.</span></div>';}
 }
 select.addEventListener('change',()=>openMailbox(select.value));
 document.getElementById('openMailboxForm').addEventListener('submit',event=>{event.preventDefault();if(customEmail.checkValidity())openMailbox(customEmail.value)});

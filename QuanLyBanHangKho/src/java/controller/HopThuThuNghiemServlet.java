@@ -15,6 +15,10 @@ public class HopThuThuNghiemServlet extends CoSoServlet {
             error(r, 404, "Hộp thư thử nghiệm đã tắt");
             return;
         }
+        if (!developmentMailboxAvailable(q)) {
+            error(r, 403, "Hộp thư thử nghiệm chỉ mở trên máy đang chạy ứng dụng");
+            return;
+        }
         super.service(q, r);
     }
 

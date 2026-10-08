@@ -32,6 +32,16 @@ public abstract class CoSoServlet extends HttpServlet {
         return out.toString();
     }
 
+    /** KhoMail chỉ phục vụ máy đang chạy Tomcat; máy khác trong mạng không đọc được thư. */
+    protected static boolean developmentMailboxAvailable(HttpServletRequest q) {
+        if (!service.ThuDienTuService.developmentMailbox()) return false;
+        try {
+            return java.net.InetAddress.getByName(q.getRemoteAddr()).isLoopbackAddress();
+        } catch (java.net.UnknownHostException e) {
+            return false;
+        }
+    }
+
     protected String jsonRows(List<Map<String, Object>> rows) {
         return util.XuLyJson.stringify(rows);
     }

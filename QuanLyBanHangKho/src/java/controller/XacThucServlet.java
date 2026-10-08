@@ -8,7 +8,6 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.*;
 import security.PhanQuyen;
-import service.ThuDienTuService;
 import util.*;
 
 @WebServlet("/api/auth/*")
@@ -18,7 +17,7 @@ public class XacThucServlet extends CoSoServlet {
 
     protected void doGet(HttpServletRequest q, HttpServletResponse r) throws IOException {
         if ("/mail-config".equals(q.getPathInfo())) {
-            ok(r, "{\"developmentMailbox\":" + ThuDienTuService.developmentMailbox() + "}");
+            ok(r, "{\"developmentMailbox\":" + developmentMailboxAvailable(q) + "}");
             return;
         }
         if ("/me".equals(q.getPathInfo())) {

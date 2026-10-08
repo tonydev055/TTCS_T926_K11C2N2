@@ -283,7 +283,7 @@
               const result = await response.json().catch(() => ({}));
               if (!response.ok)
                 throw new Error(result.message || 'Không thể cập nhật trạng thái tài khoản');
-              showToast(result.message);
+              showToast(result.message, result.assignedCustomers > 0 ? 'error' : undefined);
               await load();
             } catch (error) {
               showToast(error.message);

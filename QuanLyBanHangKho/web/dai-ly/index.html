@@ -26,6 +26,9 @@
   #agentFeature .ag-status { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
   #agentFeature .ag-status.active { background: #ecfdf3; color: #067647; }
   #agentFeature .ag-status.inactive { background: #f2f4f7; color: #475467; }
+  #agentFeature .ag-status.locked { background: #fef3f2; color: #b42318; }
+  #agentFeature .ag-lock-banner { margin: 0; padding: 12px 22px; border-bottom: 1px solid #fecdca; background: #fef3f2; color: #912018; font-size: 13px; }
+  #agentFeature .ag-lock-banner strong { display: block; margin-bottom: 2px; }
   #agentFeature .ag-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 22px; border-top: 1px solid #edf1f5; color: #64748b; font-size: 12px; }
   #agentFeature .ag-pager { display: flex; gap: 8px; }
   #agentFeature .ag-empty { padding: 48px 20px; text-align: center; color: #7a8699; }
@@ -74,6 +77,7 @@ window.agentFeature = (() => {
 
   const esc = (value) => escapeHtml(value == null ? '' : String(value));
   const statusLabel = { ACTIVE: 'Đang giao dịch', INACTIVE: 'Ngừng giao dịch' };
+  const lockBadge = (item) => item.trading_locked ? ' <span class="ag-status locked">🔒 Khoá giao dịch</span>' : '';
   const statusBadge = (status) => `<span class="ag-status ${status === 'ACTIVE' ? 'active' : 'inactive'}">${status === 'ACTIVE' ? '●' : '○'} ${esc(statusLabel[status] || status)}</span>`;
   const day = (value) => {
     const parts = String(value || '').slice(0, 10).split('-');
@@ -139,7 +143,7 @@ window.agentFeature = (() => {
           <td>${esc(item.group_name)}</td>
           <td>${esc(item.region)}</td>
           <td>${item.sales_rep_name ? esc(item.sales_rep_name) : '<small>Chưa phân công</small>'}</td>
-          <td>${statusBadge(item.status)}</td>
+          <td>${statusBadge(item.status)}${lockBadge(item)}</td>
         </tr>`).join('')}
       </tbody></table></div>
       <div class="ag-footer"><span>${data.total} đại lý · Trang ${data.page}/${pages}</span><div class="ag-pager">
@@ -167,12 +171,16 @@ window.agentFeature = (() => {
       const price = agent.price_list;
       document.getElementById('agDetail').innerHTML = `
         <div class="ag-detail-head">
-          <div><h3>${esc(agent.code)} · ${esc(agent.name)}</h3><p>${statusBadge(agent.status)}</p></div>
-          ${masters.canWrite ? `<div class="ag-actions">
-            <button type="button" class="ag-btn" id="agEdit">Sửa hồ sơ</button>
-            ${agent.has_transactions ? '' : '<button type="button" class="ag-btn danger" id="agDelete">Xoá đại lý</button>'}
+          <div><h3>${esc(agent.code)} · ${esc(agent.name)}</h3><p>${statusBadge(agent.status)}${lockBadge(agent)}</p></div>
+          ${masters.canWrite || masters.canLock ? `<div class="ag-actions">
+            ${masters.canLock ? (agent.trading_locked
+              ? '<button type="button" class="ag-btn" id="agUnlock">Mở giao dịch</button>'
+              : '<button type="button" class="ag-btn danger" id="agLock">Khoá giao dịch</button>') : ''}
+            ${masters.canWrite ? '<button type="button" class="ag-btn" id="agEdit">Sửa hồ sơ</button>' : ''}
+            ${masters.canWrite && !agent.has_transactions ? '<button type="button" class="ag-btn danger" id="agDelete">Xoá đại lý</button>' : ''}
           </div>` : ''}
         </div>
+        ${agent.trading_locked ? `<p class="ag-lock-banner" role="status"><strong>Đại lý đang bị khoá giao dịch — không tạo được đơn mới, kể cả trên cổng đặt hàng.</strong>Lý do: ${esc(agent.lock_reason)} · ${esc(agent.locked_by_name || '')} · ${esc(new Date(agent.locked_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }))}${Number(agent.open_orders) > 0 ? ` · Còn ${esc(agent.open_orders)} đơn đang xử lý (vẫn xử lý tiếp được, có cảnh báo).` : ''}</p>` : ''}
         <div class="ag-section"><h4>Thông tin chung</h4><dl class="ag-grid">
           <div><dt>Mã số thuế</dt><dd>${esc(agent.tax_code || '—')}</dd></div>
           <div><dt>Số điện thoại</dt><dd>${esc(agent.phone || '—')}</dd></div>
@@ -205,11 +213,57 @@ window.agentFeature = (() => {
       loadCreditHistory(agent, revision);
       document.getElementById('agDetail').insertAdjacentHTML('beforeend', '<div class="ag-section" id="agAddresses"><h4>Điểm giao hàng</h4><p class="ag-empty">Đang tải điểm giao hàng...</p></div>');
       loadAddresses(agent, revision);
+      document.getElementById('agDetail').insertAdjacentHTML('beforeend', '<div class="ag-section" id="agLockSection"><h4>Lịch sử khoá giao dịch</h4><div id="agLockHistory"><p class="ag-muted">Đang tải...</p></div></div>');
+      loadLockHistory(agent, revision);
+      document.getElementById('agLock')?.addEventListener('click', () => openLock(agent, true, revision));
+      document.getElementById('agUnlock')?.addEventListener('click', () => openLock(agent, false, revision));
       document.getElementById('agEdit')?.addEventListener('click', () => openForm(agent, revision));
       document.getElementById('agDelete')?.addEventListener('click', () => confirmDelete(agent, revision));
     } catch (error) {
       if (alive(revision)) document.getElementById('agDetail').innerHTML = `<p class="ag-error" role="alert">${esc(error.message)}</p>`;
     }
+  }
+
+  // ----- S3-07: khoá giao dịch -----
+  async function loadLockHistory(agent, revision) {
+    const host = document.getElementById('agLockHistory');
+    try {
+      const items = await apiRequest(`customers/${agent.id}/lock-history`);
+      if (!alive(revision) || !host.isConnected) return;
+      host.innerHTML = items.length ? `<div class="ag-table-wrap"><table class="ag-mini-table"><thead><tr><th>Thời điểm</th><th>Thao tác</th><th>Lý do / ghi chú</th><th>Người thực hiện</th></tr></thead><tbody>
+        ${items.map((item) => `<tr>
+          <td>${esc(new Date(item.changed_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }))}</td>
+          <td><strong>${item.action === 'LOCK' ? '🔒 Khoá giao dịch' : 'Mở giao dịch'}</strong></td>
+          <td>${esc(item.reason || '—')}</td>
+          <td>${esc(item.changed_by_name)}</td>
+        </tr>`).join('')}
+      </tbody></table></div>` : '<p class="ag-muted">Đại lý chưa từng bị khoá giao dịch.</p>';
+    } catch (error) {
+      if (alive(revision) && host.isConnected) host.innerHTML = `<p class="ag-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  function openLock(agent, lock, revision) {
+    const open = Number(agent.open_orders) || 0;
+    const body = lock
+      ? `<div class="form-group full"><label>Lý do khoá *<textarea name="reason" maxlength="500" required placeholder="Ví dụ: nợ quá hạn 90 ngày, có dấu hiệu mất khả năng thanh toán"></textarea></label></div>
+         <p class="s2-hint" style="grid-column:1/-1">Sau khi khoá, không ai tạo được đơn mới cho đại lý này, kể cả đại lý tự đặt trên cổng.${open ? ` Đại lý còn <strong>${esc(open)} đơn đang xử lý</strong>: các đơn này vẫn xử lý tiếp nhưng sẽ hiện cảnh báo.` : ''}</p>`
+      : `<div class="form-group full"><label>Ghi chú mở khoá<textarea name="reason" maxlength="500" placeholder="Ví dụ: đại lý đã thanh toán đủ nợ quá hạn"></textarea></label></div>`;
+    const { form, close } = openFormDialog(`${lock ? 'Khoá giao dịch' : 'Mở giao dịch'} · ${agent.code}`, body, lock ? 'Khoá giao dịch' : 'Mở giao dịch');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      try {
+        const result = await apiRequest(`customers/${agent.id}/${lock ? 'lock' : 'unlock'}`, jsonRequestOptions('POST', { reason: form.reason.value }));
+        close();
+        showToast(result.message, lock && result.open_orders > 0 ? 'error' : undefined);
+        if (alive(revision)) renderDetail(agent.id, revision);
+      } catch (error) {
+        document.getElementById('s2FormError').textContent = error.message;
+        submit.disabled = false;
+      }
+    });
   }
 
   // ----- S3-06: phân công nhân viên kinh doanh -----

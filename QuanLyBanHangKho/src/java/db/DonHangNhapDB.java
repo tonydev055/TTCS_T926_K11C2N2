@@ -15,27 +15,26 @@ public class DonHangNhapDB extends CoSoDB {
         return "%" + s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
     }
 
-    /** Đại lý là tài khoản đang hoạt động có vai trò CUSTOMER. */
-    public boolean isAgent(long userId) throws SQLException {
-        return !query(
-            "SELECT 1 FROM users u JOIN user_roles ur ON ur.user_id=u.id JOIN roles r ON r.id=ur.role_id " +
-            "WHERE u.id=? AND u.active AND r.code='CUSTOMER'", userId).isEmpty();
+    /** Đại lý đang giao dịch, chưa bị khoá và do nhân viên này phụ trách. */
+    public boolean isAgent(long customerId, long userId) throws SQLException {
+        return !query("SELECT 1 FROM customers WHERE id=? AND status='ACTIVE' AND sales_rep_id=?", customerId, userId).isEmpty();
     }
 
-    public List<Map<String, Object>> customers(String q) throws SQLException {
+    /** Tìm đại lý mình phụ trách theo mã, tên, mã số thuế hoặc số điện thoại (kèm trạng thái khoá để giao diện cảnh báo). */
+    public List<Map<String, Object>> customers(String q, long userId) throws SQLException {
         String k = like(q);
         return query(
-            "SELECT u.id, u.full_name AS \"fullName\", COALESCE(u.phone,'') AS phone, u.email " +
-            "FROM users u JOIN user_roles ur ON ur.user_id=u.id JOIN roles r ON r.id=ur.role_id AND r.code='CUSTOMER' " +
-            "WHERE u.active AND (u.full_name ILIKE ? ESCAPE '\\' OR u.username ILIKE ? ESCAPE '\\' " +
-            "OR u.email ILIKE ? ESCAPE '\\' OR COALESCE(u.phone,'') ILIKE ? ESCAPE '\\') " +
-            "ORDER BY u.full_name LIMIT 20", k, k, k, k);
+            "SELECT c.id, c.name AS \"fullName\", c.code, COALESCE(c.phone,'') AS phone, '' AS email, " +
+            "c.trading_locked AS \"tradingLocked\", COALESCE(c.lock_reason,'') AS \"lockReason\" " +
+            "FROM customers c WHERE c.status='ACTIVE' AND c.sales_rep_id=? AND (c.name ILIKE ? ESCAPE '\' " +
+            "OR c.code ILIKE ? ESCAPE '\' OR COALESCE(c.tax_code,'') ILIKE ? ESCAPE '\' " +
+            "OR COALESCE(c.phone,'') ILIKE ? ESCAPE '\') ORDER BY c.name LIMIT 20", userId, k, k, k, k);
     }
 
     /** Bảng giá hiện hành (còn hiệu lực hôm nay, phiên bản mới nhất) theo nhóm khách hàng của đại lý. */
     public Long currentPriceListId(long customerId) throws SQLException {
         var rows = query(
-            "SELECT pl.id FROM price_lists pl JOIN users u ON u.customer_group_id=pl.customer_group_id " +
+            "SELECT pl.id FROM price_lists pl JOIN customers u ON u.customer_group_id=pl.customer_group_id " +
             "WHERE u.id=? AND pl.active AND CURRENT_DATE BETWEEN pl.valid_from AND pl.valid_to " +
             "ORDER BY pl.version DESC, pl.id DESC LIMIT 1", customerId);
         return rows.isEmpty() ? null : ((Number) rows.get(0).get("id")).longValue();
@@ -94,6 +93,8 @@ public class DonHangNhapDB extends CoSoDB {
                     p.setString(1, String.valueOf(userId));
                     p.executeQuery();
                 }
+                // Đại lý bị khoá hoặc ngừng giao dịch thì không lập thêm đơn (S3-07).
+                service.KhachHangService.requireCanCreateOrder(c, customerId);
                 long id;
                 if (orderId == null) {
                     try (PreparedStatement p = c.prepareStatement(
@@ -103,7 +104,7 @@ public class DonHangNhapDB extends CoSoDB {
                         id = r.getLong(1);
                     }
                     try (PreparedStatement p = c.prepareStatement(
-                            "INSERT INTO orders(id,code,customer_id,price_list_id,status,created_by,delivery_address,delivery_point_id," +
+                            "INSERT INTO orders(id,code,agent_id,price_list_id,status,created_by,delivery_address,delivery_address_id," +
                             "desired_delivery_date,note,subtotal,discount_total,payable) " +
                             "VALUES(?,?,?,?,'DRAFT',?,?,?,?,?,?,?,?)")) {
                         p.setLong(1, id);
@@ -123,7 +124,7 @@ public class DonHangNhapDB extends CoSoDB {
                 } else {
                     id = orderId;
                     try (PreparedStatement p = c.prepareStatement(
-                            "UPDATE orders SET customer_id=?,price_list_id=?,delivery_address=?,delivery_point_id=?,desired_delivery_date=?," +
+                            "UPDATE orders SET agent_id=?,price_list_id=?,delivery_address=?,delivery_address_id=?,desired_delivery_date=?," +
                             "note=?,subtotal=?,discount_total=?,payable=?,updated_at=CURRENT_TIMESTAMP " +
                             "WHERE id=? AND created_by=? AND status='DRAFT'")) {
                         p.setLong(1, customerId);
@@ -190,10 +191,11 @@ public class DonHangNhapDB extends CoSoDB {
     /** Mở lại một đơn nháp của chính người dùng (kèm dòng hàng và các đơn vị tính để sửa tiếp). */
     public Map<String, Object> load(long id, long userId) throws SQLException {
         var rows = query(
-            "SELECT o.id, o.code, o.status, o.customer_id AS \"customerId\", u.full_name AS \"customerName\", " +
-            "COALESCE(u.phone,'') AS \"customerPhone\", o.delivery_address AS \"deliveryAddress\", o.delivery_point_id AS \"deliveryPointId\", " +
+            "SELECT o.id, o.code, o.status, o.agent_id AS \"customerId\", u.name AS \"customerName\", " +
+            "COALESCE(u.phone,'') AS \"customerPhone\", o.delivery_address AS \"deliveryAddress\", o.delivery_address_id AS \"deliveryPointId\", " +
+            "u.trading_locked AS \"tradingLocked\", COALESCE(u.lock_reason,'') AS \"lockReason\", " +
             "o.desired_delivery_date AS \"desiredDate\", o.note, o.subtotal, o.discount_total AS discount, o.payable " +
-            "FROM orders o LEFT JOIN users u ON u.id=o.customer_id WHERE o.id=? AND o.created_by=?", id, userId);
+            "FROM orders o LEFT JOIN customers u ON u.id=o.agent_id WHERE o.id=? AND o.created_by=?", id, userId);
         if (rows.isEmpty()) return null;
         Map<String, Object> order = new LinkedHashMap<>(rows.get(0));
         var lines = query(
@@ -206,9 +208,9 @@ public class DonHangNhapDB extends CoSoDB {
 
     public List<Map<String, Object>> listDrafts(long userId) throws SQLException {
         return query(
-            "SELECT o.id, o.code, COALESCE(u.full_name,'') AS \"customerName\", o.payable, o.updated_at AS \"updatedAt\", " +
+            "SELECT o.id, o.code, COALESCE(u.name,'') AS \"customerName\", o.payable, o.updated_at AS \"updatedAt\", " +
             "(SELECT count(*) FROM order_lines l WHERE l.order_id=o.id) AS \"lineCount\" " +
-            "FROM orders o LEFT JOIN users u ON u.id=o.customer_id " +
+            "FROM orders o LEFT JOIN customers u ON u.id=o.agent_id " +
             "WHERE o.created_by=? AND o.status='DRAFT' ORDER BY o.updated_at DESC LIMIT 50", userId);
     }
 }

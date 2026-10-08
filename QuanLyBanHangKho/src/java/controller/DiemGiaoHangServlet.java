@@ -9,7 +9,8 @@ import service.ChinhSachChietKhauService;
 import util.XuLyJson;
 
 /**
- * Điểm giao hàng của đại lý. Cần quyền customers.assigned (nhân viên kinh doanh).
+ * Điểm giao hàng của đại lý (bảng customer_addresses). Cần quyền customers.assigned (nhân viên kinh doanh),
+ * chỉ thao tác trên đại lý mình phụ trách.
  *   GET    /api/delivery-points/customers?q=            tìm đại lý (kèm số điểm giao đang có)
  *   GET    /api/delivery-points?customerId=             danh sách điểm giao của một đại lý
  *   POST   /api/delivery-points                         thêm điểm giao
@@ -37,10 +38,15 @@ public class DiemGiaoHangServlet extends CoSoServlet {
         return s;
     }
 
-    private long agent(Object customerId) throws Exception {
+    private static long userId(HttpServletRequest q) {
+        return ((Number) q.getSession(false).getAttribute("userId")).longValue();
+    }
+
+    /** Đại lý phải đang giao dịch và do chính nhân viên này phụ trách. */
+    private long agent(HttpServletRequest q, Object customerId) throws Exception {
         if (customerId == null) throw new IllegalArgumentException("Vui lòng chọn đại lý");
         long cid = id(customerId);
-        if (!dao.isAgent(cid)) throw new NoSuchElementException("Không tìm thấy đại lý");
+        if (!dao.isAgent(cid, userId(q))) throw new NoSuchElementException("Không tìm thấy đại lý");
         return cid;
     }
 
@@ -57,10 +63,10 @@ public class DiemGiaoHangServlet extends CoSoServlet {
     protected void doGet(HttpServletRequest q, HttpServletResponse r) throws IOException {
         try {
             if ("/customers".equals(q.getPathInfo())) {
-                ok(r, jsonRows(dao.customers(q.getParameter("q"))));
+                ok(r, jsonRows(dao.customers(q.getParameter("q"), userId(q))));
                 return;
             }
-            ok(r, jsonRows(dao.listByCustomer(agent(q.getParameter("customerId")))));
+            ok(r, jsonRows(dao.listByCustomer(agent(q, q.getParameter("customerId")))));
         } catch (Exception e) { fail(r, e); }
     }
 
@@ -68,7 +74,7 @@ public class DiemGiaoHangServlet extends CoSoServlet {
         try {
             String p = Objects.toString(q.getPathInfo(), "/");
             Map<String, Object> in = XuLyJson.object(body(q));
-            long cid = agent(in.get("customerId"));
+            long cid = agent(q, in.get("customerId"));
             if (p.matches("/\\d+/default")) {
                 dao.setDefault(Long.parseLong(p.substring(1, p.indexOf("/default"))), cid);
                 ok(r, "{\"ok\":true}");
@@ -86,7 +92,7 @@ public class DiemGiaoHangServlet extends CoSoServlet {
             String p = Objects.toString(q.getPathInfo(), "/");
             if (!p.matches("/\\d+")) throw new IllegalArgumentException("Thiếu mã điểm giao hàng");
             Map<String, Object> in = XuLyJson.object(body(q));
-            long cid = agent(in.get("customerId"));
+            long cid = agent(q, in.get("customerId"));
             dao.update(Long.parseLong(p.substring(1)), cid, text(in, "receiverName", "Người nhận", 150, true),
                 phone(in), text(in, "address", "Địa chỉ", 500, true),
                 text(in, "routeNote", "Ghi chú đường đi", 1000, false), Boolean.TRUE.equals(in.get("isDefault")));
@@ -98,7 +104,7 @@ public class DiemGiaoHangServlet extends CoSoServlet {
         try {
             String p = Objects.toString(q.getPathInfo(), "/");
             if (!p.matches("/\\d+")) throw new IllegalArgumentException("Thiếu mã điểm giao hàng");
-            dao.remove(Long.parseLong(p.substring(1)), agent(q.getParameter("customerId")));
+            dao.remove(Long.parseLong(p.substring(1)), agent(q, q.getParameter("customerId")));
             ok(r, "{\"ok\":true}");
         } catch (Exception e) { fail(r, e); }
     }

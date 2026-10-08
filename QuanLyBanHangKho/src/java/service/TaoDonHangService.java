@@ -12,7 +12,9 @@ import java.util.*;
 
 /**
  * Tạo đơn hàng cho đại lý (S3-09). Mọi số tiền do máy chủ tính: giá lấy từ bảng giá hiện hành của đại lý,
- * chiết khấu dùng lại logic "có lợi nhất" của S3-01 (ChinhSachChietKhauService.quote).
+
+ * Đại lý lấy từ hồ sơ đại lý (customers): chỉ đại lý mình phụ trách, đang giao dịch và không bị khoá mới tạo được đơn.
+ * Chiết khấu dùng lại logic "có lợi nhất" của S3-01 (ChinhSachChietKhauService.quote).
  */
 public class TaoDonHangService {
 
@@ -25,8 +27,8 @@ public class TaoDonHangService {
     }
 
     /** Tính giá, chiết khấu, phải thu cho các dòng hàng; không ghi gì vào database. */
-    public Map<String, Object> tinhTien(long customerId, Object rawLines) throws SQLException {
-        if (!dao.isAgent(customerId)) throw new NoSuchElementException("Không tìm thấy đại lý");
+    public Map<String, Object> tinhTien(long userId, long customerId, Object rawLines) throws SQLException {
+        if (!dao.isAgent(customerId, userId)) throw new NoSuchElementException("Không tìm thấy đại lý");
         Long priceListId = dao.currentPriceListId(customerId);
         if (priceListId == null) throw new IllegalArgumentException(
             "Đại lý chưa có bảng giá còn hiệu lực. Hãy kiểm tra nhóm khách hàng và bảng giá của đại lý.");
@@ -97,7 +99,7 @@ public class TaoDonHangService {
     public long luuNhap(Long orderId, long userId, Map<String, Object> in) throws SQLException {
         if (in.get("customerId") == null) throw new IllegalArgumentException("Vui lòng chọn đại lý");
         long customerId = ChinhSachChietKhauService.positiveId(in.get("customerId"));
-        Map<String, Object> priced = tinhTien(customerId, in.get("lines"));
+        Map<String, Object> priced = tinhTien(userId, customerId, in.get("lines"));
 
         // Điểm giao phải nằm trong danh sách của ĐÚNG đại lý này (kiểm tra ở máy chủ, không chỉ ẩn trên giao diện).
         Long pointId = null;

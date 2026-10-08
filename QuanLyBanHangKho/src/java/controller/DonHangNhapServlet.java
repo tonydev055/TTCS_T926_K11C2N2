@@ -63,10 +63,10 @@ public class DonHangNhapServlet extends CoSoServlet {
             if (p.equals("/")) {
                 ok(r, jsonRows(dao.listDrafts(uid)));
             } else if (p.equals("/customers")) {
-                ok(r, jsonRows(dao.customers(q.getParameter("q"))));
+                ok(r, jsonRows(dao.customers(q.getParameter("q"), uid)));
             } else if (p.equals("/products")) {
                 long customerId = parseId(Objects.toString(q.getParameter("customerId"), ""));
-                if (!dao.isAgent(customerId)) throw new NoSuchElementException("Không tìm thấy đại lý");
+                if (!dao.isAgent(customerId, uid)) throw new NoSuchElementException("Không tìm thấy đại lý");
                 Long priceListId = dao.currentPriceListId(customerId);
                 if (priceListId == null) throw new IllegalArgumentException(
                     "Đại lý chưa có bảng giá còn hiệu lực. Hãy kiểm tra nhóm khách hàng và bảng giá của đại lý.");
@@ -89,7 +89,7 @@ public class DonHangNhapServlet extends CoSoServlet {
             if (p.equals("/quote")) {
                 if (in.get("customerId") == null) throw new IllegalArgumentException("Vui lòng chọn đại lý");
                 long customerId = ChinhSachChietKhauService.positiveId(in.get("customerId"));
-                ok(r, XuLyJson.stringify(service.tinhTien(customerId, in.get("lines"))));
+                ok(r, XuLyJson.stringify(service.tinhTien(uid, customerId, in.get("lines"))));
             } else if (p.equals("/")) {
                 long id = service.luuNhap(null, uid, in);
                 created(r, XuLyJson.stringify(dao.load(id, uid)));

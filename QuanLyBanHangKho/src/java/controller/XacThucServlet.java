@@ -7,6 +7,7 @@ import java.io.*;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.*;
+import security.KhoaDangNhapTam;
 import security.PhanQuyen;
 import util.*;
 
@@ -14,6 +15,7 @@ import util.*;
 public class XacThucServlet extends CoSoServlet {
 
     private final NguoiDungDB users = new NguoiDungDB();
+    private static final String DUMMY_HASH = MatKhauUtil.encode(MatKhauUtil.randomToken());
 
     protected void doGet(HttpServletRequest q, HttpServletResponse r) throws IOException {
         if ("/mail-config".equals(q.getPathInfo())) {
@@ -74,27 +76,23 @@ public class XacThucServlet extends CoSoServlet {
             pass = YeuCauJson.text(b, "password");
         Map<String, Object> u = users.findForLogin(identity);
         if (u == null) {
+            // Xử lý như một tài khoản thật: cùng thời gian băm mật khẩu, cùng ngưỡng khoá tạm.
+            long remaining = KhoaDangNhapTam.remainingMillis(identity);
+            if (remaining > 0) {
+                temporaryLockError(r, remaining / 1000);
+                return;
+            }
+            MatKhauUtil.verify(pass, DUMMY_HASH);
+            KhoaDangNhapTam.failed(identity);
             genericLoginError(r);
             return;
         }
         long id = ((Number) u.get("id")).longValue();
         Timestamp locked = (Timestamp) u.get("locked_until");
-        if (!Boolean.TRUE.equals(u.get("active"))) {
-            error(r, 423, "Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên");
-            return;
-        }
         if (locked != null && locked.toInstant().isAfter(Instant.now())) {
-            long seconds = Math.max(
-                1,
-                locked.toInstant().getEpochSecond() - Instant.now().getEpochSecond()
-            );
-            long minutes = Math.max(1, (seconds + 59) / 60);
-            error(
+            temporaryLockError(
                 r,
-                423,
-                "Tài khoản đang tạm khóa do đăng nhập sai quá 5 lần. Vui lòng thử lại sau " +
-                    minutes +
-                    " phút"
+                locked.toInstant().getEpochSecond() - Instant.now().getEpochSecond()
             );
             return;
         }
@@ -102,6 +100,11 @@ public class XacThucServlet extends CoSoServlet {
         if (!MatKhauUtil.verify(pass, stored)) {
             users.loginFailed(id);
             genericLoginError(r);
+            return;
+        }
+        // Chỉ báo tài khoản bị quản trị viên khoá khi người đăng nhập đã nhập đúng mật khẩu.
+        if (!Boolean.TRUE.equals(u.get("active"))) {
+            error(r, 423, "Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên");
             return;
         }
         String upgraded = stored.startsWith("pbkdf2$") ? null : MatKhauUtil.encode(pass);
@@ -123,6 +126,17 @@ public class XacThucServlet extends CoSoServlet {
         s.setAttribute("warehouses", users.warehouses(id));
         s.setAttribute("requiresPasswordChange", u.get("requires_password_change"));
         writeUser(r, s);
+    }
+
+    private void temporaryLockError(HttpServletResponse r, long seconds) throws IOException {
+        long minutes = Math.max(1, (Math.max(1, seconds) + 59) / 60);
+        error(
+            r,
+            423,
+            "Tài khoản đang tạm khóa do đăng nhập sai quá 5 lần. Vui lòng thử lại sau " +
+                minutes +
+                " phút"
+        );
     }
 
     private void genericLoginError(HttpServletResponse r) throws IOException {

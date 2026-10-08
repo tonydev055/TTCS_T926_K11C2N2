@@ -150,7 +150,12 @@ public class NguoiDungDB extends CoSoDB {
 
     public void loginFailed(long id) throws SQLException {
         update(
-            "UPDATE users SET failed_login_attempts=failed_login_attempts+1,locked_until=CASE WHEN failed_login_attempts+1>=5 THEN CURRENT_TIMESTAMP+INTERVAL '15 minutes' ELSE locked_until END WHERE id=?",
+            // Hết thời gian khoá tạm thì đếm lại từ đầu: chỉ khoá sau 5 lần sai liên tiếp mới.
+            "UPDATE users SET " +
+                "failed_login_attempts=CASE WHEN locked_until<=CURRENT_TIMESTAMP THEN 1 ELSE failed_login_attempts+1 END," +
+                "locked_until=CASE WHEN locked_until<=CURRENT_TIMESTAMP THEN NULL " +
+                "WHEN failed_login_attempts+1>=5 THEN CURRENT_TIMESTAMP+INTERVAL '15 minutes' ELSE locked_until END " +
+                "WHERE id=?",
             id
         );
     }

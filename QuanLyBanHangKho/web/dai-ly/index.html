@@ -1,0 +1,237 @@
+<!-- Loaded by the application shell: ../index.html -->
+<style>
+  #agentFeature { display: flex; flex-direction: column; gap: 18px; }
+  #agentFeature .ag-card { overflow: hidden; border: 1px solid var(--app-border, #e4e9ef); border-radius: 16px; background: #fff; box-shadow: 0 8px 24px rgba(15, 23, 42, .04); }
+  #agentFeature .ag-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 18px 22px; border-bottom: 1px solid #edf1f5; }
+  #agentFeature .ag-search { flex: 1 1 260px; min-height: 42px; padding: 0 12px; border: 1px solid #dce3ea; border-radius: 9px; font: inherit; }
+  #agentFeature .ag-search:focus,
+  #agentFeature .ag-select:focus { border-color: var(--orange); outline: 3px solid rgba(244, 122, 0, .13); }
+  #agentFeature .ag-select { min-height: 42px; padding: 0 10px; border: 1px solid #dce3ea; border-radius: 9px; background: #fff; font: inherit; }
+  #agentFeature .ag-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 0 16px; border: 1px solid #dce3ea; border-radius: 9px; background: #fff; color: #334155; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  #agentFeature .ag-btn:hover { border-color: #c4ceda; background: #f8fafc; }
+  #agentFeature .ag-btn:focus-visible { outline: 3px solid rgba(244, 122, 0, .25); }
+  #agentFeature .ag-btn.primary { border-color: var(--orange); background: var(--orange); color: #fff; }
+  #agentFeature .ag-btn.primary:hover { background: var(--orange-dark); }
+  #agentFeature .ag-btn.danger { border-color: #f3c4c0; color: #b42318; }
+  #agentFeature .ag-btn.danger:hover { background: #fef3f2; }
+  #agentFeature .ag-btn:disabled { opacity: .55; cursor: not-allowed; }
+  #agentFeature .ag-table-wrap { overflow-x: auto; }
+  #agentFeature .ag-table { width: 100%; min-width: 760px; border-collapse: collapse; }
+  #agentFeature .ag-table th { padding: 11px 14px; background: #f4f7fa; color: #455468; text-align: left; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  #agentFeature .ag-table td { padding: 12px 14px; border-top: 1px solid #edf1f5; color: #334155; font-size: 13px; vertical-align: middle; }
+  #agentFeature .ag-table tbody tr { cursor: pointer; }
+  #agentFeature .ag-table tbody tr:hover td { background: #fffaf6; }
+  #agentFeature .ag-table tbody tr:focus-visible { outline: 2px solid var(--orange); outline-offset: -2px; }
+  #agentFeature .ag-table small { display: block; margin-top: 2px; color: #8490a2; font-size: 11px; }
+  #agentFeature .ag-status { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+  #agentFeature .ag-status.active { background: #ecfdf3; color: #067647; }
+  #agentFeature .ag-status.inactive { background: #f2f4f7; color: #475467; }
+  #agentFeature .ag-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 22px; border-top: 1px solid #edf1f5; color: #64748b; font-size: 12px; }
+  #agentFeature .ag-pager { display: flex; gap: 8px; }
+  #agentFeature .ag-empty { padding: 48px 20px; text-align: center; color: #7a8699; }
+  #agentFeature .ag-empty strong { display: block; margin-bottom: 5px; color: #334155; }
+  #agentFeature .ag-error { margin: 0; padding: 16px; color: #b42318; text-align: center; }
+  #agentFeature .ag-detail-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 22px; border-bottom: 1px solid #edf1f5; }
+  #agentFeature .ag-detail-head h3 { margin: 0 0 6px; color: #172033; font-size: 20px; }
+  #agentFeature .ag-detail-head p { margin: 0; color: #64748b; font-size: 13px; }
+  #agentFeature .ag-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  #agentFeature .ag-section { padding: 20px 22px; border-bottom: 1px solid #edf1f5; }
+  #agentFeature .ag-section:last-child { border-bottom: 0; }
+  #agentFeature .ag-section h4 { margin: 0 0 14px; color: #172033; font-size: 15px; }
+  #agentFeature .ag-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px 24px; margin: 0; }
+  #agentFeature .ag-grid dt { color: #7a8699; font-size: 12px; }
+  #agentFeature .ag-grid dd { margin: 3px 0 0; color: #172033; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+  #agentFeature .ag-note { margin: 0; padding: 11px 14px; border: 1px solid #dbeafe; border-radius: 10px; background: #eff6ff; color: #1d4ed8; font-size: 13px; }
+  #agentFeature .ag-back { align-self: flex-start; }
+  @media (max-width: 720px) {
+    #agentFeature .ag-toolbar,
+    #agentFeature .ag-detail-head,
+    #agentFeature .ag-section { padding: 16px; }
+    #agentFeature .ag-footer { padding: 12px 16px; }
+  }
+</style>
+<script>
+window.agentFeature = (() => {
+  let generation = 0;
+  let masters = { groups: [], salesReps: [], regions: [], canWrite: false };
+  let state = { search: '', page: 1, size: 20 };
+
+  const esc = (value) => escapeHtml(value == null ? '' : String(value));
+  const statusLabel = { ACTIVE: 'Đang giao dịch', INACTIVE: 'Ngừng giao dịch' };
+  const statusBadge = (status) => `<span class="ag-status ${status === 'ACTIVE' ? 'active' : 'inactive'}">${status === 'ACTIVE' ? '●' : '○'} ${esc(statusLabel[status] || status)}</span>`;
+  const day = (value) => {
+    const parts = String(value || '').slice(0, 10).split('-');
+    return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : '—';
+  };
+  const alive = (revision) => revision === generation && document.getElementById('agentFeature');
+
+  function shell(inner) {
+    moduleContent.innerHTML = `<section id="agentFeature">
+      <header class="module-head"><div><span class="eyebrow">KHÁCH HÀNG · ĐẠI LÝ</span><h2>Đại lý</h2><p>Danh sách đại lý chuẩn dùng chung cho kinh doanh, kế toán và giao hàng.</p></div></header>
+      ${inner}
+    </section>`;
+  }
+
+  async function render() {
+    const revision = ++generation;
+    state = { search: '', page: 1, size: 20 };
+    shell(`<div class="ag-card"><div class="ag-empty"><strong>Đang tải danh sách đại lý...</strong></div></div>`);
+    try {
+      masters = await apiRequest('customers/masters');
+      if (!alive(revision)) return;
+      renderList(revision);
+    } catch (error) {
+      if (alive(revision)) document.querySelector('#agentFeature .ag-card').innerHTML = `<p class="ag-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  function renderList(revision) {
+    shell(`<div class="ag-card">
+      <div class="ag-toolbar">
+        <input class="ag-search" id="agSearch" type="search" placeholder="Tìm theo mã, tên, số điện thoại, mã số thuế" aria-label="Tìm đại lý" value="${esc(state.search)}">
+        ${masters.canWrite ? '<button type="button" class="ag-btn primary" id="agCreate">+ Thêm đại lý</button>' : ''}
+      </div>
+      <div id="agList"><div class="ag-empty"><strong>Đang tải...</strong></div></div>
+    </div>`);
+    let timer;
+    document.getElementById('agSearch').addEventListener('input', (event) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => { state.search = event.target.value.trim(); state.page = 1; loadList(revision); }, 300);
+    });
+    document.getElementById('agCreate')?.addEventListener('click', () => openForm(null, revision));
+    loadList(revision);
+  }
+
+  async function loadList(revision) {
+    const host = document.getElementById('agList');
+    const params = new URLSearchParams({ page: state.page, size: state.size });
+    if (state.search) params.set('search', state.search);
+    try {
+      const data = await apiRequest(`customers/?${params}`);
+      if (!alive(revision) || !host.isConnected) return;
+      if (!data.items.length) {
+        host.innerHTML = `<div class="ag-empty"><strong>${state.search ? 'Không có đại lý phù hợp' : 'Chưa có đại lý'}</strong><span>${state.search ? 'Thử từ khoá khác.' : masters.canWrite ? 'Bấm “Thêm đại lý” để khai báo đại lý đầu tiên.' : 'Chưa có đại lý nào được giao cho bạn.'}</span></div>`;
+        return;
+      }
+      const pages = Math.max(1, Math.ceil(data.total / data.size));
+      host.innerHTML = `<div class="ag-table-wrap"><table class="ag-table"><thead><tr><th>Mã đại lý</th><th>Tên đại lý</th><th>Nhóm khách hàng</th><th>Khu vực</th><th>Người phụ trách</th><th>Trạng thái</th></tr></thead><tbody>
+        ${data.items.map((item) => `<tr tabindex="0" data-id="${esc(item.id)}">
+          <td><strong>${esc(item.code)}</strong></td>
+          <td>${esc(item.name)}${item.phone ? `<small>${esc(item.phone)}</small>` : ''}</td>
+          <td>${esc(item.group_name)}</td>
+          <td>${esc(item.region)}</td>
+          <td>${item.sales_rep_name ? esc(item.sales_rep_name) : '<small>Chưa phân công</small>'}</td>
+          <td>${statusBadge(item.status)}</td>
+        </tr>`).join('')}
+      </tbody></table></div>
+      <div class="ag-footer"><span>${data.total} đại lý · Trang ${data.page}/${pages}</span><div class="ag-pager">
+        <button type="button" class="ag-btn" id="agPrev" ${data.page <= 1 ? 'disabled' : ''}>← Trước</button>
+        <button type="button" class="ag-btn" id="agNext" ${data.page >= pages ? 'disabled' : ''}>Sau →</button>
+      </div></div>`;
+      host.querySelectorAll('tbody tr').forEach((row) => {
+        const open = () => renderDetail(row.dataset.id, revision);
+        row.addEventListener('click', open);
+        row.addEventListener('keydown', (event) => { if (event.key === 'Enter') open(); });
+      });
+      document.getElementById('agPrev').onclick = () => { state.page--; loadList(revision); };
+      document.getElementById('agNext').onclick = () => { state.page++; loadList(revision); };
+    } catch (error) {
+      if (alive(revision) && host.isConnected) host.innerHTML = `<p class="ag-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  async function renderDetail(id, revision) {
+    shell(`<button type="button" class="ag-btn ag-back" id="agBack">← Danh sách đại lý</button><div class="ag-card" id="agDetail"><div class="ag-empty"><strong>Đang tải hồ sơ đại lý...</strong></div></div>`);
+    document.getElementById('agBack').onclick = () => renderList(revision);
+    try {
+      const agent = await apiRequest(`customers/${encodeURIComponent(id)}`);
+      if (!alive(revision)) return;
+      const price = agent.price_list;
+      document.getElementById('agDetail').innerHTML = `
+        <div class="ag-detail-head">
+          <div><h3>${esc(agent.code)} · ${esc(agent.name)}</h3><p>${statusBadge(agent.status)}</p></div>
+          ${masters.canWrite ? `<div class="ag-actions">
+            <button type="button" class="ag-btn" id="agEdit">Sửa hồ sơ</button>
+            ${agent.has_transactions ? '' : '<button type="button" class="ag-btn danger" id="agDelete">Xoá đại lý</button>'}
+          </div>` : ''}
+        </div>
+        <div class="ag-section"><h4>Thông tin chung</h4><dl class="ag-grid">
+          <div><dt>Mã số thuế</dt><dd>${esc(agent.tax_code || '—')}</dd></div>
+          <div><dt>Số điện thoại</dt><dd>${esc(agent.phone || '—')}</dd></div>
+          <div><dt>Khu vực</dt><dd>${esc(agent.region)}</dd></div>
+          <div><dt>Người phụ trách</dt><dd>${agent.sales_rep_name ? `${esc(agent.sales_rep_name)}` : 'Chưa phân công'}</dd></div>
+        </dl></div>
+        <div class="ag-section"><h4>Nhóm khách hàng & bảng giá</h4><dl class="ag-grid">
+          <div><dt>Nhóm khách hàng</dt><dd>${esc(agent.group_name)}</dd></div>
+          <div><dt>Bảng giá đang áp dụng</dt><dd>${price ? `${esc(price.name)} · phiên bản ${esc(price.version)}` : 'Chưa có bảng giá hiệu lực'}</dd></div>
+          ${price ? `<div><dt>Hiệu lực</dt><dd>${day(price.valid_from)} – ${day(price.valid_to)}</dd></div>` : ''}
+        </dl>
+        ${agent.has_transactions ? '<p class="ag-note" style="margin-top:14px">Đại lý đã phát sinh giao dịch nên không thể xoá. Khi không còn hợp tác, hãy chuyển trạng thái sang “Ngừng giao dịch”.</p>' : ''}
+        </div>`;
+      document.getElementById('agEdit')?.addEventListener('click', () => openForm(agent, revision));
+      document.getElementById('agDelete')?.addEventListener('click', () => confirmDelete(agent, revision));
+    } catch (error) {
+      if (alive(revision)) document.getElementById('agDetail').innerHTML = `<p class="ag-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  function openForm(agent, revision) {
+    const value = (key, fallback = '') => agent?.[key] ?? fallback;
+    const regionOptions = masters.regions.map((region) => `<option value="${esc(region)}">`).join('');
+    const body = [
+      renderInputField('code', 'Mã đại lý', value('code')),
+      renderInputField('name', 'Tên đại lý', value('name')),
+      renderInputField('tax_code', 'Mã số thuế', value('tax_code'), 'text', false),
+      renderInputField('phone', 'Số điện thoại', value('phone'), 'tel', false),
+      renderInputField('customer_group_id', 'Nhóm khách hàng', value('customer_group_id'), 'text', true, masters.groups.map((group) => [group.id, group.name])),
+      `<div class="form-group"><label>Khu vực *<input name="region" list="agRegions" value="${esc(value('region'))}" required maxlength="150"></label><datalist id="agRegions">${regionOptions}</datalist></div>`,
+      renderInputField('sales_rep_id', 'Người phụ trách', value('sales_rep_id'), 'text', false, masters.salesReps.map((rep) => [rep.id, rep.full_name + (rep.territory ? ` · ${rep.territory}` : '')])),
+      renderInputField('status', 'Trạng thái', value('status', 'ACTIVE'), 'text', true, [['ACTIVE', 'Đang giao dịch'], ['INACTIVE', 'Ngừng giao dịch']])
+    ].join('');
+    const { form, close } = openFormDialog(agent ? 'Sửa hồ sơ đại lý' : 'Thêm đại lý', body, 'Lưu hồ sơ đại lý');
+    form.querySelector('[name="code"]').maxLength = 40;
+    form.querySelector('[name="name"]').maxLength = 200;
+    form.querySelector('[name="tax_code"]').placeholder = '10 chữ số, chi nhánh thêm -XXX';
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submit = form.querySelector('[type="submit"]');
+      const errorHost = document.getElementById('s2FormError');
+      submit.disabled = true;
+      errorHost.textContent = '';
+      const data = Object.fromEntries(new FormData(form));
+      try {
+        const result = await apiRequest(agent ? `customers/${agent.id}` : 'customers/', jsonRequestOptions(agent ? 'PUT' : 'POST', data));
+        close();
+        showToast('Đã lưu hồ sơ đại lý');
+        if (alive(revision)) {
+          masters = await apiRequest('customers/masters');
+          renderDetail(result.id, revision);
+        }
+      } catch (error) {
+        errorHost.textContent = error.message;
+        submit.disabled = false;
+      }
+    });
+  }
+
+  function confirmDelete(agent, revision) {
+    const { form, close } = openFormDialog('Xoá đại lý', `<p class="s2-hint" style="grid-column:1/-1">Xoá vĩnh viễn đại lý <strong>${esc(agent.code)} · ${esc(agent.name)}</strong>? Chỉ xoá được đại lý chưa phát sinh giao dịch.</p>`, 'Xoá đại lý');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      try {
+        await apiRequest(`customers/${agent.id}`, { method: 'DELETE' });
+        close();
+        showToast('Đã xoá đại lý');
+        if (alive(revision)) renderList(revision);
+      } catch (error) {
+        document.getElementById('s2FormError').textContent = error.message;
+        submit.disabled = false;
+      }
+    });
+  }
+
+  return { render, renderDetail: (id) => renderDetail(id, generation) };
+})();
+</script>

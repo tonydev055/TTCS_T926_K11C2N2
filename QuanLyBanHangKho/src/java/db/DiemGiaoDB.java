@@ -39,9 +39,9 @@ public class DiemGiaoDB extends CoSoDB {
         }
     }
 
-    /** Đại lý đang giao dịch và do nhân viên này phụ trách. */
+    /** Đại lý do nhân viên này phụ trách, bao gồm hồ sơ có đơn đang xử lý. */
     public boolean isAgent(long customerId, long userId) throws SQLException {
-        return !query("SELECT 1 FROM customers WHERE id=? AND status='ACTIVE' AND sales_rep_id=?", customerId, userId).isEmpty();
+        return !query("SELECT 1 FROM customers WHERE id=? AND sales_rep_id=?", customerId, userId).isEmpty();
     }
 
     private static String like(String q) {
@@ -56,9 +56,9 @@ public class DiemGiaoDB extends CoSoDB {
         return query(
             "SELECT c.id, c.name AS \"fullName\", c.code, COALESCE(c.phone,'') AS phone, '' AS email, " +
             "(SELECT count(*) FROM customer_addresses d WHERE d.customer_id=c.id AND d.active) AS \"pointCount\" " +
-            "FROM customers c WHERE c.status='ACTIVE' AND c.sales_rep_id=? AND (c.name ILIKE ? ESCAPE '\' " +
-            "OR c.code ILIKE ? ESCAPE '\' OR COALESCE(c.tax_code,'') ILIKE ? ESCAPE '\' " +
-            "OR COALESCE(c.phone,'') ILIKE ? ESCAPE '\') ORDER BY c.name LIMIT 20", userId, k, k, k, k);
+            "FROM customers c WHERE c.status='ACTIVE' AND c.sales_rep_id=? AND (c.name ILIKE ? ESCAPE '\\' " +
+            "OR c.code ILIKE ? ESCAPE '\\' OR COALESCE(c.tax_code,'') ILIKE ? ESCAPE '\\' " +
+            "OR COALESCE(c.phone,'') ILIKE ? ESCAPE '\\') ORDER BY c.name LIMIT 20", userId, k, k, k, k);
     }
 
     public List<Map<String, Object>> listByCustomer(long customerId) throws SQLException {

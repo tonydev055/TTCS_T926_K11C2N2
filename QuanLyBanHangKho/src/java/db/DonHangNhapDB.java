@@ -15,9 +15,9 @@ public class DonHangNhapDB extends CoSoDB {
         return "%" + s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
     }
 
-    /** Đại lý đang giao dịch, chưa bị khoá và do nhân viên này phụ trách. */
+    /** Đại lý do nhân viên này phụ trách; trạng thái giao dịch được kiểm tra khi tạo đơn mới. */
     public boolean isAgent(long customerId, long userId) throws SQLException {
-        return !query("SELECT 1 FROM customers WHERE id=? AND status='ACTIVE' AND sales_rep_id=?", customerId, userId).isEmpty();
+        return !query("SELECT 1 FROM customers WHERE id=? AND sales_rep_id=?", customerId, userId).isEmpty();
     }
 
     /** Tìm đại lý mình phụ trách theo mã, tên, mã số thuế hoặc số điện thoại (kèm trạng thái khoá để giao diện cảnh báo). */
@@ -26,9 +26,9 @@ public class DonHangNhapDB extends CoSoDB {
         return query(
             "SELECT c.id, c.name AS \"fullName\", c.code, COALESCE(c.phone,'') AS phone, '' AS email, " +
             "c.trading_locked AS \"tradingLocked\", COALESCE(c.lock_reason,'') AS \"lockReason\" " +
-            "FROM customers c WHERE c.status='ACTIVE' AND c.sales_rep_id=? AND (c.name ILIKE ? ESCAPE '\' " +
-            "OR c.code ILIKE ? ESCAPE '\' OR COALESCE(c.tax_code,'') ILIKE ? ESCAPE '\' " +
-            "OR COALESCE(c.phone,'') ILIKE ? ESCAPE '\') ORDER BY c.name LIMIT 20", userId, k, k, k, k);
+            "FROM customers c WHERE c.status='ACTIVE' AND c.sales_rep_id=? AND (c.name ILIKE ? ESCAPE '\\' " +
+            "OR c.code ILIKE ? ESCAPE '\\' OR COALESCE(c.tax_code,'') ILIKE ? ESCAPE '\\' " +
+            "OR COALESCE(c.phone,'') ILIKE ? ESCAPE '\\') ORDER BY c.name LIMIT 20", userId, k, k, k, k);
     }
 
     /** Bảng giá hiện hành (còn hiệu lực hôm nay, phiên bản mới nhất) theo nhóm khách hàng của đại lý. */
@@ -85,7 +85,7 @@ public class DonHangNhapDB extends CoSoDB {
     /** Tạo mới (orderId == null) hoặc cập nhật đơn nháp của chính người dùng. Trả về id đơn. */
     public long saveDraft(Long orderId, long userId, long customerId, long priceListId, Long pointId, String address,
                           LocalDate desiredDate, String note, BigDecimal subtotal, BigDecimal discount,
-                          BigDecimal payable, List<Map<String, Object>> lines) throws SQLException {
+                          BigDecimal payable, List<Map<String, Object>> lines, boolean complete) throws SQLException {
         try (Connection c = KetNoiDB.getConnection()) {
             c.setAutoCommit(false);
             try {
@@ -93,8 +93,20 @@ public class DonHangNhapDB extends CoSoDB {
                     p.setString(1, String.valueOf(userId));
                     p.executeQuery();
                 }
-                // Đại lý bị khoá hoặc ngừng giao dịch thì không lập thêm đơn (S3-07).
-                service.KhachHangService.requireCanCreateOrder(c, customerId);
+                Long oldCustomerId = null;
+                if (orderId != null) {
+                    var old = TruyVanDB.one(c, "SELECT o.agent_id FROM orders o JOIN customers k ON k.id=o.agent_id WHERE o.id=? AND o.created_by=? AND o.status='DRAFT' AND k.sales_rep_id=? FOR UPDATE OF o,k", orderId, userId, userId);
+                    if (old == null) throw new NoSuchElementException("Không tìm thấy đơn nháp để cập nhật");
+                    oldCustomerId = ((Number) old.get("agent_id")).longValue();
+                }
+                var customer = TruyVanDB.one(c, "SELECT sales_rep_id FROM customers WHERE id=? FOR UPDATE", customerId);
+                if (customer == null || !Objects.equals(customer.get("sales_rep_id"), userId))
+                    throw new NoSuchElementException("Không tìm thấy đại lý phụ trách");
+                // Đơn đang dở được xử lý tiếp; đổi sang đại lý khác phải kiểm tra như tạo mới.
+                if (!Objects.equals(oldCustomerId, customerId)) service.KhachHangService.requireCanCreateOrder(c, customerId);
+                if (pointId != null && TruyVanDB.one(c,
+                    "SELECT id FROM customer_addresses WHERE id=? AND customer_id=? AND active FOR SHARE", pointId, customerId) == null)
+                    throw new IllegalArgumentException("Điểm giao hàng không thuộc đại lý hoặc đã ngừng sử dụng");
                 long id;
                 if (orderId == null) {
                     try (PreparedStatement p = c.prepareStatement(
@@ -162,6 +174,7 @@ public class DonHangNhapDB extends CoSoDB {
                     }
                     p.executeBatch();
                 }
+                if (complete) TruyVanDB.update(c, "UPDATE orders SET status='COMPLETED',updated_at=CURRENT_TIMESTAMP WHERE id=?", id);
                 c.commit();
                 return id;
             } catch (SQLException | RuntimeException e) {
@@ -171,23 +184,6 @@ public class DonHangNhapDB extends CoSoDB {
         }
     }
 
-    /** Hoàn tất đơn nháp của chính người dùng. */
-    public void completeOrder(long orderId, long userId) throws SQLException {
-        try (Connection c = KetNoiDB.getConnection();
-             PreparedStatement p = c.prepareStatement(
-                 "UPDATE orders SET status='COMPLETED', updated_at=CURRENT_TIMESTAMP " +
-                 "WHERE id=? AND created_by=? AND status='DRAFT'")) {
-
-            p.setLong(1, orderId);
-            p.setLong(2, userId);
-
-            if (p.executeUpdate() == 0) {
-                throw new NoSuchElementException(
-                    "Không tìm thấy đơn nháp để hoàn tất"
-                );
-            }
-        }
-    }
     /** Mở lại một đơn nháp của chính người dùng (kèm dòng hàng và các đơn vị tính để sửa tiếp). */
     public Map<String, Object> load(long id, long userId) throws SQLException {
         var rows = query(
@@ -195,7 +191,7 @@ public class DonHangNhapDB extends CoSoDB {
             "COALESCE(u.phone,'') AS \"customerPhone\", o.delivery_address AS \"deliveryAddress\", o.delivery_address_id AS \"deliveryPointId\", " +
             "u.trading_locked AS \"tradingLocked\", COALESCE(u.lock_reason,'') AS \"lockReason\", " +
             "o.desired_delivery_date AS \"desiredDate\", o.note, o.subtotal, o.discount_total AS discount, o.payable " +
-            "FROM orders o LEFT JOIN customers u ON u.id=o.agent_id WHERE o.id=? AND o.created_by=?", id, userId);
+            "FROM orders o LEFT JOIN customers u ON u.id=o.agent_id WHERE o.id=? AND o.created_by=? AND u.sales_rep_id=?", id, userId, userId);
         if (rows.isEmpty()) return null;
         Map<String, Object> order = new LinkedHashMap<>(rows.get(0));
         var lines = query(
@@ -211,6 +207,6 @@ public class DonHangNhapDB extends CoSoDB {
             "SELECT o.id, o.code, COALESCE(u.name,'') AS \"customerName\", o.payable, o.updated_at AS \"updatedAt\", " +
             "(SELECT count(*) FROM order_lines l WHERE l.order_id=o.id) AS \"lineCount\" " +
             "FROM orders o LEFT JOIN customers u ON u.id=o.agent_id " +
-            "WHERE o.created_by=? AND o.status='DRAFT' ORDER BY o.updated_at DESC LIMIT 50", userId);
+            "WHERE o.created_by=? AND u.sales_rep_id=? AND o.status='DRAFT' ORDER BY o.updated_at DESC LIMIT 50", userId, userId);
     }
 }

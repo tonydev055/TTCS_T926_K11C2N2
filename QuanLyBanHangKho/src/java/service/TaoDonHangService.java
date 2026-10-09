@@ -97,8 +97,24 @@ public class TaoDonHangService {
 
     /** Lưu nháp: tạo mới (orderId == null) hoặc cập nhật. Nháp được phép chưa đủ địa chỉ, ngày giao hoặc dòng hàng. */
     public long luuNhap(Long orderId, long userId, Map<String, Object> in) throws SQLException {
+        return luu(orderId, userId, in, false);
+    }
+
+    /** Tính lại giá và lưu toàn bộ nội dung cùng trạng thái hoàn tất trong một giao dịch. */
+    public long hoanTat(long orderId, long userId, Map<String, Object> in) throws SQLException {
+        return luu(orderId, userId, in, true);
+    }
+
+    private long luu(Long orderId, long userId, Map<String, Object> in, boolean complete) throws SQLException {
         if (in.get("customerId") == null) throw new IllegalArgumentException("Vui lòng chọn đại lý");
         long customerId = ChinhSachChietKhauService.positiveId(in.get("customerId"));
+        if (orderId != null) {
+            var old = dao.load(orderId, userId);
+            if (old == null || !"DRAFT".equals(old.get("status")))
+                throw new NoSuchElementException("Không tìm thấy đơn nháp để cập nhật");
+        }
+        if (complete && in.get("deliveryPointId") == null)
+            throw new IllegalArgumentException("Vui lòng chọn điểm giao hàng trước khi hoàn tất đơn");
         Map<String, Object> priced = tinhTien(userId, customerId, in.get("lines"));
 
         // Điểm giao phải nằm trong danh sách của ĐÚNG đại lý này (kiểm tra ở máy chủ, không chỉ ẩn trên giao diện).
@@ -119,10 +135,15 @@ public class TaoDonHangService {
             try { date = LocalDate.parse(d); }
             catch (DateTimeParseException e) { throw new IllegalArgumentException("Ngày giao mong muốn không hợp lệ"); }
         }
+        if (date != null && date.isBefore(LocalDate.now()))
+            throw new IllegalArgumentException("Ngày giao mong muốn không được ở quá khứ");
+        if (complete && date == null)
+            throw new IllegalArgumentException("Vui lòng chọn ngày giao mong muốn trước khi hoàn tất đơn");
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> lines = (List<Map<String, Object>>) priced.get("lines");
+        if (complete && lines.isEmpty()) throw new IllegalArgumentException("Đơn hàng phải có ít nhất một sản phẩm");
         return dao.saveDraft(orderId, userId, customerId, ((Number) priced.get("priceListId")).longValue(),
             pointId, address, date, note, (BigDecimal) priced.get("subtotal"), (BigDecimal) priced.get("discount"),
-            (BigDecimal) priced.get("payable"), lines);
+            (BigDecimal) priced.get("payable"), lines, complete);
     }
 }

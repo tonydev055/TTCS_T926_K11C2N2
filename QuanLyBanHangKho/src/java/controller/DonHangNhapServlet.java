@@ -18,6 +18,7 @@ import util.XuLyJson;
  *   POST /api/sales-orders/quote        tính tiền hàng, chiết khấu, phải thu (không lưu)
  *   POST /api/sales-orders              lưu nháp mới
  *   PUT  /api/sales-orders/{id}         lưu nháp đang sửa
+ *   PUT  /api/sales-orders/{id}/complete hoàn tất với body như lưu nháp; máy chủ tính lại giá, kiểm tra điểm giao/ngày/dòng hàng
  */
 @WebServlet("/api/sales-orders/*")
 public class DonHangNhapServlet extends CoSoServlet {
@@ -107,41 +108,13 @@ public class DonHangNhapServlet extends CoSoServlet {
             if (p.equals("/")) throw new IllegalArgumentException("Thiếu mã đơn");
 
             long uid = userId(q);
-            long id = parseId(p.substring(1));
-
-            if (p.endsWith("/complete")) {
-                String rawId =
-                    p.substring(
-                        1,
-                        p.length() - "/complete".length()
-                    );
-
-                id = parseId(rawId);
-
-                dao.completeOrder(id, uid);
-
-                ok(
-                    r,
-                    XuLyJson.stringify(
-                        dao.load(id, uid)
-                    )
-                );
-
-                return;
-            }
-
-            service.luuNhap(
-                id,
-                uid,
-                XuLyJson.object(body(q))
-            );
-
-            ok(
-                r,
-                XuLyJson.stringify(
-                    dao.load(id, uid)
-                )
-            );
+            boolean complete = p.endsWith("/complete");
+            String rawId = complete ? p.substring(1, p.length() - "/complete".length()) : p.substring(1);
+            long id = parseId(rawId);
+            Map<String, Object> in = XuLyJson.object(body(q));
+            if (complete) service.hoanTat(id, uid, in);
+            else service.luuNhap(id, uid, in);
+            ok(r, XuLyJson.stringify(dao.load(id, uid)));
         } catch (Exception e) {
             fail(r, e);
         }

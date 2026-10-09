@@ -62,18 +62,30 @@
   #agentFeature .ag-default-tag { align-self: flex-start; padding: 2px 8px; border-radius: 999px; background: var(--orange-soft, #fff1df); color: var(--orange-dark, #d96500); font-size: 11px; font-weight: 700; }
   #agentFeature .ag-address .ag-actions { margin-top: 6px; gap: 8px; }
   #agentFeature .ag-address .ag-btn { min-height: 32px; padding: 0 10px; font-size: 12px; }
+  #agentFeature .ag-filters { display: flex; flex-wrap: wrap; gap: 10px; }
+  #agentFeature .ag-table a[href^="tel:"] { color: var(--orange-dark, #d96500); font-weight: 600; text-decoration: none; }
   @media (max-width: 720px) {
     #agentFeature .ag-toolbar,
     #agentFeature .ag-detail-head,
     #agentFeature .ag-section { padding: 16px; }
     #agentFeature .ag-footer { padding: 12px 16px; }
+    #agentFeature .ag-filters { width: 100%; }
+    #agentFeature .ag-filters .ag-select { flex: 1 1 calc(50% - 10px); min-width: 0; }
+    #agentFeature .ag-table { min-width: 0; }
+    #agentFeature .ag-table thead { display: none; }
+    #agentFeature .ag-table tbody tr { display: block; padding: 12px 16px; border-top: 1px solid #edf1f5; }
+    #agentFeature .ag-table td { display: block; padding: 2px 0; border: 0; }
   }
 </style>
 <script>
 window.agentFeature = (() => {
   let generation = 0;
   let masters = { groups: [], salesReps: [], regions: [], canWrite: false };
-  let state = { search: '', page: 1, size: 20 };
+  const emptyFilters = () => ({ search: '', region: '', groupId: '', salesRepId: '', status: '', page: 1, size: 20 });
+  let state = emptyFilters();
+  const filtering = () => !!(state.search || state.region || state.groupId || state.salesRepId || state.status);
+  const option = (value, label, current) =>
+    `<option value="${esc(value)}" ${String(current) === String(value) ? 'selected' : ''}>${esc(label)}</option>`;
 
   const esc = (value) => escapeHtml(value == null ? '' : String(value));
   const statusLabel = { ACTIVE: 'Đang giao dịch', INACTIVE: 'Ngừng giao dịch' };
@@ -94,7 +106,7 @@ window.agentFeature = (() => {
 
   async function render() {
     const revision = ++generation;
-    state = { search: '', page: 1, size: 20 };
+    state = emptyFilters();
     shell(`<div class="ag-card"><div class="ag-empty"><strong>Đang tải danh sách đại lý...</strong></div></div>`);
     try {
       masters = await apiRequest('customers/masters');
@@ -109,6 +121,21 @@ window.agentFeature = (() => {
     shell(`<div class="ag-card">
       <div class="ag-toolbar">
         <input class="ag-search" id="agSearch" type="search" placeholder="Tìm theo mã, tên, số điện thoại, mã số thuế" aria-label="Tìm đại lý" value="${esc(state.search)}">
+        <div class="ag-filters">
+          <select class="ag-select" id="agRegion" aria-label="Lọc theo khu vực">
+            ${option('', 'Tất cả khu vực', state.region)}${masters.regions.map((r) => option(r, r, state.region)).join('')}
+          </select>
+          <select class="ag-select" id="agGroup" aria-label="Lọc theo nhóm khách hàng">
+            ${option('', 'Tất cả nhóm', state.groupId)}${masters.groups.map((g) => option(g.id, g.name, state.groupId)).join('')}
+          </select>
+          ${masters.seesAll ? `<select class="ag-select" id="agRep" aria-label="Lọc theo người phụ trách">
+            ${option('', 'Tất cả người phụ trách', state.salesRepId)}${masters.salesReps.map((u) => option(u.id, u.full_name, state.salesRepId)).join('')}
+          </select>` : ''}
+          <select class="ag-select" id="agStatus" aria-label="Lọc theo trạng thái">
+            ${option('', 'Tất cả trạng thái', state.status)}${option('ACTIVE', 'Đang giao dịch', state.status)}${option('INACTIVE', 'Ngừng giao dịch', state.status)}${option('LOCKED', 'Đang bị khoá', state.status)}
+          </select>
+          <button type="button" class="ag-btn" id="agClear" ${filtering() ? '' : 'disabled'}>Xoá bộ lọc</button>
+        </div>
         ${masters.canAssign ? '<button type="button" class="ag-btn" id="agTransfer">Chuyển giao địa bàn</button>' : ''}
         ${masters.canWrite ? '<button type="button" class="ag-btn primary" id="agCreate">+ Thêm đại lý</button>' : ''}
       </div>
@@ -121,25 +148,33 @@ window.agentFeature = (() => {
     });
     document.getElementById('agCreate')?.addEventListener('click', () => openForm(null, revision));
     document.getElementById('agTransfer')?.addEventListener('click', () => openTransfer(revision));
+    [['agRegion', 'region'], ['agGroup', 'groupId'], ['agRep', 'salesRepId'], ['agStatus', 'status']].forEach(([id, key]) => {
+      document.getElementById(id)?.addEventListener('change', (event) => {
+        state[key] = event.target.value; state.page = 1; loadList(revision);
+      });
+    });
+    document.getElementById('agClear').addEventListener('click', () => { state = emptyFilters(); renderList(revision); });
     loadList(revision);
   }
 
   async function loadList(revision) {
     const host = document.getElementById('agList');
     const params = new URLSearchParams({ page: state.page, size: state.size });
-    if (state.search) params.set('search', state.search);
+    for (const key of ['search', 'region', 'groupId', 'salesRepId', 'status']) if (state[key]) params.set(key, state[key]);
+    const clear = document.getElementById('agClear');
+    if (clear) clear.disabled = !filtering();
     try {
       const data = await apiRequest(`customers/?${params}`);
       if (!alive(revision) || !host.isConnected) return;
       if (!data.items.length) {
-        host.innerHTML = `<div class="ag-empty"><strong>${state.search ? 'Không có đại lý phù hợp' : 'Chưa có đại lý'}</strong><span>${state.search ? 'Thử từ khoá khác.' : masters.canWrite ? 'Bấm “Thêm đại lý” để khai báo đại lý đầu tiên.' : 'Chưa có đại lý nào được giao cho bạn.'}</span></div>`;
+        host.innerHTML = `<div class="ag-empty"><strong>${filtering() ? 'Không tìm thấy đại lý phù hợp' : 'Chưa có đại lý'}</strong><span>${filtering() ? 'Thử từ khoá hoặc bộ lọc khác.' : masters.canWrite ? 'Bấm “Thêm đại lý” để khai báo đại lý đầu tiên.' : 'Chưa có đại lý nào được giao cho bạn.'}</span></div>`;
         return;
       }
       const pages = Math.max(1, Math.ceil(data.total / data.size));
       host.innerHTML = `<div class="ag-table-wrap"><table class="ag-table"><thead><tr><th>Mã đại lý</th><th>Tên đại lý</th><th>Nhóm khách hàng</th><th>Khu vực</th><th>Người phụ trách</th><th>Trạng thái</th></tr></thead><tbody>
         ${data.items.map((item) => `<tr tabindex="0" data-id="${esc(item.id)}">
           <td><strong>${esc(item.code)}</strong></td>
-          <td>${esc(item.name)}${item.phone ? `<small>${esc(item.phone)}</small>` : ''}</td>
+          <td>${esc(item.name)}${item.phone ? `<small><a href="tel:${esc(item.phone)}">${esc(item.phone)}</a></small>` : ''}</td>
           <td>${esc(item.group_name)}</td>
           <td>${esc(item.region)}</td>
           <td>${item.sales_rep_name ? esc(item.sales_rep_name) : '<small>Chưa phân công</small>'}</td>
@@ -154,6 +189,7 @@ window.agentFeature = (() => {
         const open = () => renderDetail(row.dataset.id, revision);
         row.addEventListener('click', open);
         row.addEventListener('keydown', (event) => { if (event.key === 'Enter') open(); });
+        row.querySelector('a[href^="tel:"]')?.addEventListener('click', (event) => event.stopPropagation());
       });
       document.getElementById('agPrev').onclick = () => { state.page--; loadList(revision); };
       document.getElementById('agNext').onclick = () => { state.page++; loadList(revision); };

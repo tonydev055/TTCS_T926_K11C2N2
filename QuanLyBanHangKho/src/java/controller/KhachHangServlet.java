@@ -11,7 +11,10 @@ import util.XuLyJson;
 
 /**
  * API hồ sơ đại lý.
- * GET /api/customers/?search&region&groupId&salesRepId&status&page&size — danh sách theo phạm vi.
+ * GET /api/customers/?search&region&groupId&salesRepId&status&page&size — danh sách theo phạm vi (S3-08).
+ * search khớp mã, tên (không phân biệt dấu), mã số thuế, số điện thoại (bỏ qua dấu cách, +84 ≡ 0);
+ * status nhận ACTIVE | INACTIVE | LOCKED (đang bị khoá giao dịch).
+ * GET /api/customers/masters — thêm seesAll: true khi được xem mọi đại lý (hiện bộ lọc người phụ trách).
  * GET /api/customers/masters — nhóm khách hàng, nhân viên kinh doanh, khu vực.
  * GET /api/customers/{id} — chi tiết kèm bảng giá đang áp dụng.
  * POST /api/customers/, PUT /api/customers/{id}, DELETE /api/customers/{id} — cần customers.write.

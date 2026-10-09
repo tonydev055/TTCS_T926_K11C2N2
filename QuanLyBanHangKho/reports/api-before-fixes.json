@@ -1,0 +1,781 @@
+{
+  "date": "2026-10-03T13:16:10.829Z",
+  "base": "http://localhost:8080/QuanLyBanHangKho",
+  "prefix": "qa20261003r1",
+  "results": [
+    {
+      "name": "Health",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Anonymous denied /api/auth/me",
+      "status": "PASS",
+      "detail": "HTTP 401; expected 401"
+    },
+    {
+      "name": "Anonymous denied /api/users/",
+      "status": "PASS",
+      "detail": "HTTP 401; expected 401"
+    },
+    {
+      "name": "Anonymous denied /api/products/",
+      "status": "PASS",
+      "detail": "HTTP 401; expected 401"
+    },
+    {
+      "name": "Anonymous denied /api/profile/",
+      "status": "PASS",
+      "detail": "HTTP 401; expected 401"
+    },
+    {
+      "name": "Anonymous denied /api/audit/",
+      "status": "PASS",
+      "detail": "HTTP 401; expected 401"
+    },
+    {
+      "name": "Admin login",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Login ADMIN",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Read products ADMIN",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Read profile ADMIN",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Users permission ADMIN",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Audit permission ADMIN",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Users template permission ADMIN",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Product template permission ADMIN",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Suppliers permission ADMIN",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Login SALES_MANAGER",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Read products SALES_MANAGER",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Read profile SALES_MANAGER",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Users permission SALES_MANAGER",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Audit permission SALES_MANAGER",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Users template permission SALES_MANAGER",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Product template permission SALES_MANAGER",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Suppliers permission SALES_MANAGER",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Login SALES_REP",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Read products SALES_REP",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Read profile SALES_REP",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Users permission SALES_REP",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Audit permission SALES_REP",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Users template permission SALES_REP",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Product template permission SALES_REP",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Suppliers permission SALES_REP",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Login WH_MANAGER",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Read products WH_MANAGER",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Read profile WH_MANAGER",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Users permission WH_MANAGER",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Audit permission WH_MANAGER",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Users template permission WH_MANAGER",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Product template permission WH_MANAGER",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Suppliers permission WH_MANAGER",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Login WAREHOUSE",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Read products WAREHOUSE",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Read profile WAREHOUSE",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Users permission WAREHOUSE",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Audit permission WAREHOUSE",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Users template permission WAREHOUSE",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Product template permission WAREHOUSE",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Suppliers permission WAREHOUSE",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Login ACCOUNTANT",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Read products ACCOUNTANT",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Read profile ACCOUNTANT",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Users permission ACCOUNTANT",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Audit permission ACCOUNTANT",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Users template permission ACCOUNTANT",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Product template permission ACCOUNTANT",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Suppliers permission ACCOUNTANT",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Login CUSTOMER",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Read products CUSTOMER",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Read profile CUSTOMER",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Users permission CUSTOMER",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Audit permission CUSTOMER",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Users template permission CUSTOMER",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Product template permission CUSTOMER",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Suppliers permission CUSTOMER",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Unknown login",
+      "status": "PASS",
+      "detail": "HTTP 401; expected 401"
+    },
+    {
+      "name": "Admin creates user",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Temporary password flagged",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Temporary password must be changed before catalog access",
+      "status": "FAIL",
+      "detail": "HTTP 200; expected 401,403"
+    },
+    {
+      "name": "Reject weak password",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Reject wrong current password",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Change password",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Other session revoked",
+      "status": "PASS",
+      "detail": "HTTP 401; expected 401"
+    },
+    {
+      "name": "Current session retained",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Profile valid update",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Profile persisted Unicode",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Profile blocks role escalation",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Profile rejects phone",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Profile rejects empty name",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Avatar PNG upload",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Avatar resized 256x256",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Thumbnail 64x64",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Reject fake PNG",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Reject avatar over 2 MB",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Lock requires reason",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Admin locks user",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Locked session revoked",
+      "status": "PASS",
+      "detail": "HTTP 401; expected 401"
+    },
+    {
+      "name": "Locked login denied",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Admin unlocks user",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Wrong password 1",
+      "status": "PASS",
+      "detail": "HTTP 401; expected 401"
+    },
+    {
+      "name": "Wrong password 2",
+      "status": "PASS",
+      "detail": "HTTP 401; expected 401"
+    },
+    {
+      "name": "Wrong password 3",
+      "status": "PASS",
+      "detail": "HTTP 401; expected 401"
+    },
+    {
+      "name": "Wrong password 4",
+      "status": "PASS",
+      "detail": "HTTP 401; expected 401"
+    },
+    {
+      "name": "Wrong password 5",
+      "status": "PASS",
+      "detail": "HTTP 401; expected 401"
+    },
+    {
+      "name": "Locked after five failures",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Unlock temporary lock",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Admin unlock clears temporary lock",
+      "status": "FAIL",
+      "detail": "HTTP 423"
+    },
+    {
+      "name": "Forgot existing",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Reset email created with context",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Reset valid token",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Reset token one use",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Reset invalid token",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Forgot unknown generic response",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Login reset password",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Logout",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Logout invalidates session",
+      "status": "PASS",
+      "detail": "HTTP 401; expected 401"
+    },
+    {
+      "name": "Users search pagination",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Admin cannot self lock",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Admin cannot self delete",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Admin changes role",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Removed role no longer grants permissions",
+      "status": "FAIL",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Reject nonexistent role",
+      "status": "FAIL",
+      "detail": "HTTP 201"
+    },
+    {
+      "name": "Reject malformed email at admin create",
+      "status": "FAIL",
+      "detail": "HTTP 201"
+    },
+    {
+      "name": "Self registration",
+      "status": "PASS",
+      "detail": "HTTP 201; expected 201"
+    },
+    {
+      "name": "Duplicate registration",
+      "status": "PASS",
+      "detail": "HTTP 409; expected 409"
+    },
+    {
+      "name": "Weak registration password",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Registration only CUSTOMER",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Create categories",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Create categories",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Category cycle blocked",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Category with child deletion blocked",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Create products",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Duplicate SKU rejected",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Admin cost write denied",
+      "status": "PASS",
+      "detail": "HTTP 403; expected 403"
+    },
+    {
+      "name": "Admin cost hidden",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Sales manager cost visible",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Base unit immutable",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Negative cost rejected",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Update product",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Customer cannot see inactive product",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Create product-units",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Unit update creates version",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Zero conversion rejected",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Create suppliers",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Create customer-groups",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Create price-lists",
+      "status": "PASS",
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "Overlapping price dates denied",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Floor above sale price denied",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Customer without group sees no prices",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Audit actor/type filters",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Audit hides cost",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Audit date range",
+      "status": "PASS",
+      "detail": "HTTP 200; expected 200"
+    },
+    {
+      "name": "Audit invalid date",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Commit without preview denied",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    },
+    {
+      "name": "Reject XLS extension",
+      "status": "PASS",
+      "detail": "HTTP 400; expected 400"
+    }
+  ],
+  "fixtures": [
+    {
+      "type": "users",
+      "id": 43,
+      "email": "qa20261003r1auth@example.test"
+    },
+    {
+      "type": "users",
+      "id": 44,
+      "email": "qa20261003r1role@example.test"
+    },
+    {
+      "type": "users",
+      "id": 45,
+      "email": "qa20261003r1badrole@example.test"
+    },
+    {
+      "type": "users",
+      "id": 46,
+      "email": "qa20261003r1invalid"
+    },
+    {
+      "type": "users",
+      "id": 47,
+      "email": "qa20261003r1reg@example.test"
+    },
+    {
+      "type": "categories",
+      "id": 51
+    },
+    {
+      "type": "categories",
+      "id": 52
+    },
+    {
+      "type": "products",
+      "id": 66
+    },
+    {
+      "type": "product-units",
+      "id": 82
+    },
+    {
+      "type": "product-units",
+      "id": 83
+    },
+    {
+      "type": "suppliers",
+      "id": 17
+    },
+    {
+      "type": "customer-groups",
+      "id": 17
+    },
+    {
+      "type": "price-lists",
+      "id": 31
+    }
+  ]
+}

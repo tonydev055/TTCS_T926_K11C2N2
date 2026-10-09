@@ -1,0 +1,120 @@
+{
+  "prefix": "qa20261003r1",
+  "results": [
+    {
+      "name": "users XLSX preview valid/invalid row",
+      "status": "PASS",
+      "detail": "{\"status\":200,\"valid\":1,\"invalid\":1}"
+    },
+    {
+      "name": "users preview no persistence",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "users token bound to session",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "users commit partial success",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "users token single use",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "users committed persisted",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "products XLSX preview valid/invalid row",
+      "status": "PASS",
+      "detail": "{\"status\":200,\"valid\":1,\"invalid\":1}"
+    },
+    {
+      "name": "products preview no persistence",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "products token bound to session",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "products commit partial success",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "products token single use",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "products committed persisted",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Imported user receives activation mail",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Imported user temporary login",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Duplicate imported user invalid",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Existing SKU preview update",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Existing SKU update commit",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Formula row rejected",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Admin cannot import cost column",
+      "status": "PASS",
+      "detail": "HTTP 400; valid undefined"
+    },
+    {
+      "name": "JPG avatar accepted",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Product image upload",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Product thumbnail PNG",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "name": "Invalid role creates unusable account",
+      "status": "PASS",
+      "detail": ""
+    }
+  ]
+}

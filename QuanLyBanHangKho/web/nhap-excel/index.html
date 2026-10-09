@@ -1,0 +1,167 @@
+<!-- Loaded by the application shell: ../index.html -->
+<style>
+  .s2-import-stats {
+    display: flex;
+    gap: 24px;
+    padding: 20px 0;
+  }
+  .s2-import .module-actions {
+    margin-top: 18px;
+  }
+  .s2-valid {
+    color: #278046;
+  }
+  .s2-invalid {
+    color: #b72e2e;
+  }
+  .s2-import [hidden] {
+    display: none !important;
+  }
+  .s2-import .outline-button {
+    padding: 12px 16px;
+  }
+  #s2ImportForm label {
+    display: block;
+    margin-bottom: 12px;
+    font-weight: 600;
+  }
+  #s2ImportFileHint {
+    margin: 10px 0 18px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+</style>
+<script>
+  function renderExcelImport(kind) {
+    catalogState.request++;
+    const revision = viewRevision;
+    let preview = null,
+      resultPage = 1;
+    const noun = kind === 'users' ? 'người dùng' : 'sản phẩm';
+    moduleContent.innerHTML = `
+      <section class="module-head">
+        <div><h2>Nhập ${noun} từ Excel</h2></div>
+        <a class="outline-button" href="api/templates/${kind}">Tải file mẫu</a>
+      </section>
+      <section class="inventory-panel s2-import">
+        ${kind === 'products' ? '<p>Nhập mã nhóm hàng đã được tạo. SKU đã có sẽ được cập nhật. active dùng true/false; giá vốn dùng số, không có dấu phân cách.</p>' : ''}
+        <form id="s2ImportForm">
+          <label for="s2ImportFile">Chọn file Excel</label>
+          <input id="s2ImportFile" name="file" type="file" accept=".xlsx" aria-describedby="s2ImportFileHint" required>
+          <p id="s2ImportFileHint">Định dạng .xlsx · Tối đa 8 MB, 5.000 dòng</p>
+          <button type="submit" class="orange-button">Kiểm tra file</button>
+        </form>
+        <p id="s2ImportMessage" role="status"></p>
+        <div id="s2ImportSummary"></div>
+        <div id="s2ImportRows" class="table-scroll"></div>
+        <div id="s2ImportPages" class="pagination"></div>
+        <div class="module-actions">
+          <button id="s2CommitImport" class="orange-button" hidden>Nhập các dòng hợp lệ</button>
+          <button id="s2DownloadReport" class="outline-button" hidden>Tải kết quả (.csv)</button>
+        </div>
+      </section>
+    `;
+    const form = document.getElementById('s2ImportForm'),
+      message = document.getElementById('s2ImportMessage'),
+      commit = document.getElementById('s2CommitImport');
+    const renderImportResults = () => {
+      document.getElementById('s2ImportSummary').innerHTML =
+        `<div class="s2-import-stats"><strong>${preview.total} dòng</strong><span>${preview.valid} ${preview.committed ? 'đã nhập' : 'hợp lệ'}</span><span>${preview.invalid} ${preview.committed ? 'bỏ qua' : 'có lỗi'}</span></div>`;
+      document.getElementById('s2ImportRows').innerHTML =
+        `<table class="feature-table s2-table"><thead><tr><th>Dòng Excel</th><th>Dữ liệu</th><th>Thao tác</th><th>Kết quả</th></tr></thead><tbody>${preview.rows
+          .slice((resultPage - 1) * 50, resultPage * 50)
+          .map(
+            (row) =>
+              `<tr><td>${row.row}</td><td>${escapeHtml(Object.values(row.data).join(' · '))}</td><td>${escapeHtml(row.action)}</td><td class="${row.valid ? 's2-valid' : 's2-invalid'}">${escapeHtml(row.message)}</td></tr>`
+          )
+          .join('')}</tbody></table>`;
+      document.getElementById('s2ImportPages').innerHTML =
+        `<button id="s2ImportPrev" ${resultPage === 1 ? 'disabled' : ''}>‹</button><span>Trang ${resultPage}</span><button id="s2ImportNext" ${resultPage * 50 >= preview.total ? 'disabled' : ''}>›</button>`;
+      document.getElementById('s2ImportPrev').onclick = () => {
+        resultPage--;
+        renderImportResults();
+      };
+      document.getElementById('s2ImportNext').onclick = () => {
+        resultPage++;
+        renderImportResults();
+      };
+      commit.hidden = preview.committed || preview.valid === 0;
+      document.getElementById('s2DownloadReport').hidden = false;
+    };
+    form.elements.file.onchange = () => {
+      preview = null;
+      message.textContent = '';
+      commit.hidden = true;
+      document.getElementById('s2ImportRows').innerHTML = '';
+      document.getElementById('s2ImportSummary').innerHTML = '';
+      document.getElementById('s2ImportPages').innerHTML = '';
+      document.getElementById('s2DownloadReport').hidden = true;
+    };
+    form.onsubmit = async (event) => {
+      event.preventDefault();
+      const button = form.querySelector('button');
+      button.disabled = true;
+      commit.hidden = true;
+      message.textContent = 'Đang kiểm tra file...';
+      try {
+        const data = new FormData(form);
+        if (data.get('file').size > 8388608) throw new Error('Tệp vượt quá 8 MB');
+        const result = await apiRequest(`imports/${kind}/preview`, { method: 'POST', body: data });
+        if (revision !== viewRevision || !form.isConnected) return;
+        preview = result;
+        resultPage = 1;
+        message.textContent = 'Kiểm tra xong. Chưa nhập dữ liệu.';
+        renderImportResults();
+      } catch (e) {
+        message.textContent = e.message;
+      } finally {
+        button.disabled = false;
+      }
+    };
+    commit.onclick = async () => {
+      commit.disabled = true;
+      form.querySelector('button').disabled = true;
+      message.textContent = 'Đang nhập dữ liệu...';
+      try {
+        const result = await apiRequest(
+          `imports/${kind}/commit`,
+          jsonRequestOptions('POST', { token: preview.token })
+        );
+        if (revision !== viewRevision || !form.isConnected) return;
+        preview = result;
+        resultPage = 1;
+        message.textContent = 'Đã nhập các dòng hợp lệ. Các dòng lỗi không được nhập.';
+        renderImportResults();
+      } catch (e) {
+        message.textContent = e.message + ' Vui lòng kiểm tra lại file.';
+        commit.hidden = true;
+      } finally {
+        commit.disabled = false;
+        form.querySelector('button').disabled = false;
+      }
+    };
+    document.getElementById('s2DownloadReport').onclick = () => {
+      if (!preview) return;
+      const cell = (value) =>
+        '"' +
+        String(value)
+          .replace(/^[=+@-]/, "'$&")
+          .replace(/"/g, '""') +
+        '"';
+      const csv =
+        '\ufeff' +
+        [
+          ['Dòng', 'Thao tác', 'Kết quả'],
+          ...preview.rows.map((row) => [row.row, row.action, row.message])
+        ]
+          .map((row) => row.map(cell).join(','))
+          .join('\r\n');
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ket-qua-nhap-${kind}.csv`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+  }
+</script>

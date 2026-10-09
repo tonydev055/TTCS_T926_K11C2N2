@@ -1,0 +1,146 @@
+<!-- Loaded by the application shell: ../index.html -->
+<style>
+  #priceHistoryFeature { display: flex; flex-direction: column; gap: 18px; }
+  #priceHistoryFeature .ph-note { margin: 0; padding: 11px 14px; border: 1px solid #dbeafe; border-radius: 10px; background: #eff6ff; color: #2563eb; font-size: 13px; }
+  #priceHistoryFeature .ph-card { overflow: hidden; border: 1px solid var(--app-border, #e4e9ef); border-radius: 16px; background: #fff; box-shadow: 0 8px 24px rgba(15, 23, 42, .04); }
+  #priceHistoryFeature .ph-filters { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; padding: 20px 22px; border-bottom: 1px solid #edf1f5; }
+  #priceHistoryFeature .ph-field { display: flex; flex-direction: column; gap: 7px; }
+  #priceHistoryFeature .ph-field label { color: #334155; font-size: 12px; font-weight: 700; }
+  #priceHistoryFeature .ph-field select { width: 100%; min-height: 42px; padding: 0 12px; border: 1px solid #dce3ea; border-radius: 9px; background: #fff; color: #172033; font: inherit; }
+  #priceHistoryFeature .ph-field select:focus { border-color: var(--orange); outline: 3px solid rgba(244, 122, 0, .13); }
+  #priceHistoryFeature .ph-content { padding: 20px 22px 22px; }
+  #priceHistoryFeature .ph-summary { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+  #priceHistoryFeature .ph-summary h3 { margin: 0 0 5px; color: #172033; font-size: 18px; }
+  #priceHistoryFeature .ph-summary p { margin: 0; color: #7a8699; font-size: 12px; }
+  #priceHistoryFeature .ph-readonly { flex-shrink: 0; padding: 5px 9px; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: 11px; font-weight: 700; }
+  #priceHistoryFeature .ph-table-wrap { overflow-x: auto; border: 1px solid #e5eaf0; border-radius: 10px; }
+  #priceHistoryFeature .ph-table { width: 100%; min-width: 620px; table-layout: fixed; border-collapse: collapse; }
+  #priceHistoryFeature .ph-table th:nth-child(1) { width: 16%; }
+  #priceHistoryFeature .ph-table th:nth-child(2) { width: 25%; }
+  #priceHistoryFeature .ph-table th:nth-child(3),
+  #priceHistoryFeature .ph-table th:nth-child(4) { width: 12%; }
+  #priceHistoryFeature .ph-table th:nth-child(5) { width: 15%; }
+  #priceHistoryFeature .ph-table th:nth-child(6) { width: 20%; }
+  #priceHistoryFeature .ph-table th { padding: 11px 13px; background: #f4f7fa; color: #455468; text-align: left; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  #priceHistoryFeature .ph-table td { padding: 12px 10px; border-top: 1px solid #edf1f5; color: #334155; font-size: 12px; vertical-align: middle; overflow-wrap: anywhere; }
+  #priceHistoryFeature .ph-table tbody tr:hover td { background: #fffaf6; }
+  #priceHistoryFeature .ph-table small { display: block; margin-top: 2px; color: #8490a2; font-size: 11px; }
+  #priceHistoryFeature .ph-price-old { color: #64748b; }
+  #priceHistoryFeature .ph-price-old.empty { color: #8490a2; font-style: italic; line-height: 1.25; }
+  #priceHistoryFeature .ph-price-new { color: #172033; font-weight: 700; }
+  #priceHistoryFeature .ph-change { font-weight: 700; white-space: nowrap; }
+  #priceHistoryFeature .ph-change.up { color: #15803d; }
+  #priceHistoryFeature .ph-change.down { color: #dc2626; }
+  #priceHistoryFeature .ph-change.neutral { color: #64748b; }
+  #priceHistoryFeature .ph-empty { padding: 48px 20px; text-align: center; color: #7a8699; }
+  #priceHistoryFeature .ph-empty strong { display: block; margin-bottom: 5px; color: #334155; }
+  #priceHistoryFeature .ph-error { margin: 0; padding: 16px; color: #b42318; text-align: center; }
+  @media (max-width: 720px) {
+    #priceHistoryFeature .ph-filters { grid-template-columns: 1fr; padding: 16px; }
+    #priceHistoryFeature .ph-content { padding: 16px; }
+    #priceHistoryFeature .ph-summary { align-items: flex-start; flex-direction: column; }
+  }
+</style>
+<script>
+window.priceHistoryFeature = (() => {
+  let generation = 0;
+  let history = [];
+  let product = null;
+
+  const esc = (value) => escapeHtml(value == null ? '' : String(value));
+  const money = (value) => value == null ? '—' : `${Math.round(Number(value)).toLocaleString('vi-VN')} đ`;
+  const date = (value) => {
+    if (!value) return '—';
+    const parts = String(value).slice(0, 10).split('-');
+    return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]} 00:00` : String(value);
+  };
+  const timestamp = (value) => value
+    ? new Date(value).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })
+    : '—';
+
+  function changeCell(item) {
+    if (item.old_price == null) return '<span class="ph-change neutral">Giá khởi tạo</span>';
+    if (item.new_price == null) return '<span class="ph-change neutral">Ngừng áp dụng</span>';
+    const difference = Number(item.new_price) - Number(item.old_price);
+    const sign = difference > 0 ? '+' : '';
+    const kind = difference > 0 ? 'up' : difference < 0 ? 'down' : 'neutral';
+    return `<span class="ph-change ${kind}">${esc(sign + money(difference))}</span>`;
+  }
+
+  function renderRows() {
+    const listId = document.getElementById('phPriceList')?.value || '';
+    const rows = listId ? history.filter((item) => String(item.price_list_id) === listId) : history;
+    const host = document.getElementById('phTableBody');
+    if (!host) return;
+    document.getElementById('phCount').textContent = `${rows.length} lần thay đổi${history[0] ? ` · Cập nhật gần nhất: ${timestamp(history[0].changed_at)}` : ''}`;
+    host.innerHTML = rows.length ? rows.map((item) => `<tr>
+      <td>${esc(date(item.effective_at))}</td>
+      <td><strong>${esc(item.price_list_name)}</strong><small>${esc(item.customer_group_name)} · Phiên bản ${esc(item.price_list_version)}</small></td>
+      <td>${item.old_price == null ? '<span class="ph-price-old empty">Chưa có giá<br>trước đó</span>' : `<span class="ph-price-old">${esc(money(item.old_price))}</span>`}</td>
+      <td>${item.new_price == null ? '<span class="ph-price-old empty">Ngừng áp dụng</span>' : `<span class="ph-price-new">${esc(money(item.new_price))}</span>`}</td>
+      <td>${changeCell(item)}</td>
+      <td><strong>${esc(item.changed_by_name)}</strong>${item.changed_by_email ? `<small>${esc(item.changed_by_email)}</small>` : ''}</td>
+    </tr>`).join('') : '<tr><td colspan="6"><div class="ph-empty"><strong>Chưa có lịch sử phù hợp</strong><span>Thử chọn bảng giá khác hoặc cập nhật giá sản phẩm.</span></div></td></tr>';
+  }
+
+  async function loadHistory(productId, revision) {
+    const content = document.getElementById('phContent');
+    content.innerHTML = '<div class="ph-empty"><strong>Đang tải lịch sử giá...</strong></div>';
+    try {
+      const result = await apiRequest(`price-history/?productId=${encodeURIComponent(productId)}`);
+      if (revision !== generation || !content.isConnected) return;
+      if (!result?.readOnly || !Array.isArray(result.items) || !result.product)
+        throw new Error('Dữ liệu lịch sử giá trả về không hợp lệ.');
+      history = result.items;
+      product = result.product;
+      const priceLists = [...new Map(history.map((item) => [String(item.price_list_id), item])).values()];
+      content.innerHTML = `<div class="ph-summary"><div><h3>${esc(product.sku)} · ${esc(product.name)}</h3><p id="phCount"></p></div><span class="ph-readonly">Chỉ đọc</span></div>
+        <div class="ph-table-wrap"><table class="ph-table"><thead><tr><th>Hiệu lực từ</th><th>Bảng giá</th><th>Giá cũ</th><th>Giá mới</th><th>Thay đổi</th><th>Người cập nhật</th></tr></thead><tbody id="phTableBody"></tbody></table></div>`;
+      const listSelect = document.getElementById('phPriceList');
+      listSelect.innerHTML = '<option value="">Tất cả bảng giá</option>' + priceLists.map((item) => `<option value="${esc(item.price_list_id)}">${esc(item.price_list_name)} · v${esc(item.price_list_version)}</option>`).join('');
+      listSelect.disabled = false;
+      listSelect.onchange = renderRows;
+      renderRows();
+    } catch (error) {
+      if (revision === generation && content.isConnected)
+        content.innerHTML = `<p class="ph-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  async function render() {
+    const revision = ++generation;
+    moduleContent.innerHTML = `<section id="priceHistoryFeature">
+      <header class="module-head"><div><span class="eyebrow">S3-02 · QUẢN LÝ GIÁ</span><h2>Lịch sử thay đổi giá</h2><p>Tra cứu giá cũ, giá mới, người cập nhật và thời điểm có hiệu lực.</p></div></header>
+      <p class="ph-note">Chỉ đọc · Lịch sử được lưu đối soát, không thể chỉnh sửa hoặc xóa.</p>
+      <div class="ph-card">
+        <div class="ph-filters">
+          <div class="ph-field"><label for="phProduct">Sản phẩm</label><select id="phProduct"><option value="">Đang tải sản phẩm...</option></select></div>
+          <div class="ph-field"><label for="phPriceList">Bảng giá</label><select id="phPriceList" disabled><option value="">Tất cả bảng giá</option></select></div>
+        </div>
+        <div class="ph-content" id="phContent"><div class="ph-empty"><strong>Đang tải dữ liệu...</strong></div></div>
+      </div>
+    </section>`;
+    try {
+      const products = await apiRequest('products/');
+      if (revision !== generation || !document.getElementById('priceHistoryFeature')) return;
+      const select = document.getElementById('phProduct');
+      if (!Array.isArray(products) || !products.length) {
+        select.innerHTML = '<option value="">Chưa có sản phẩm</option>';
+        document.getElementById('phContent').innerHTML = '<div class="ph-empty"><strong>Chưa có sản phẩm</strong><span>Hãy khai báo sản phẩm trước khi xem lịch sử giá.</span></div>';
+        return;
+      }
+      select.innerHTML = products.map((item) => `<option value="${esc(item.id)}">${esc(item.sku)} · ${esc(item.name)}</option>`).join('');
+      const requested = window.priceHistorySelectedProductId;
+      window.priceHistorySelectedProductId = null;
+      if (requested && products.some((item) => String(item.id) === String(requested))) select.value = String(requested);
+      select.onchange = () => loadHistory(select.value, revision);
+      await loadHistory(select.value, revision);
+    } catch (error) {
+      if (revision === generation && document.getElementById('phContent'))
+        document.getElementById('phContent').innerHTML = `<p class="ph-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  return { render };
+})();
+</script>

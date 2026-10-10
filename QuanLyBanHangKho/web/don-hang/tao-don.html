@@ -307,6 +307,28 @@
   font-size:11px;
 }
 
+#salesOrderFeatureRoot .lock-warn{
+  margin-top:8px;
+  padding:10px 12px;
+  border:1px solid #fecaca;
+  border-radius:8px;
+  background:#fef2f2;
+  color:#991b1b;
+  font-size:12px;
+  line-height:1.45;
+}
+
+#salesOrderFeatureRoot .lock-tag{
+  display:inline-block;
+  margin-left:6px;
+  padding:1px 6px;
+  border-radius:999px;
+  background:#fee2e2;
+  color:#b91c1c;
+  font-size:10px;
+  font-weight:600;
+}
+
 #salesOrderFeatureRoot .msg{
   margin-top:12px;
   padding:10px 12px;
@@ -951,6 +973,13 @@
             Đổi
           </button>
 
+        </div>
+
+        <div
+          id="lockWarning"
+          class="lock-warn"
+          role="alert"
+          hidden>
         </div>
 
 
@@ -1633,6 +1662,26 @@ window.salesOrderFeature = (() => {
     }
 
 
+    /* S3-07: đại lý bị khoá giao dịch -> cảnh báo rõ trên form. */
+    const warning =
+      $('lockWarning');
+
+    const locked =
+      !!customer?.tradingLocked;
+
+    warning.hidden = !locked;
+
+    warning.textContent =
+      !locked
+        ? ''
+        : 'Đại lý đang bị khoá giao dịch' +
+          (customer.lockReason ? ': ' + customer.lockReason : '') +
+          '. ' +
+          (S.id
+            ? 'Đơn nháp này vẫn được xử lý tiếp, vui lòng kiểm tra kỹ trước khi hoàn tất.'
+            : 'Không thể tạo đơn mới cho đại lý này.');
+
+
     const productInput =
       $('productQ');
 
@@ -1668,7 +1717,13 @@ window.salesOrderFeature = (() => {
         customer.fullName,
 
       phone:
-        customer.phone || ''
+        customer.phone || '',
+
+      tradingLocked:
+        !!customer.tradingLocked,
+
+      lockReason:
+        customer.lockReason || ''
 
     };
 
@@ -2072,7 +2127,17 @@ window.salesOrderFeature = (() => {
                     {
                       text:
                         customer.fullName
-                    }
+                    },
+
+                    customer.tradingLocked
+                      ? el(
+                          'span',
+                          {
+                            class:'lock-tag',
+                            text:'Đang khoá'
+                          }
+                        )
+                      : null
                   ),
 
                   el(
@@ -3471,7 +3536,13 @@ window.salesOrderFeature = (() => {
 
         phone:
           order.customerPhone ||
-          ''
+          '',
+
+        tradingLocked:
+          !!order.tradingLocked,
+
+        lockReason:
+          order.lockReason || ''
 
       };
 

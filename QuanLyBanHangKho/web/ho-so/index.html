@@ -12,12 +12,30 @@
     gap: 22px;
     align-items: center;
   }
-  .s2-avatar,
-  .s2-avatar-placeholder {
+  .s2-avatar-container {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    flex-shrink: 0;
+  }
+  .s2-avatar-wrapper {
+    position: relative;
     width: 96px;
     height: 96px;
     border-radius: 24px;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    display: block;
+    user-select: none;
+  }
+  .s2-avatar,
+  .s2-avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    border-radius: 24px;
     object-fit: cover;
+    display: block;
   }
   .s2-avatar-placeholder {
     display: grid;
@@ -25,14 +43,179 @@
     background: var(--orange-soft);
     color: var(--orange);
     font-size: 38px;
+    font-weight: 600;
+  }
+  .s2-avatar-overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: 24px;
+    background: rgba(15, 23, 42, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    color: #ffffff;
+  }
+  .s2-avatar-wrapper:hover .s2-avatar-overlay {
+    opacity: 1;
+  }
+  .s2-avatar-camera-btn {
+    position: absolute;
+    right: -4px;
+    bottom: -4px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid #ffffff;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.16);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 3;
+    padding: 0;
+  }
+  .s2-avatar-camera-btn:hover,
+  .s2-avatar-wrapper:hover + .s2-avatar-camera-btn {
+    background: var(--orange, #ea580c);
+    color: #ffffff;
+    transform: scale(1.08);
+  }
+  .s2-avatar-camera-btn svg {
+    width: 17px;
+    height: 17px;
   }
   .s2-profile hr {
     margin: 28px 0;
     border: 0;
     border-top: 1px solid var(--line);
   }
+
+  /* Modal xem trước ảnh đại diện kiểu Facebook */
+  .s2-avatar-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1200;
+    padding: 16px;
+    animation: s2AvatarFadeIn 0.18s ease-out;
+  }
+  @keyframes s2AvatarFadeIn {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .s2-avatar-dialog {
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    max-width: 440px;
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .s2-avatar-dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line, #e2e8f0);
+  }
+  .s2-avatar-dialog-header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+  .s2-avatar-dialog-close {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    color: #64748b;
+    padding: 2px 6px;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+  }
+  .s2-avatar-dialog-close:hover {
+    color: #0f172a;
+    background: #f1f5f9;
+  }
+  .s2-avatar-dialog-body {
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+  }
+  .s2-avatar-preview-box {
+    width: 180px;
+    height: 180px;
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    background: #f8fafc;
+    border: 3px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .s2-avatar-preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .s2-avatar-file-meta {
+    font-size: 0.88rem;
+    color: #64748b;
+    margin: 0;
+  }
+  .s2-avatar-dialog-body .s2-avatar-guide {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    margin: 0;
+  }
+  .s2-avatar-preview-error {
+    color: #dc2626;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.86rem;
+    margin: 0;
+    width: 100%;
+    box-sizing: border-box;
+    display: none;
+  }
+  .s2-avatar-dialog-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    background: #f8fafc;
+    border-top: 1px solid var(--line, #e2e8f0);
+  }
+  .s2-avatar-dialog-footer .right-actions {
+    display: flex;
+    gap: 8px;
+  }
 </style>
 <script>
+  let pendingAvatarFile = null;
+  let avatarPreviewObjectUrl = null;
+
   async function renderProfile() {
     const revision = viewRevision;
     moduleContent.innerHTML = '<p class="s2-empty">Đang tải hồ sơ...</p>';
@@ -40,9 +223,9 @@
       const user = await apiRequest('profile/');
       if (revision !== viewRevision) return;
 
-      const avatar = user.has_avatar
-        ? '<img src="api/profile/avatar" class="s2-avatar" alt="Ảnh đại diện">'
-        : '<div class="s2-avatar-placeholder">' + escapeHtml(user.full_name.slice(0, 1)) + '</div>';
+      const avatarContent = user.has_avatar
+        ? `<img src="api/profile/avatar?t=${Date.now()}" class="s2-avatar" alt="Ảnh đại diện" id="s2CurrentAvatarImg">`
+        : `<div class="s2-avatar-placeholder" id="s2CurrentAvatarPlaceholder">${escapeHtml(user.full_name.slice(0, 1))}</div>`;
       const roleNames = user.roles.map(role => roleConfigs[role]?.label || role).join(', ');
       const workArea = user.warehouses.join(', ') || user.territory || 'Chưa gán';
       const profileFields = [
@@ -61,7 +244,24 @@
         </section>
         <section class="inventory-panel s2-profile">
           <div class="s2-profile-head">
-            ${avatar}
+            <div class="s2-avatar-container">
+              <div class="s2-avatar-wrapper" onclick="triggerAvatarSelect()" role="button" tabindex="0" title="Nhấp để đổi ảnh đại diện">
+                ${avatarContent}
+                <div class="s2-avatar-overlay" aria-hidden="true">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                    <circle cx="12" cy="13" r="4"></circle>
+                  </svg>
+                </div>
+              </div>
+              <button type="button" class="s2-avatar-camera-btn" onclick="triggerAvatarSelect()" title="Đổi ảnh đại diện" aria-label="Đổi ảnh đại diện">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                  <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+              </button>
+              <input type="file" id="s2AvatarHiddenInput" accept="image/png,image/jpeg" style="display: none;" onchange="handleAvatarFileChosen(event)">
+            </div>
             <div>
               <h3>${escapeHtml(user.full_name)}</h3>
               <p>${escapeHtml(user.email)}</p>
@@ -73,15 +273,142 @@
             <p class="s2-form-error" id="s2ProfileError" role="alert"></p>
             <button class="orange-button" type="submit">Lưu hồ sơ</button>
           </form>
-          <hr>
-          
         </section>
       `;
       document.getElementById('s2ProfileForm').onsubmit = saveProfile;
-      
     } catch (e) {
       if (revision === viewRevision)
         moduleContent.innerHTML = `<p class="s2-empty">${escapeHtml(e.message)}</p>`;
+    }
+  }
+
+  function triggerAvatarSelect() {
+    const input = document.getElementById('s2AvatarHiddenInput');
+    if (input) {
+      input.value = '';
+      input.click();
+    }
+  }
+
+  function handleAvatarFileChosen(event) {
+    const file = event.target?.files?.[0];
+    if (!file) return;
+    showAvatarPreview(file);
+  }
+
+  function showAvatarPreview(file) {
+    pendingAvatarFile = file;
+    if (avatarPreviewObjectUrl) {
+      URL.revokeObjectURL(avatarPreviewObjectUrl);
+    }
+    avatarPreviewObjectUrl = URL.createObjectURL(file);
+
+    const maxAvatarSize = 2 * 1024 * 1024;
+    const isOversized = file.size > maxAvatarSize;
+    const isValidFormat = ['image/jpeg', 'image/png'].includes(file.type);
+
+    let modal = document.getElementById('s2AvatarPreviewModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 's2AvatarPreviewModal';
+      modal.className = 's2-avatar-modal';
+      document.body.appendChild(modal);
+    }
+
+    const fileSizeFormatted = (file.size / 1024 / 1024).toFixed(2);
+    let errorMessage = '';
+    if (isOversized) {
+      errorMessage = `Ảnh vượt quá 2 MB (hiện tại: ${fileSizeFormatted} MB). Vui lòng đổi ảnh khác.`;
+    } else if (!isValidFormat) {
+      errorMessage = 'Chỉ chấp nhận định dạng JPG hoặc PNG. Vui lòng đổi ảnh khác.';
+    }
+
+    modal.innerHTML = `
+      <div class="s2-avatar-dialog" role="dialog" aria-modal="true" aria-labelledby="s2AvatarDialogTitle">
+        <header class="s2-avatar-dialog-header">
+          <h3 id="s2AvatarDialogTitle">Cập nhật ảnh đại diện</h3>
+          <button type="button" class="s2-avatar-dialog-close" onclick="closeAvatarPreviewModal()" aria-label="Đóng">×</button>
+        </header>
+        <div class="s2-avatar-dialog-body">
+          <div class="s2-avatar-preview-box">
+            <img src="${avatarPreviewObjectUrl}" alt="Xem trước ảnh đại diện" class="s2-avatar-preview-img">
+          </div>
+          <p class="s2-avatar-file-meta"><strong>${escapeHtml(file.name)}</strong> (${fileSizeFormatted} MB)</p>
+          <p class="s2-avatar-guide">Hệ thống sẽ tự động căn giữa và cắt vuông chuẩn 256×256 px.</p>
+          <p class="s2-avatar-preview-error" id="s2AvatarModalError" style="${errorMessage ? 'display: block;' : ''}">${escapeHtml(errorMessage)}</p>
+        </div>
+        <footer class="s2-avatar-dialog-footer">
+          <button type="button" class="outline-button" onclick="triggerAvatarSelect()">Đổi ảnh khác</button>
+          <div class="right-actions">
+            <button type="button" class="outline-button" onclick="closeAvatarPreviewModal()">Hủy</button>
+            <button type="button" class="orange-button" id="s2AvatarConfirmBtn" onclick="confirmSaveAvatar()" ${errorMessage ? 'disabled' : ''}>Lưu ảnh</button>
+          </div>
+        </footer>
+      </div>
+    `;
+  }
+
+  function closeAvatarPreviewModal() {
+    const modal = document.getElementById('s2AvatarPreviewModal');
+    if (modal) {
+      modal.remove();
+    }
+    if (avatarPreviewObjectUrl) {
+      URL.revokeObjectURL(avatarPreviewObjectUrl);
+      avatarPreviewObjectUrl = null;
+    }
+    pendingAvatarFile = null;
+    const input = document.getElementById('s2AvatarHiddenInput');
+    if (input) input.value = '';
+  }
+
+  async function confirmSaveAvatar() {
+    if (!pendingAvatarFile) return;
+    const button = document.getElementById('s2AvatarConfirmBtn');
+    const errorEl = document.getElementById('s2AvatarModalError');
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Đang lưu...';
+    }
+    if (errorEl) {
+      errorEl.style.display = 'none';
+      errorEl.textContent = '';
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', pendingAvatarFile);
+      await apiRequest('profile/avatar', { method: 'POST', body: formData });
+      showToast('Đã cập nhật ảnh đại diện');
+      closeAvatarPreviewModal();
+
+      // Cập nhật ngay avatar hiển thị trên trang hiện tại
+      const currentAvatarImg = document.getElementById('s2CurrentAvatarImg');
+      const newAvatarUrl = `api/profile/avatar?t=${Date.now()}`;
+      if (currentAvatarImg) {
+        currentAvatarImg.src = newAvatarUrl;
+      } else {
+        const placeholder = document.getElementById('s2CurrentAvatarPlaceholder');
+        if (placeholder && placeholder.parentElement) {
+          const newImg = document.createElement('img');
+          newImg.src = newAvatarUrl;
+          newImg.className = 's2-avatar';
+          newImg.alt = 'Ảnh đại diện';
+          newImg.id = 's2CurrentAvatarImg';
+          placeholder.parentElement.replaceChild(newImg, placeholder);
+        }
+      }
+    } catch (error) {
+      if (errorEl) {
+        errorEl.textContent = error.message || 'Lỗi khi cập nhật ảnh';
+        errorEl.style.display = 'block';
+      } else {
+        showRequestError(error);
+      }
+      if (button) {
+        button.disabled = false;
+        button.textContent = 'Lưu ảnh';
+      }
     }
   }
 
@@ -110,5 +437,4 @@
       button.disabled = false;
     }
   }
-
 </script>

@@ -215,6 +215,7 @@
 <script>
   let pendingAvatarFile = null;
   let avatarPreviewObjectUrl = null;
+
   async function renderProfile() {
     const revision = viewRevision;
     moduleContent.innerHTML = '<p class="s2-empty">Đang tải hồ sơ...</p>';
@@ -359,6 +360,56 @@
     pendingAvatarFile = null;
     const input = document.getElementById('s2AvatarHiddenInput');
     if (input) input.value = '';
+  }
+
+  async function confirmSaveAvatar() {
+    if (!pendingAvatarFile) return;
+    const button = document.getElementById('s2AvatarConfirmBtn');
+    const errorEl = document.getElementById('s2AvatarModalError');
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Đang lưu...';
+    }
+    if (errorEl) {
+      errorEl.style.display = 'none';
+      errorEl.textContent = '';
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', pendingAvatarFile);
+      await apiRequest('profile/avatar', { method: 'POST', body: formData });
+      showToast('Đã cập nhật ảnh đại diện');
+      closeAvatarPreviewModal();
+
+      // Cập nhật ngay avatar hiển thị trên trang hiện tại
+      const currentAvatarImg = document.getElementById('s2CurrentAvatarImg');
+      const newAvatarUrl = `api/profile/avatar?t=${Date.now()}`;
+      if (currentAvatarImg) {
+        currentAvatarImg.src = newAvatarUrl;
+      } else {
+        const placeholder = document.getElementById('s2CurrentAvatarPlaceholder');
+        if (placeholder && placeholder.parentElement) {
+          const newImg = document.createElement('img');
+          newImg.src = newAvatarUrl;
+          newImg.className = 's2-avatar';
+          newImg.alt = 'Ảnh đại diện';
+          newImg.id = 's2CurrentAvatarImg';
+          placeholder.parentElement.replaceChild(newImg, placeholder);
+        }
+      }
+    } catch (error) {
+      if (errorEl) {
+        errorEl.textContent = error.message || 'Lỗi khi cập nhật ảnh';
+        errorEl.style.display = 'block';
+      } else {
+        showRequestError(error);
+      }
+      if (button) {
+        button.disabled = false;
+        button.textContent = 'Lưu ảnh';
+      }
+    }
   }
 
   async function saveProfile(event) {

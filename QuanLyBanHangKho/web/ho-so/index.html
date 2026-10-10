@@ -94,8 +94,127 @@
     border: 0;
     border-top: 1px solid var(--line);
   }
+
+  /* Modal xem trước ảnh đại diện kiểu Facebook */
+  .s2-avatar-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1200;
+    padding: 16px;
+    animation: s2AvatarFadeIn 0.18s ease-out;
+  }
+  @keyframes s2AvatarFadeIn {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .s2-avatar-dialog {
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    max-width: 440px;
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .s2-avatar-dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line, #e2e8f0);
+  }
+  .s2-avatar-dialog-header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+  .s2-avatar-dialog-close {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    color: #64748b;
+    padding: 2px 6px;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+  }
+  .s2-avatar-dialog-close:hover {
+    color: #0f172a;
+    background: #f1f5f9;
+  }
+  .s2-avatar-dialog-body {
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+  }
+  .s2-avatar-preview-box {
+    width: 180px;
+    height: 180px;
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    background: #f8fafc;
+    border: 3px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .s2-avatar-preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .s2-avatar-file-meta {
+    font-size: 0.88rem;
+    color: #64748b;
+    margin: 0;
+  }
+  .s2-avatar-dialog-body .s2-avatar-guide {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    margin: 0;
+  }
+  .s2-avatar-preview-error {
+    color: #dc2626;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.86rem;
+    margin: 0;
+    width: 100%;
+    box-sizing: border-box;
+    display: none;
+  }
+  .s2-avatar-dialog-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    background: #f8fafc;
+    border-top: 1px solid var(--line, #e2e8f0);
+  }
+  .s2-avatar-dialog-footer .right-actions {
+    display: flex;
+    gap: 8px;
+  }
 </style>
 <script>
+  let pendingAvatarFile = null;
+  let avatarPreviewObjectUrl = null;
   async function renderProfile() {
     const revision = viewRevision;
     moduleContent.innerHTML = '<p class="s2-empty">Đang tải hồ sơ...</p>';
@@ -140,7 +259,7 @@
                   <circle cx="12" cy="13" r="4"></circle>
                 </svg>
               </button>
-              <input type="file" id="s2AvatarHiddenInput" accept="image/png,image/jpeg" style="display: none;">
+              <input type="file" id="s2AvatarHiddenInput" accept="image/png,image/jpeg" style="display: none;" onchange="handleAvatarFileChosen(event)">
             </div>
             <div>
               <h3>${escapeHtml(user.full_name)}</h3>
@@ -168,6 +287,78 @@
       input.value = '';
       input.click();
     }
+  }
+
+  function handleAvatarFileChosen(event) {
+    const file = event.target?.files?.[0];
+    if (!file) return;
+    showAvatarPreview(file);
+  }
+
+  function showAvatarPreview(file) {
+    pendingAvatarFile = file;
+    if (avatarPreviewObjectUrl) {
+      URL.revokeObjectURL(avatarPreviewObjectUrl);
+    }
+    avatarPreviewObjectUrl = URL.createObjectURL(file);
+
+    const maxAvatarSize = 2 * 1024 * 1024;
+    const isOversized = file.size > maxAvatarSize;
+    const isValidFormat = ['image/jpeg', 'image/png'].includes(file.type);
+
+    let modal = document.getElementById('s2AvatarPreviewModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 's2AvatarPreviewModal';
+      modal.className = 's2-avatar-modal';
+      document.body.appendChild(modal);
+    }
+
+    const fileSizeFormatted = (file.size / 1024 / 1024).toFixed(2);
+    let errorMessage = '';
+    if (isOversized) {
+      errorMessage = `Ảnh vượt quá 2 MB (hiện tại: ${fileSizeFormatted} MB). Vui lòng đổi ảnh khác.`;
+    } else if (!isValidFormat) {
+      errorMessage = 'Chỉ chấp nhận định dạng JPG hoặc PNG. Vui lòng đổi ảnh khác.';
+    }
+
+    modal.innerHTML = `
+      <div class="s2-avatar-dialog" role="dialog" aria-modal="true" aria-labelledby="s2AvatarDialogTitle">
+        <header class="s2-avatar-dialog-header">
+          <h3 id="s2AvatarDialogTitle">Cập nhật ảnh đại diện</h3>
+          <button type="button" class="s2-avatar-dialog-close" onclick="closeAvatarPreviewModal()" aria-label="Đóng">×</button>
+        </header>
+        <div class="s2-avatar-dialog-body">
+          <div class="s2-avatar-preview-box">
+            <img src="${avatarPreviewObjectUrl}" alt="Xem trước ảnh đại diện" class="s2-avatar-preview-img">
+          </div>
+          <p class="s2-avatar-file-meta"><strong>${escapeHtml(file.name)}</strong> (${fileSizeFormatted} MB)</p>
+          <p class="s2-avatar-guide">Hệ thống sẽ tự động căn giữa và cắt vuông chuẩn 256×256 px.</p>
+          <p class="s2-avatar-preview-error" id="s2AvatarModalError" style="${errorMessage ? 'display: block;' : ''}">${escapeHtml(errorMessage)}</p>
+        </div>
+        <footer class="s2-avatar-dialog-footer">
+          <button type="button" class="outline-button" onclick="triggerAvatarSelect()">Đổi ảnh khác</button>
+          <div class="right-actions">
+            <button type="button" class="outline-button" onclick="closeAvatarPreviewModal()">Hủy</button>
+            <button type="button" class="orange-button" id="s2AvatarConfirmBtn" onclick="confirmSaveAvatar()" ${errorMessage ? 'disabled' : ''}>Lưu ảnh</button>
+          </div>
+        </footer>
+      </div>
+    `;
+  }
+
+  function closeAvatarPreviewModal() {
+    const modal = document.getElementById('s2AvatarPreviewModal');
+    if (modal) {
+      modal.remove();
+    }
+    if (avatarPreviewObjectUrl) {
+      URL.revokeObjectURL(avatarPreviewObjectUrl);
+      avatarPreviewObjectUrl = null;
+    }
+    pendingAvatarFile = null;
+    const input = document.getElementById('s2AvatarHiddenInput');
+    if (input) input.value = '';
   }
 
   async function saveProfile(event) {

@@ -14,7 +14,7 @@ import java.util.*;
  * Tạo đơn hàng cho đại lý (S3-09). Mọi số tiền do máy chủ tính: giá lấy từ bảng giá hiện hành của đại lý,
 
  * Đại lý lấy từ hồ sơ đại lý (customers): chỉ đại lý mình phụ trách, đang giao dịch và không bị khoá mới tạo được đơn.
- * Chiết khấu dùng lại logic "có lợi nhất" của S3-01 (ChinhSachChietKhauService.quote).
+ * Chiết khấu dùng lại logic "có lợi nhất" của S3-01; bậc xét theo tổng số lượng SKU hoặc nhóm hàng trong cả đơn.
  */
 public class TaoDonHangService {
 
@@ -38,9 +38,9 @@ public class TaoDonHangService {
         else throw new IllegalArgumentException("Danh sách dòng hàng không hợp lệ");
         if (raw.size() > MAX_LINES) throw new IllegalArgumentException("Một đơn tối đa " + MAX_LINES + " dòng hàng");
 
+        // Bước 1: kiểm tra từng dòng và quy đổi số lượng ra đơn vị cơ sở.
         List<Map<String, Object>> lines = new ArrayList<>();
-        BigDecimal subtotal = BigDecimal.ZERO, discount = BigDecimal.ZERO, payable = BigDecimal.ZERO;
-
+        List<Map<String, Object>> quoteInput = new ArrayList<>();
         for (int i = 0; i < raw.size(); i++) {
             try {
                 if (!(raw.get(i) instanceof Map<?, ?> m)) throw new IllegalArgumentException("Dòng hàng không hợp lệ");
@@ -59,11 +59,6 @@ public class TaoDonHangService {
                 if (baseQty.compareTo(BigDecimal.valueOf(1_000_000_000L)) > 0) throw new IllegalArgumentException("Số lượng quá lớn");
                 int bq = baseQty.setScale(0, RoundingMode.UNNECESSARY).intValueExact();
 
-                var quote = new ChinhSachChietKhauDB().quote(Map.of("productId", productId, "quantity", bq, "unitPrice", basePrice));
-                BigDecimal lineSubtotal = (BigDecimal) quote.get("subtotal");
-                BigDecimal lineDiscount = (BigDecimal) quote.get("discount");
-                BigDecimal linePayable = (BigDecimal) quote.get("payment");
-
                 Map<String, Object> line = new LinkedHashMap<>();
                 line.put("productId", productId);
                 line.put("sku", info.get("sku"));
@@ -74,17 +69,29 @@ public class TaoDonHangService {
                 line.put("conversionFactor", factor);
                 line.put("basePrice", basePrice);
                 line.put("unitPrice", basePrice.multiply(factor).setScale(2, RoundingMode.HALF_UP));
-                line.put("subtotal", lineSubtotal);
-                line.put("discount", lineDiscount);
-                line.put("payable", linePayable);
-                line.put("policyId", quote.get("policyId"));
                 lines.add(line);
-                subtotal = subtotal.add(lineSubtotal);
-                discount = discount.add(lineDiscount);
-                payable = payable.add(linePayable);
+                quoteInput.add(Map.of("productId", productId, "quantity", bq, "unitPrice", basePrice));
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Dòng " + (i + 1) + ": " + e.getMessage());
             }
+        }
+
+        // Bước 2: chiết khấu "có lợi nhất" (S3-01), bậc xét theo tổng số lượng SKU / nhóm hàng trong cả đơn.
+        var quotes = new ChinhSachChietKhauDB().quoteOrder(quoteInput);
+        BigDecimal subtotal = BigDecimal.ZERO, discount = BigDecimal.ZERO, payable = BigDecimal.ZERO;
+        for (int i = 0; i < lines.size(); i++) {
+            var quote = quotes.get(i);
+            var line = lines.get(i);
+            BigDecimal lineSubtotal = (BigDecimal) quote.get("subtotal");
+            BigDecimal lineDiscount = (BigDecimal) quote.get("discount");
+            BigDecimal linePayable = (BigDecimal) quote.get("payment");
+            line.put("subtotal", lineSubtotal);
+            line.put("discount", lineDiscount);
+            line.put("payable", linePayable);
+            line.put("policyId", quote.get("policyId"));
+            subtotal = subtotal.add(lineSubtotal);
+            discount = discount.add(lineDiscount);
+            payable = payable.add(linePayable);
         }
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("priceListId", priceListId);

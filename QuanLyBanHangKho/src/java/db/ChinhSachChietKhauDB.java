@@ -81,6 +81,48 @@ public class ChinhSachChietKhauDB extends CoSoDB {
             p.setString(1,String.valueOf(actor)); p.executeQuery();
         }
     }
+    /** Nhóm của sản phẩm và toàn bộ nhóm cha; rỗng nếu sản phẩm không có nhóm. */
+    private Set<Long> categoryChain(Object category) throws SQLException {
+        Set<Long> groups=new HashSet<>();
+        if (category!=null) for (var row:query(
+            "WITH RECURSIVE up(id,parent_id,depth) AS (SELECT id,parent_id,0 FROM categories WHERE id=? "+
+            "UNION ALL SELECT c.id,c.parent_id,up.depth+1 FROM categories c JOIN up ON c.id=up.parent_id WHERE up.depth<50) "+
+            "SELECT id FROM up",((Number)category).longValue()))
+            groups.add(((Number)row.get("id")).longValue());
+        return groups;
+    }
+
+    /**
+     * Tính chiết khấu cho mọi dòng của một đơn. Mỗi dòng gồm productId, quantity (đơn vị cơ sở), unitPrice.
+     * Bậc của chính sách SKU xét tổng số lượng SKU đó trong đơn (cộng các dòng khác đơn vị tính);
+     * bậc của chính sách nhóm hàng xét tổng số lượng các sản phẩm thuộc nhóm (kể cả nhóm con).
+     */
+    public List<Map<String,Object>> quoteOrder(List<Map<String,Object>> lines) throws SQLException {
+        var policies=findAll();
+        Map<Long,Set<Long>> chains=new HashMap<>();
+        Map<Long,Long> skuQty=new HashMap<>(), groupQty=new HashMap<>();
+        for (var line:lines) {
+            long product=ChinhSachChietKhauService.positiveId(line.get("productId"));
+            long qty=ChinhSachChietKhauService.positiveId(line.get("quantity"));
+            if (!chains.containsKey(product)) {
+                var rows=query("SELECT category_id FROM products WHERE id=? AND active",product);
+                if (rows.isEmpty()) throw new NoSuchElementException("Sản phẩm không tồn tại hoặc đã ngừng hoạt động");
+                chains.put(product,categoryChain(rows.get(0).get("category_id")));
+            }
+            skuQty.merge(product,qty,Long::sum);
+            for (long g:chains.get(product)) groupQty.merge(g,qty,Long::sum);
+        }
+        List<Map<String,Object>> out=new ArrayList<>();
+        for (var line:lines) {
+            long product=ChinhSachChietKhauService.positiveId(line.get("productId"));
+            long qty=ChinhSachChietKhauService.positiveId(line.get("quantity"));
+            if (qty>Integer.MAX_VALUE) throw new IllegalArgumentException("Số lượng quá lớn");
+            out.add(ChinhSachChietKhauService.quote(policies,product,chains.get(product),(int)qty,
+                ChinhSachChietKhauService.decimal(line.get("unitPrice")),skuQty.get(product),groupQty));
+        }
+        return out;
+    }
+
     public Map<String,Object> quote(Map<String,Object> input) throws SQLException {
         long product=ChinhSachChietKhauService.positiveId(input.get("productId"));
         long qty=ChinhSachChietKhauService.positiveId(input.get("quantity"));
@@ -88,13 +130,7 @@ public class ChinhSachChietKhauDB extends CoSoDB {
         var rows=query("SELECT category_id FROM products WHERE id=? AND active",product);
         if (rows.isEmpty()) throw new NoSuchElementException("Sản phẩm không tồn tại hoặc đã ngừng hoạt động");
         // Chính sách của nhóm cha áp dụng cho sản phẩm thuộc mọi nhóm con bên dưới.
-        Set<Long> groups=new HashSet<>();
-        Object category=rows.get(0).get("category_id");
-        if (category!=null) for (var row:query(
-            "WITH RECURSIVE up(id,parent_id,depth) AS (SELECT id,parent_id,0 FROM categories WHERE id=? "+
-            "UNION ALL SELECT c.id,c.parent_id,up.depth+1 FROM categories c JOIN up ON c.id=up.parent_id WHERE up.depth<50) "+
-            "SELECT id FROM up",((Number)category).longValue()))
-            groups.add(((Number)row.get("id")).longValue());
+        Set<Long> groups=categoryChain(rows.get(0).get("category_id"));
         return ChinhSachChietKhauService.quote(findAll(),product,groups,
             (int)qty,ChinhSachChietKhauService.decimal(input.get("unitPrice")));
     }

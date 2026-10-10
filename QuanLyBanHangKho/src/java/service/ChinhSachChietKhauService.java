@@ -4,7 +4,8 @@ import java.math.*;
 import java.util.*;
 
 /** Highest eligible quantity tier per policy, then best monetary saving; never stack.
- *  A GROUP policy covers its category and every descendant category. */
+ *  A GROUP policy covers its category and every descendant category.
+ *  Trong một đơn, bậc xét theo tổng số lượng của SKU (mọi đơn vị tính) hoặc của cả nhóm hàng. */
 public final class ChinhSachChietKhauService {
     private ChinhSachChietKhauService() {}
     public static BigDecimal decimal(Object value) {
@@ -48,6 +49,16 @@ public final class ChinhSachChietKhauService {
     /** {@code categories}: nhóm của sản phẩm và toàn bộ nhóm cha của nó. */
     public static Map<String,Object> quote(List<Map<String,Object>> policies, long product, Set<Long> categories,
                                            int qty, BigDecimal price) {
+        return quote(policies, product, categories, qty, price, qty, Map.of());
+    }
+
+    /**
+     * Như trên, nhưng bậc chiết khấu xét theo tổng số lượng của cả đơn: {@code skuQty} là tổng số lượng
+     * (đơn vị cơ sở) của SKU này, {@code groupQty} là tổng số lượng theo từng nhóm hàng (tính cả nhóm con).
+     * Nhóm không có trong {@code groupQty} dùng số lượng của dòng. Chiết khấu vẫn nhân với số lượng của dòng.
+     */
+    public static Map<String,Object> quote(List<Map<String,Object>> policies, long product, Set<Long> categories,
+                                           int qty, BigDecimal price, long skuQty, Map<Long,Long> groupQty) {
         if (qty<1 || price.signum()<0 || price.scale()>2 || price.precision()-price.scale()>16)
             throw new IllegalArgumentException("Số lượng hoặc đơn giá không hợp lệ");
         List<Map<String,Object>> results = new ArrayList<>();
@@ -57,11 +68,12 @@ public final class ChinhSachChietKhauService {
             if (!Boolean.TRUE.equals(p.get("active"))) continue;
             long target = positiveId(p.get("tid"));
             if (p.get("scope").equals("SKU") ? target != product : !categories.contains(target)) continue;
+            long reached = p.get("scope").equals("SKU") ? Math.max(qty, skuQty) : Math.max(qty, groupQty.getOrDefault(target, (long)qty));
             Map<?,?> tier = null;
             for (Object item : (List<?>)p.get("tiers")) {
                 Map<?,?> t = (Map<?,?>)item;
                 long q = positiveId(t.get("q"));
-                if (q<=qty && (tier==null || q>positiveId(tier.get("q")))) tier=t;
+                if (q<=reached && (tier==null || q>positiveId(tier.get("q")))) tier=t;
             }
             if (tier==null) continue;
             BigDecimal value = decimal(tier.get("v"));

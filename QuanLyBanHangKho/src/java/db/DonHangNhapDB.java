@@ -10,7 +10,8 @@ import util.KetNoiDB;
 public class DonHangNhapDB extends CoSoDB {
 
     private static String like(String q) {
-        String s = q == null ? "" : q.trim();
+        // NFC để chữ có dấu gõ từ bàn phím khác nhau vẫn khớp hàm khongdau (S3-08).
+        String s = q == null ? "" : java.text.Normalizer.normalize(q.trim(), java.text.Normalizer.Form.NFC);
         if (s.length() > 60) s = s.substring(0, 60);
         return "%" + s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
     }
@@ -20,13 +21,13 @@ public class DonHangNhapDB extends CoSoDB {
         return !query("SELECT 1 FROM customers WHERE id=? AND sales_rep_id=?", customerId, userId).isEmpty();
     }
 
-    /** Tìm đại lý mình phụ trách theo mã, tên, mã số thuế hoặc số điện thoại (kèm trạng thái khoá để giao diện cảnh báo). */
+    /** Tìm đại lý mình phụ trách theo mã, tên (không phân biệt dấu), mã số thuế hoặc số điện thoại (kèm trạng thái khoá để giao diện cảnh báo). */
     public List<Map<String, Object>> customers(String q, long userId) throws SQLException {
         String k = like(q);
         return query(
             "SELECT c.id, c.name AS \"fullName\", c.code, COALESCE(c.phone,'') AS phone, '' AS email, " +
             "c.trading_locked AS \"tradingLocked\", COALESCE(c.lock_reason,'') AS \"lockReason\" " +
-            "FROM customers c WHERE c.status='ACTIVE' AND c.sales_rep_id=? AND (c.name ILIKE ? ESCAPE '\\' " +
+            "FROM customers c WHERE c.status='ACTIVE' AND c.sales_rep_id=? AND (khongdau(c.name) LIKE khongdau(?) ESCAPE '\\' " +
             "OR c.code ILIKE ? ESCAPE '\\' OR COALESCE(c.tax_code,'') ILIKE ? ESCAPE '\\' " +
             "OR COALESCE(c.phone,'') ILIKE ? ESCAPE '\\') ORDER BY c.name LIMIT 20", userId, k, k, k, k);
     }

@@ -52,18 +52,19 @@ public class DiemGiaoDB extends CoSoDB {
     }
 
     private static String like(String q) {
-        String s = q == null ? "" : q.trim();
+        // NFC để chữ có dấu gõ từ bàn phím khác nhau vẫn khớp hàm khongdau (S3-08).
+        String s = q == null ? "" : java.text.Normalizer.normalize(q.trim(), java.text.Normalizer.Form.NFC);
         if (s.length() > 60) s = s.substring(0, 60);
         return "%" + s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
     }
 
-    /** Tìm đại lý mình phụ trách theo mã, tên, mã số thuế hoặc số điện thoại. */
+    /** Tìm đại lý mình phụ trách theo mã, tên (không phân biệt dấu), mã số thuế hoặc số điện thoại. */
     public List<Map<String, Object>> customers(String q, long userId) throws SQLException {
         String k = like(q);
         return query(
             "SELECT c.id, c.name AS \"fullName\", c.code, COALESCE(c.phone,'') AS phone, '' AS email, " +
             "(SELECT count(*) FROM customer_addresses d WHERE d.customer_id=c.id AND d.active) AS \"pointCount\" " +
-            "FROM customers c WHERE c.status='ACTIVE' AND c.sales_rep_id=? AND (c.name ILIKE ? ESCAPE '\\' " +
+            "FROM customers c WHERE c.status='ACTIVE' AND c.sales_rep_id=? AND (khongdau(c.name) LIKE khongdau(?) ESCAPE '\\' " +
             "OR c.code ILIKE ? ESCAPE '\\' OR COALESCE(c.tax_code,'') ILIKE ? ESCAPE '\\' " +
             "OR COALESCE(c.phone,'') ILIKE ? ESCAPE '\\') ORDER BY c.name LIMIT 20", userId, k, k, k, k);
     }

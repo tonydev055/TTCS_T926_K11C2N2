@@ -76,12 +76,12 @@ public class DiemGiaoHangServlet extends CoSoServlet {
             Map<String, Object> in = XuLyJson.object(body(q));
             long cid = agent(q, in.get("customerId"));
             if (p.matches("/\\d+/default")) {
-                dao.setDefault(Long.parseLong(p.substring(1, p.indexOf("/default"))), cid);
+                dao.setDefault(Long.parseLong(p.substring(1, p.indexOf("/default"))), cid, userId(q));
                 ok(r, "{\"ok\":true}");
             } else if (p.equals("/") || p.isEmpty()) {
                 long newId = dao.create(cid, text(in, "receiverName", "Người nhận", 150, true),
                     phone(in), text(in, "address", "Địa chỉ", 500, true),
-                    text(in, "routeNote", "Ghi chú đường đi", 1000, false), Boolean.TRUE.equals(in.get("isDefault")));
+                    text(in, "routeNote", "Ghi chú đường đi", 1000, false), Boolean.TRUE.equals(in.get("isDefault")), userId(q));
                 created(r, XuLyJson.stringify(Map.of("id", newId)));
             } else throw new NoSuchElementException("Không tìm thấy chức năng");
         } catch (Exception e) { fail(r, e); }
@@ -95,7 +95,7 @@ public class DiemGiaoHangServlet extends CoSoServlet {
             long cid = agent(q, in.get("customerId"));
             dao.update(Long.parseLong(p.substring(1)), cid, text(in, "receiverName", "Người nhận", 150, true),
                 phone(in), text(in, "address", "Địa chỉ", 500, true),
-                text(in, "routeNote", "Ghi chú đường đi", 1000, false), Boolean.TRUE.equals(in.get("isDefault")));
+                text(in, "routeNote", "Ghi chú đường đi", 1000, false), Boolean.TRUE.equals(in.get("isDefault")), userId(q));
             ok(r, "{\"ok\":true}");
         } catch (Exception e) { fail(r, e); }
     }
@@ -104,7 +104,7 @@ public class DiemGiaoHangServlet extends CoSoServlet {
         try {
             String p = Objects.toString(q.getPathInfo(), "/");
             if (!p.matches("/\\d+")) throw new IllegalArgumentException("Thiếu mã điểm giao hàng");
-            dao.remove(Long.parseLong(p.substring(1)), agent(q, q.getParameter("customerId")));
+            dao.remove(Long.parseLong(p.substring(1)), agent(q, q.getParameter("customerId")), userId(q));
             ok(r, "{\"ok\":true}");
         } catch (Exception e) { fail(r, e); }
     }

@@ -13,11 +13,18 @@ public class DiemGiaoDB extends CoSoDB {
 
     private interface Work<T> { T run(Connection c) throws SQLException; }
 
-    /** Khóa dòng đại lý để hai thao tác đổi "mặc định" cùng lúc không đạp lên nhau. */
-    private <T> T tx(long customerId, Work<T> w) throws SQLException {
+    /**
+     * Khóa dòng đại lý để hai thao tác đổi "mặc định" cùng lúc không đạp lên nhau.
+     * Đặt người thực hiện để trigger nhật ký ghi đúng actor trong transaction này.
+     */
+    private <T> T tx(long customerId, long actor, Work<T> w) throws SQLException {
         try (Connection c = KetNoiDB.getConnection()) {
             c.setAutoCommit(false);
             try {
+                try (PreparedStatement p = c.prepareStatement("SELECT set_config('app.actor_id',?,true)")) {
+                    p.setString(1, String.valueOf(actor));
+                    p.executeQuery();
+                }
                 try (PreparedStatement p = c.prepareStatement("SELECT id FROM customers WHERE id=? FOR UPDATE")) {
                     p.setLong(1, customerId);
                     p.executeQuery();
@@ -75,8 +82,8 @@ public class DiemGiaoDB extends CoSoDB {
     }
 
     public long create(long customerId, String receiver, String phone, String address, String note,
-                       boolean makeDefault) throws SQLException {
-        return tx(customerId, c -> {
+                       boolean makeDefault, long actor) throws SQLException {
+        return tx(customerId, actor, c -> {
             long count;
             try (PreparedStatement p = c.prepareStatement(
                     "SELECT count(*) FROM customer_addresses WHERE customer_id=? AND active")) {
@@ -96,8 +103,8 @@ public class DiemGiaoDB extends CoSoDB {
     }
 
     public void update(long id, long customerId, String receiver, String phone, String address, String note,
-                       boolean makeDefault) throws SQLException {
-        tx(customerId, c -> {
+                       boolean makeDefault, long actor) throws SQLException {
+        tx(customerId, actor, c -> {
             if (makeDefault) exec(c, "UPDATE customer_addresses SET is_default=FALSE WHERE customer_id=? AND is_default", customerId);
             int n = exec(c, "UPDATE customer_addresses SET recipient_name=?,phone=?,address=?,directions=?," +
                 "is_default=(is_default OR ?),updated_at=CURRENT_TIMESTAMP WHERE id=? AND customer_id=? AND active",
@@ -107,8 +114,8 @@ public class DiemGiaoDB extends CoSoDB {
         });
     }
 
-    public void setDefault(long id, long customerId) throws SQLException {
-        tx(customerId, c -> {
+    public void setDefault(long id, long customerId, long actor) throws SQLException {
+        tx(customerId, actor, c -> {
             exec(c, "UPDATE customer_addresses SET is_default=FALSE WHERE customer_id=? AND is_default", customerId);
             int n = exec(c, "UPDATE customer_addresses SET is_default=TRUE,updated_at=CURRENT_TIMESTAMP " +
                 "WHERE id=? AND customer_id=? AND active", id, customerId);
@@ -117,8 +124,8 @@ public class DiemGiaoDB extends CoSoDB {
         });
     }
 
-    public void remove(long id, long customerId) throws SQLException {
-        tx(customerId, c -> {
+    public void remove(long id, long customerId, long actor) throws SQLException {
+        tx(customerId, actor, c -> {
             int n = exec(c, "UPDATE customer_addresses SET active=FALSE,is_default=FALSE,updated_at=CURRENT_TIMESTAMP " +
                 "WHERE id=? AND customer_id=? AND active", id, customerId);
             if (n == 0) throw new NoSuchElementException("Không tìm thấy điểm giao hàng");

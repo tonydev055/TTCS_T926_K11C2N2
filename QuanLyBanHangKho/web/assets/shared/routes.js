@@ -16,7 +16,7 @@ function renderAccessError(view, message = 'Bạn chưa được cấp quyền s
 function renderFeatureView(view) {
  if(view==="Người dùng") { renderUsersModule(); return true; }
  if(view==="Vai trò & quyền") { renderPermissionMatrix(); return true; }
- if(view==="Sản phẩm & bảng giá") { renderCatalog('categories'); return true; }
+ if(view==="Sản phẩm & bảng giá") { renderCatalog('products'); return true; }
  if(view==="Đổi mật khẩu") { renderChangePassword(); return true; }
  return false;
 }

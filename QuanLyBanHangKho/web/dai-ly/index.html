@@ -1,0 +1,571 @@
+<!-- Loaded by the application shell: ../index.html -->
+<style>
+  #agentFeature { display: flex; flex-direction: column; gap: 18px; }
+  #agentFeature .ag-card { overflow: hidden; border: 1px solid var(--app-border, #e4e9ef); border-radius: 16px; background: #fff; box-shadow: 0 8px 24px rgba(15, 23, 42, .04); }
+  #agentFeature .ag-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 18px 22px; border-bottom: 1px solid #edf1f5; }
+  #agentFeature .ag-search { flex: 1 1 260px; min-height: 42px; padding: 0 12px; border: 1px solid #dce3ea; border-radius: 9px; font: inherit; }
+  #agentFeature .ag-search:focus,
+  #agentFeature .ag-select:focus { border-color: var(--orange); outline: 3px solid rgba(244, 122, 0, .13); }
+  #agentFeature .ag-select { min-height: 42px; padding: 0 10px; border: 1px solid #dce3ea; border-radius: 9px; background: #fff; font: inherit; }
+  #agentFeature .ag-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 0 16px; border: 1px solid #dce3ea; border-radius: 9px; background: #fff; color: #334155; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  #agentFeature .ag-btn:hover { border-color: #c4ceda; background: #f8fafc; }
+  #agentFeature .ag-btn:focus-visible { outline: 3px solid rgba(244, 122, 0, .25); }
+  #agentFeature .ag-btn.primary { border-color: var(--orange); background: var(--orange); color: #fff; }
+  #agentFeature .ag-btn.primary:hover { background: var(--orange-dark); }
+  #agentFeature .ag-btn.danger { border-color: #f3c4c0; color: #b42318; }
+  #agentFeature .ag-btn.danger:hover { background: #fef3f2; }
+  #agentFeature .ag-btn:disabled { opacity: .55; cursor: not-allowed; }
+  #agentFeature .ag-table-wrap { overflow-x: auto; }
+  #agentFeature .ag-table { width: 100%; min-width: 760px; border-collapse: collapse; }
+  #agentFeature .ag-table th { padding: 11px 14px; background: #f4f7fa; color: #455468; text-align: left; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  #agentFeature .ag-table td { padding: 12px 14px; border-top: 1px solid #edf1f5; color: #334155; font-size: 13px; vertical-align: middle; }
+  #agentFeature .ag-table tbody tr { cursor: pointer; }
+  #agentFeature .ag-table tbody tr:hover td { background: #fffaf6; }
+  #agentFeature .ag-table tbody tr:focus-visible { outline: 2px solid var(--orange); outline-offset: -2px; }
+  #agentFeature .ag-table small { display: block; margin-top: 2px; color: #8490a2; font-size: 11px; }
+  #agentFeature .ag-status { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+  #agentFeature .ag-status.active { background: #ecfdf3; color: #067647; }
+  #agentFeature .ag-status.inactive { background: #f2f4f7; color: #475467; }
+  #agentFeature .ag-status.locked { background: #fef3f2; color: #b42318; }
+  #agentFeature .ag-lock-banner { margin: 0; padding: 12px 22px; border-bottom: 1px solid #fecdca; background: #fef3f2; color: #912018; font-size: 13px; }
+  #agentFeature .ag-lock-banner strong { display: block; margin-bottom: 2px; }
+  #agentFeature .ag-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 22px; border-top: 1px solid #edf1f5; color: #64748b; font-size: 12px; }
+  #agentFeature .ag-pager { display: flex; gap: 8px; }
+  #agentFeature .ag-empty { padding: 48px 20px; text-align: center; color: #7a8699; }
+  #agentFeature .ag-empty strong { display: block; margin-bottom: 5px; color: #334155; }
+  #agentFeature .ag-error { margin: 0; padding: 16px; color: #b42318; text-align: center; }
+  #agentFeature .ag-detail-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 22px; border-bottom: 1px solid #edf1f5; }
+  #agentFeature .ag-detail-head h3 { margin: 0 0 6px; color: #172033; font-size: 20px; }
+  #agentFeature .ag-detail-head p { margin: 0; color: #64748b; font-size: 13px; }
+  #agentFeature .ag-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  #agentFeature .ag-section { padding: 20px 22px; border-bottom: 1px solid #edf1f5; }
+  #agentFeature .ag-section:last-child { border-bottom: 0; }
+  #agentFeature .ag-section h4 { margin: 0 0 14px; color: #172033; font-size: 15px; }
+  #agentFeature .ag-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px 24px; margin: 0; }
+  #agentFeature .ag-grid dt { color: #7a8699; font-size: 12px; }
+  #agentFeature .ag-grid dd { margin: 3px 0 0; color: #172033; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+  #agentFeature .ag-note { margin: 0; padding: 11px 14px; border: 1px solid #dbeafe; border-radius: 10px; background: #eff6ff; color: #1d4ed8; font-size: 13px; }
+  #agentFeature .ag-back { align-self: flex-start; }
+  #agentFeature .ag-mini-table { width: 100%; min-width: 560px; border-collapse: collapse; margin-top: 14px; }
+  #agentFeature .ag-mini-table th { padding: 9px 12px; background: #f4f7fa; color: #455468; text-align: left; font-size: 12px; font-weight: 700; }
+  #agentFeature .ag-mini-table td { padding: 10px 12px; border-top: 1px solid #edf1f5; color: #334155; font-size: 12px; vertical-align: top; }
+  #agentFeature .ag-mini-table small { display: block; color: #8490a2; font-size: 11px; }
+  #agentFeature .ag-muted { margin: 14px 0 0; color: #7a8699; font-size: 12px; }
+  #agentFeature .ag-section-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  #agentFeature .ag-section-head h4 { margin: 0; }
+  #agentFeature .ag-addresses { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); align-items: start; gap: 12px; }
+  #agentFeature .ag-address { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border: 1px solid #e5eaf0; border-radius: 12px; background: #fcfdfe; }
+  #agentFeature .ag-address.default { border-color: #fcd9b0; background: #fffaf3; }
+  #agentFeature .ag-address strong { color: #172033; font-size: 14px; }
+  #agentFeature .ag-address span { color: #475569; font-size: 13px; }
+  #agentFeature .ag-address em { color: #7a8699; font-size: 12px; font-style: normal; }
+  #agentFeature .ag-default-tag { align-self: flex-start; padding: 2px 8px; border-radius: 999px; background: var(--orange-soft, #fff1df); color: var(--orange-dark, #d96500); font-size: 11px; font-weight: 700; }
+  #agentFeature .ag-address .ag-actions { margin-top: 6px; gap: 8px; }
+  #agentFeature .ag-address .ag-btn { min-height: 32px; padding: 0 10px; font-size: 12px; }
+  #agentFeature .ag-filters { display: flex; flex-wrap: wrap; gap: 10px; }
+  #agentFeature .ag-table a[href^="tel:"] { color: var(--orange-dark, #d96500); font-weight: 600; text-decoration: none; }
+  @media (max-width: 720px) {
+    #agentFeature .ag-toolbar,
+    #agentFeature .ag-detail-head,
+    #agentFeature .ag-section { padding: 16px; }
+    #agentFeature .ag-footer { padding: 12px 16px; }
+    #agentFeature .ag-filters { width: 100%; }
+    #agentFeature .ag-filters .ag-select { flex: 1 1 calc(50% - 10px); min-width: 0; }
+    #agentFeature .ag-table { min-width: 0; }
+    #agentFeature .ag-table thead { display: none; }
+    #agentFeature .ag-table tbody tr { display: block; padding: 12px 16px; border-top: 1px solid #edf1f5; }
+    #agentFeature .ag-table td { display: block; padding: 2px 0; border: 0; }
+  }
+</style>
+<script>
+window.agentFeature = (() => {
+  let generation = 0;
+  let masters = { groups: [], salesReps: [], regions: [], canWrite: false };
+  const emptyFilters = () => ({ search: '', region: '', groupId: '', salesRepId: '', status: '', page: 1, size: 20 });
+  let state = emptyFilters();
+  const filtering = () => !!(state.search || state.region || state.groupId || state.salesRepId || state.status);
+  const option = (value, label, current) =>
+    `<option value="${esc(value)}" ${String(current) === String(value) ? 'selected' : ''}>${esc(label)}</option>`;
+
+  const esc = (value) => escapeHtml(value == null ? '' : String(value));
+  const statusLabel = { ACTIVE: 'Đang giao dịch', INACTIVE: 'Ngừng giao dịch' };
+  const lockBadge = (item) => item.trading_locked ? ' <span class="ag-status locked">🔒 Khoá giao dịch</span>' : '';
+  const statusBadge = (status) => `<span class="ag-status ${status === 'ACTIVE' ? 'active' : 'inactive'}">${status === 'ACTIVE' ? '●' : '○'} ${esc(statusLabel[status] || status)}</span>`;
+  const day = (value) => {
+    const parts = String(value || '').slice(0, 10).split('-');
+    return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : '—';
+  };
+  const alive = (revision) => revision === generation && document.getElementById('agentFeature');
+
+  function shell(inner) {
+    moduleContent.innerHTML = `<section id="agentFeature">
+      <header class="module-head"><div><span class="eyebrow">KHÁCH HÀNG · ĐẠI LÝ</span><h2>Đại lý</h2><p>Danh sách đại lý chuẩn dùng chung cho kinh doanh, kế toán và giao hàng.</p></div></header>
+      ${inner}
+    </section>`;
+  }
+
+  async function render() {
+    const revision = ++generation;
+    state = emptyFilters();
+    shell(`<div class="ag-card"><div class="ag-empty"><strong>Đang tải danh sách đại lý...</strong></div></div>`);
+    try {
+      masters = await apiRequest('customers/masters');
+      if (!alive(revision)) return;
+      renderList(revision);
+    } catch (error) {
+      if (alive(revision)) document.querySelector('#agentFeature .ag-card').innerHTML = `<p class="ag-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  function renderList(revision) {
+    shell(`<div class="ag-card">
+      <div class="ag-toolbar">
+        <input class="ag-search" id="agSearch" type="search" placeholder="Tìm theo mã, tên, số điện thoại, mã số thuế" aria-label="Tìm đại lý" value="${esc(state.search)}">
+        <div class="ag-filters">
+          <select class="ag-select" id="agRegion" aria-label="Lọc theo khu vực">
+            ${option('', 'Tất cả khu vực', state.region)}${masters.regions.map((r) => option(r, r, state.region)).join('')}
+          </select>
+          <select class="ag-select" id="agGroup" aria-label="Lọc theo nhóm khách hàng">
+            ${option('', 'Tất cả nhóm', state.groupId)}${masters.groups.map((g) => option(g.id, g.name, state.groupId)).join('')}
+          </select>
+          ${masters.seesAll ? `<select class="ag-select" id="agRep" aria-label="Lọc theo người phụ trách">
+            ${option('', 'Tất cả người phụ trách', state.salesRepId)}${masters.salesReps.map((u) => option(u.id, u.full_name, state.salesRepId)).join('')}
+          </select>` : ''}
+          <select class="ag-select" id="agStatus" aria-label="Lọc theo trạng thái">
+            ${option('', 'Tất cả trạng thái', state.status)}${option('ACTIVE', 'Đang giao dịch', state.status)}${option('INACTIVE', 'Ngừng giao dịch', state.status)}${option('LOCKED', 'Đang bị khoá', state.status)}
+          </select>
+          <button type="button" class="ag-btn" id="agClear" ${filtering() ? '' : 'disabled'}>Xoá bộ lọc</button>
+        </div>
+        ${masters.canAssign ? '<button type="button" class="ag-btn" id="agTransfer">Chuyển giao địa bàn</button>' : ''}
+        ${masters.canWrite ? '<button type="button" class="ag-btn primary" id="agCreate">+ Thêm đại lý</button>' : ''}
+      </div>
+      <div id="agList"><div class="ag-empty"><strong>Đang tải...</strong></div></div>
+    </div>`);
+    let timer;
+    document.getElementById('agSearch').addEventListener('input', (event) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => { state.search = event.target.value.trim(); state.page = 1; loadList(revision); }, 300);
+    });
+    document.getElementById('agCreate')?.addEventListener('click', () => openForm(null, revision));
+    document.getElementById('agTransfer')?.addEventListener('click', () => openTransfer(revision));
+    [['agRegion', 'region'], ['agGroup', 'groupId'], ['agRep', 'salesRepId'], ['agStatus', 'status']].forEach(([id, key]) => {
+      document.getElementById(id)?.addEventListener('change', (event) => {
+        state[key] = event.target.value; state.page = 1; loadList(revision);
+      });
+    });
+    document.getElementById('agClear').addEventListener('click', () => { state = emptyFilters(); renderList(revision); });
+    loadList(revision);
+  }
+
+  async function loadList(revision) {
+    const host = document.getElementById('agList');
+    const params = new URLSearchParams({ page: state.page, size: state.size });
+    for (const key of ['search', 'region', 'groupId', 'salesRepId', 'status']) if (state[key]) params.set(key, state[key]);
+    const clear = document.getElementById('agClear');
+    if (clear) clear.disabled = !filtering();
+    try {
+      const data = await apiRequest(`customers/?${params}`);
+      if (!alive(revision) || !host.isConnected) return;
+      if (!data.items.length) {
+        host.innerHTML = `<div class="ag-empty"><strong>${filtering() ? 'Không tìm thấy đại lý phù hợp' : 'Chưa có đại lý'}</strong><span>${filtering() ? 'Thử từ khoá hoặc bộ lọc khác.' : masters.canWrite ? 'Bấm “Thêm đại lý” để khai báo đại lý đầu tiên.' : 'Chưa có đại lý nào được giao cho bạn.'}</span></div>`;
+        return;
+      }
+      const pages = Math.max(1, Math.ceil(data.total / data.size));
+      host.innerHTML = `<div class="ag-table-wrap"><table class="ag-table"><thead><tr><th>Mã đại lý</th><th>Tên đại lý</th><th>Nhóm khách hàng</th><th>Khu vực</th><th>Người phụ trách</th><th>Trạng thái</th></tr></thead><tbody>
+        ${data.items.map((item) => `<tr tabindex="0" data-id="${esc(item.id)}">
+          <td><strong>${esc(item.code)}</strong></td>
+          <td>${esc(item.name)}${item.phone ? `<small><a href="tel:${esc(item.phone)}">${esc(item.phone)}</a></small>` : ''}</td>
+          <td>${esc(item.group_name)}</td>
+          <td>${esc(item.region)}</td>
+          <td>${item.sales_rep_name ? esc(item.sales_rep_name) : '<small>Chưa phân công</small>'}</td>
+          <td>${statusBadge(item.status)}${lockBadge(item)}</td>
+        </tr>`).join('')}
+      </tbody></table></div>
+      <div class="ag-footer"><span>${data.total} đại lý · Trang ${data.page}/${pages}</span><div class="ag-pager">
+        <button type="button" class="ag-btn" id="agPrev" ${data.page <= 1 ? 'disabled' : ''}>← Trước</button>
+        <button type="button" class="ag-btn" id="agNext" ${data.page >= pages ? 'disabled' : ''}>Sau →</button>
+      </div></div>`;
+      host.querySelectorAll('tbody tr').forEach((row) => {
+        const open = () => renderDetail(row.dataset.id, revision);
+        row.addEventListener('click', open);
+        row.addEventListener('keydown', (event) => { if (event.key === 'Enter') open(); });
+        row.querySelector('a[href^="tel:"]')?.addEventListener('click', (event) => event.stopPropagation());
+      });
+      document.getElementById('agPrev').onclick = () => { state.page--; loadList(revision); };
+      document.getElementById('agNext').onclick = () => { state.page++; loadList(revision); };
+    } catch (error) {
+      if (alive(revision) && host.isConnected) host.innerHTML = `<p class="ag-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  async function renderDetail(id, revision) {
+    shell(`<button type="button" class="ag-btn ag-back" id="agBack">← Danh sách đại lý</button><div class="ag-card" id="agDetail"><div class="ag-empty"><strong>Đang tải hồ sơ đại lý...</strong></div></div>`);
+    document.getElementById('agBack').onclick = () => renderList(revision);
+    try {
+      const agent = await apiRequest(`customers/${encodeURIComponent(id)}`);
+      if (!alive(revision)) return;
+      const price = agent.price_list;
+      document.getElementById('agDetail').innerHTML = `
+        <div class="ag-detail-head">
+          <div><h3>${esc(agent.code)} · ${esc(agent.name)}</h3><p>${statusBadge(agent.status)}${lockBadge(agent)}</p></div>
+          ${masters.canWrite || masters.canLock ? `<div class="ag-actions">
+            ${masters.canLock ? (agent.trading_locked
+              ? '<button type="button" class="ag-btn" id="agUnlock">Mở giao dịch</button>'
+              : '<button type="button" class="ag-btn danger" id="agLock">Khoá giao dịch</button>') : ''}
+            ${masters.canWrite ? '<button type="button" class="ag-btn" id="agEdit">Sửa hồ sơ</button>' : ''}
+            ${masters.canWrite && !agent.has_transactions ? '<button type="button" class="ag-btn danger" id="agDelete">Xoá đại lý</button>' : ''}
+          </div>` : ''}
+        </div>
+        ${agent.trading_locked ? `<p class="ag-lock-banner" role="status"><strong>Đại lý đang bị khoá giao dịch — không tạo được đơn mới, kể cả trên cổng đặt hàng.</strong>Lý do: ${esc(agent.lock_reason)} · ${esc(agent.locked_by_name || '')} · ${esc(new Date(agent.locked_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }))}${Number(agent.open_orders) > 0 ? ` · Còn ${esc(agent.open_orders)} đơn đang xử lý (vẫn xử lý tiếp được, có cảnh báo).` : ''}</p>` : ''}
+        <div class="ag-section"><h4>Thông tin chung</h4><dl class="ag-grid">
+          <div><dt>Mã số thuế</dt><dd>${esc(agent.tax_code || '—')}</dd></div>
+          <div><dt>Số điện thoại</dt><dd>${esc(agent.phone || '—')}</dd></div>
+          <div><dt>Khu vực</dt><dd>${esc(agent.region)}</dd></div>
+          <div><dt>Người phụ trách</dt><dd>${agent.sales_rep_name ? `${esc(agent.sales_rep_name)}` : 'Chưa phân công'}</dd></div>
+        </dl></div>
+        <div class="ag-section"><h4>Nhóm khách hàng & bảng giá</h4><dl class="ag-grid">
+          <div><dt>Nhóm khách hàng</dt><dd>${esc(agent.group_name)}</dd></div>
+          <div><dt>Bảng giá đang áp dụng</dt><dd>${price ? `${esc(price.name)} · phiên bản ${esc(price.version)}` : 'Chưa có bảng giá hiệu lực'}</dd></div>
+          ${price ? `<div><dt>Hiệu lực</dt><dd>${day(price.valid_from)} – ${day(price.valid_to)}</dd></div>` : ''}
+        </dl>
+        ${agent.has_transactions ? '<p class="ag-note" style="margin-top:14px">Đại lý đã phát sinh giao dịch nên không thể xoá. Khi không còn hợp tác, hãy chuyển trạng thái sang “Ngừng giao dịch”.</p>' : ''}
+        </div>`;
+      document.getElementById('agDetail').insertAdjacentHTML('beforeend', `<div class="ag-section" id="agAssignment">
+        <div class="ag-section-head"><h4>Nhân viên phụ trách</h4>${masters.canAssign ? '<button type="button" class="ag-btn" id="agAssign">Đổi người phụ trách</button>' : ''}</div>
+        <dl class="ag-grid"><div><dt>Phụ trách chính</dt><dd>${agent.sales_rep_name ? `${esc(agent.sales_rep_name)}` : 'Chưa phân công'}</dd></div>${agent.sales_rep_email ? `<div><dt>Email</dt><dd>${esc(agent.sales_rep_email)}</dd></div>` : ''}</dl>
+        <div id="agAssignHistory"><p class="ag-muted">Đang tải lịch sử phân công...</p></div>
+      </div>`);
+      document.getElementById('agAssign')?.addEventListener('click', () => openAssign(agent, revision));
+      loadAssignHistory(agent, revision);
+      document.getElementById('agDetail').insertAdjacentHTML('beforeend', `<div class="ag-section" id="agCredit">
+        <div class="ag-section-head"><h4>Hạn mức công nợ</h4>${masters.canEditCredit ? '<button type="button" class="ag-btn" id="agEditCredit">Điều chỉnh hạn mức</button>' : ''}</div>
+        <dl class="ag-grid">
+          <div><dt>Hạn mức tiền tối đa</dt><dd>${Number(agent.credit_limit) > 0 ? esc(formatMoney(agent.credit_limit)) : 'Không cho nợ'}</dd></div>
+          <div><dt>Số ngày nợ tối đa</dt><dd>${Number(agent.credit_days) > 0 ? `${esc(agent.credit_days)} ngày` : 'Thanh toán ngay'}</dd></div>
+        </dl>
+        <div id="agCreditHistory"><p class="ag-muted">Đang tải lịch sử thay đổi...</p></div>
+      </div>`);
+      document.getElementById('agEditCredit')?.addEventListener('click', () => openCreditForm(agent, revision));
+      loadCreditHistory(agent, revision);
+      document.getElementById('agDetail').insertAdjacentHTML('beforeend', '<div class="ag-section" id="agAddresses"><h4>Điểm giao hàng</h4><p class="ag-empty">Đang tải điểm giao hàng...</p></div>');
+      loadAddresses(agent, revision);
+      document.getElementById('agDetail').insertAdjacentHTML('beforeend', '<div class="ag-section" id="agLockSection"><h4>Lịch sử khoá giao dịch</h4><div id="agLockHistory"><p class="ag-muted">Đang tải...</p></div></div>');
+      loadLockHistory(agent, revision);
+      document.getElementById('agLock')?.addEventListener('click', () => openLock(agent, true, revision));
+      document.getElementById('agUnlock')?.addEventListener('click', () => openLock(agent, false, revision));
+      document.getElementById('agEdit')?.addEventListener('click', () => openForm(agent, revision));
+      document.getElementById('agDelete')?.addEventListener('click', () => confirmDelete(agent, revision));
+    } catch (error) {
+      if (alive(revision)) document.getElementById('agDetail').innerHTML = `<p class="ag-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  // ----- S3-07: khoá giao dịch -----
+  async function loadLockHistory(agent, revision) {
+    const host = document.getElementById('agLockHistory');
+    try {
+      const items = await apiRequest(`customers/${agent.id}/lock-history`);
+      if (!alive(revision) || !host.isConnected) return;
+      host.innerHTML = items.length ? `<div class="ag-table-wrap"><table class="ag-mini-table"><thead><tr><th>Thời điểm</th><th>Thao tác</th><th>Lý do / ghi chú</th><th>Người thực hiện</th></tr></thead><tbody>
+        ${items.map((item) => `<tr>
+          <td>${esc(new Date(item.changed_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }))}</td>
+          <td><strong>${item.action === 'LOCK' ? '🔒 Khoá giao dịch' : 'Mở giao dịch'}</strong></td>
+          <td>${esc(item.reason || '—')}</td>
+          <td>${esc(item.changed_by_name)}</td>
+        </tr>`).join('')}
+      </tbody></table></div>` : '<p class="ag-muted">Đại lý chưa từng bị khoá giao dịch.</p>';
+    } catch (error) {
+      if (alive(revision) && host.isConnected) host.innerHTML = `<p class="ag-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  function openLock(agent, lock, revision) {
+    const open = Number(agent.open_orders) || 0;
+    const body = lock
+      ? `<div class="form-group full"><label>Lý do khoá *<textarea name="reason" maxlength="500" required placeholder="Ví dụ: nợ quá hạn 90 ngày, có dấu hiệu mất khả năng thanh toán"></textarea></label></div>
+         <p class="s2-hint" style="grid-column:1/-1">Sau khi khoá, không ai tạo được đơn mới cho đại lý này, kể cả đại lý tự đặt trên cổng.${open ? ` Đại lý còn <strong>${esc(open)} đơn đang xử lý</strong>: các đơn này vẫn xử lý tiếp nhưng sẽ hiện cảnh báo.` : ''}</p>`
+      : `<div class="form-group full"><label>Ghi chú mở khoá<textarea name="reason" maxlength="500" placeholder="Ví dụ: đại lý đã thanh toán đủ nợ quá hạn"></textarea></label></div>`;
+    const { form, close } = openFormDialog(`${lock ? 'Khoá giao dịch' : 'Mở giao dịch'} · ${agent.code}`, body, lock ? 'Khoá giao dịch' : 'Mở giao dịch');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      try {
+        const result = await apiRequest(`customers/${agent.id}/${lock ? 'lock' : 'unlock'}`, jsonRequestOptions('POST', { reason: form.reason.value }));
+        close();
+        showToast(result.message, lock && result.open_orders > 0 ? 'error' : undefined);
+        if (alive(revision)) renderDetail(agent.id, revision);
+      } catch (error) {
+        document.getElementById('s2FormError').textContent = error.message;
+        submit.disabled = false;
+      }
+    });
+  }
+
+  // ----- S3-06: phân công nhân viên kinh doanh -----
+  const repOptions = () => masters.salesReps.map((rep) => [rep.id, rep.full_name + (rep.territory ? ` · ${rep.territory}` : '')]);
+
+  async function loadAssignHistory(agent, revision) {
+    const host = document.getElementById('agAssignHistory');
+    try {
+      const items = await apiRequest(`customers/${agent.id}/assignment-history`);
+      if (!alive(revision) || !host.isConnected) return;
+      host.innerHTML = items.length ? `<div class="ag-table-wrap"><table class="ag-mini-table"><thead><tr><th>Thời điểm</th><th>Từ</th><th>Sang</th><th>Lý do</th><th>Người thực hiện</th></tr></thead><tbody>
+        ${items.map((item) => `<tr>
+          <td>${esc(new Date(item.changed_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }))}</td>
+          <td>${esc(item.from_user_name || 'Chưa phân công')}</td>
+          <td><strong>${esc(item.to_user_name || 'Bỏ phân công')}</strong></td>
+          <td>${esc(item.reason)}${item.transfer_batch ? '<small>Chuyển giao hàng loạt</small>' : ''}</td>
+          <td>${esc(item.changed_by_name)}</td>
+        </tr>`).join('')}
+      </tbody></table></div>` : '<p class="ag-muted">Chưa có lịch sử phân công.</p>';
+    } catch (error) {
+      if (alive(revision) && host.isConnected) host.innerHTML = `<p class="ag-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  function openAssign(agent, revision) {
+    const body = [
+      renderInputField('sales_rep_id', 'Nhân viên phụ trách mới', agent.sales_rep_id || '', 'text', false, repOptions()),
+      '<div class="form-group full"><label>Lý do *<textarea name="reason" maxlength="500" required placeholder="Ví dụ: cân đối lại tuyến bán hàng"></textarea></label></div>',
+      '<p class="s2-hint" style="grid-column:1/-1">Để trống nhân viên nếu muốn bỏ phân công. Nhân viên kinh doanh chỉ nhìn thấy đại lý mình phụ trách.</p>'
+    ].join('');
+    const { form, close } = openFormDialog(`Đổi người phụ trách · ${agent.code}`, body, 'Lưu phân công');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      try {
+        await apiRequest(`customers/${agent.id}/assignment`, jsonRequestOptions('PUT', Object.fromEntries(new FormData(form))));
+        close();
+        showToast('Đã cập nhật người phụ trách');
+        if (alive(revision)) renderDetail(agent.id, revision);
+      } catch (error) {
+        document.getElementById('s2FormError').textContent = error.message;
+        submit.disabled = false;
+      }
+    });
+  }
+
+  async function openTransfer(revision) {
+    let reps;
+    try { reps = await apiRequest('customers/reps'); }
+    catch (error) { showRequestError(error); return; }
+    const from = reps.filter((rep) => Number(rep.customer_count) > 0)
+      .map((rep) => [rep.id, `${rep.full_name} · ${rep.customer_count} đại lý${rep.active ? '' : ' · đã khoá'}`]);
+    if (!from.length) { showToast('Chưa có nhân viên nào đang phụ trách đại lý'); return; }
+    const body = [
+      renderInputField('from_user_id', 'Nhân viên bàn giao', '', 'text', true, from),
+      renderInputField('to_user_id', 'Nhân viên nhận', '', 'text', true, repOptions()),
+      '<div class="form-group full"><label>Lý do *<textarea name="reason" maxlength="500" required placeholder="Ví dụ: nhân viên nghỉ việc từ 01/11"></textarea></label></div>',
+      '<p class="s2-hint" style="grid-column:1/-1">Toàn bộ đại lý của nhân viên bàn giao sẽ chuyển sang nhân viên nhận. Mỗi đại lý được ghi lịch sử chuyển giao.</p>'
+    ].join('');
+    const { form, close } = openFormDialog('Chuyển giao địa bàn', body, 'Chuyển giao đại lý');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      try {
+        const result = await apiRequest('customers/transfer', jsonRequestOptions('POST', Object.fromEntries(new FormData(form))));
+        close();
+        showToast(`Đã chuyển giao ${result.transferred} đại lý`);
+        if (alive(revision)) renderList(revision);
+      } catch (error) {
+        document.getElementById('s2FormError').textContent = error.message;
+        submit.disabled = false;
+      }
+    });
+  }
+
+  // ----- S3-05: hạn mức công nợ -----
+  async function loadCreditHistory(agent, revision) {
+    const host = document.getElementById('agCreditHistory');
+    try {
+      const items = await apiRequest(`customers/${agent.id}/credit-history`);
+      if (!alive(revision) || !host.isConnected) return;
+      const money = (value) => Number(value) > 0 ? formatMoney(value) : 'Không cho nợ';
+      host.innerHTML = items.length ? `<div class="ag-table-wrap"><table class="ag-mini-table"><thead><tr><th>Thời điểm</th><th>Hạn mức</th><th>Số ngày nợ</th><th>Lý do</th><th>Người sửa</th></tr></thead><tbody>
+        ${items.map((item) => `<tr>
+          <td>${esc(new Date(item.changed_at).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }))}</td>
+          <td>${esc(money(item.old_limit))} → <strong>${esc(money(item.new_limit))}</strong></td>
+          <td>${esc(item.old_days)} → <strong>${esc(item.new_days)}</strong> ngày</td>
+          <td>${esc(item.reason)}</td>
+          <td>${esc(item.changed_by_name)}${item.changed_by_email ? `<small>${esc(item.changed_by_email)}</small>` : ''}</td>
+        </tr>`).join('')}
+      </tbody></table></div>` : '<p class="ag-muted">Chưa có thay đổi hạn mức nào.</p>';
+    } catch (error) {
+      if (alive(revision) && host.isConnected) host.innerHTML = `<p class="ag-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  function openCreditForm(agent, revision) {
+    const body = [
+      `<div class="form-group"><label>Hạn mức tiền tối đa (đồng) *<input name="credit_limit" type="number" min="0" step="1" max="1000000000000" value="${esc(Math.round(Number(agent.credit_limit) || 0))}" required></label></div>`,
+      `<div class="form-group"><label>Số ngày nợ tối đa *<input name="credit_days" type="number" min="0" max="365" step="1" value="${esc(agent.credit_days ?? 0)}" required></label></div>`,
+      '<div class="form-group full"><label>Lý do thay đổi *<textarea name="reason" maxlength="500" required placeholder="Ví dụ: tăng hạn mức theo doanh số quý 3"></textarea></label></div>',
+      '<p class="s2-hint" style="grid-column:1/-1">Đặt hạn mức 0 nếu đại lý phải thanh toán ngay. Mỗi lần thay đổi được ghi vào lịch sử và nhật ký hệ thống.</p>'
+    ].join('');
+    const { form, close } = openFormDialog(`Điều chỉnh hạn mức · ${agent.code}`, body, 'Lưu hạn mức');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      try {
+        await apiRequest(`customers/${agent.id}/credit`, jsonRequestOptions('PUT', Object.fromEntries(new FormData(form))));
+        close();
+        showToast('Đã cập nhật hạn mức công nợ');
+        if (alive(revision)) renderDetail(agent.id, revision);
+      } catch (error) {
+        document.getElementById('s2FormError').textContent = error.message;
+        submit.disabled = false;
+      }
+    });
+  }
+
+  // ----- S3-04: điểm giao hàng -----
+  const canEditAddresses = (agent) => hasPermission('customers.write') ||
+    (hasPermission('customers.assigned') && String(agent.sales_rep_id) === String(currentUser.id));
+
+  async function loadAddresses(agent, revision) {
+    const host = document.getElementById('agAddresses');
+    const editable = canEditAddresses(agent);
+    try {
+      const items = await apiRequest(`customers/${agent.id}/addresses`);
+      if (!alive(revision) || !host.isConnected) return;
+      host.innerHTML = `<div class="ag-section-head"><h4>Điểm giao hàng (${items.length})</h4>${editable ? '<button type="button" class="ag-btn primary" id="agAddAddress">+ Thêm điểm giao</button>' : ''}</div>
+        ${items.length ? `<div class="ag-addresses">${items.map((item) => `<article class="ag-address ${item.is_default ? 'default' : ''}">
+          ${item.is_default ? '<span class="ag-default-tag">★ Mặc định</span>' : ''}
+          <strong>${esc(item.address)}</strong>
+          <span>Người nhận: ${esc(item.recipient_name)} · ${esc(item.phone)}</span>
+          ${item.directions ? `<em>Đường đi: ${esc(item.directions)}</em>` : ''}
+          ${editable ? `<div class="ag-actions">
+            <button type="button" class="ag-btn" data-address-edit="${esc(item.id)}">Sửa</button>
+            ${item.is_default ? '' : `<button type="button" class="ag-btn" data-address-default="${esc(item.id)}">Đặt mặc định</button>`}
+            <button type="button" class="ag-btn danger" data-address-delete="${esc(item.id)}">Gỡ</button>
+          </div>` : ''}
+        </article>`).join('')}</div>` : `<div class="ag-empty"><strong>Chưa có điểm giao hàng</strong><span>${editable ? 'Thêm điểm giao để đơn hàng giao đúng kho của đại lý.' : 'Đại lý chưa khai báo điểm giao.'}</span></div>`}`;
+      document.getElementById('agAddAddress')?.addEventListener('click', () => openAddressForm(agent, null, revision));
+      const byId = (id) => items.find((item) => String(item.id) === id);
+      host.querySelectorAll('[data-address-edit]').forEach((button) => button.onclick = () => openAddressForm(agent, byId(button.dataset.addressEdit), revision));
+      host.querySelectorAll('[data-address-default]').forEach((button) => button.onclick = async () => {
+        button.disabled = true;
+        try {
+          await apiRequest(`customers/${agent.id}/addresses/${button.dataset.addressDefault}/default`, { method: 'POST' });
+          showToast('Đã đặt điểm giao mặc định');
+          loadAddresses(agent, revision);
+        } catch (error) { showRequestError(error); button.disabled = false; }
+      });
+      host.querySelectorAll('[data-address-delete]').forEach((button) => button.onclick = () => confirmAddressDelete(agent, byId(button.dataset.addressDelete), revision));
+    } catch (error) {
+      if (alive(revision) && host.isConnected) host.innerHTML = `<h4>Điểm giao hàng</h4><p class="ag-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  function openAddressForm(agent, address, revision) {
+    const body = [
+      `<div class="form-group full"><label>Địa chỉ giao hàng *<input name="address" value="${esc(address?.address || '')}" required maxlength="500"></label></div>`,
+      renderInputField('recipient_name', 'Người nhận', address?.recipient_name || ''),
+      renderInputField('phone', 'Số điện thoại người nhận', address?.phone || '', 'tel'),
+      `<div class="form-group full"><label>Ghi chú đường đi<textarea name="directions" maxlength="1000" placeholder="Ví dụ: vào cổng sau, gọi trước 15 phút">${esc(address?.directions || '')}</textarea></label></div>`,
+      address?.is_default ? '' : '<div class="form-group full"><label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="is_default" style="width:auto;min-height:auto"> Đặt làm điểm giao mặc định</label></div>'
+    ].join('');
+    const { form, close } = openFormDialog(address ? 'Sửa điểm giao hàng' : 'Thêm điểm giao hàng', body, 'Lưu điểm giao hàng');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      const data = {
+        address: form.address.value, recipient_name: form.recipient_name.value,
+        phone: form.phone.value, directions: form.directions.value,
+        is_default: Boolean(form.is_default?.checked)
+      };
+      try {
+        await apiRequest(address ? `customers/${agent.id}/addresses/${address.id}` : `customers/${agent.id}/addresses`, jsonRequestOptions(address ? 'PUT' : 'POST', data));
+        close();
+        showToast('Đã lưu điểm giao hàng');
+        if (alive(revision)) loadAddresses(agent, revision);
+      } catch (error) {
+        document.getElementById('s2FormError').textContent = error.message;
+        submit.disabled = false;
+      }
+    });
+  }
+
+  function confirmAddressDelete(agent, address, revision) {
+    const { form, close } = openFormDialog('Gỡ điểm giao hàng', `<p class="s2-hint" style="grid-column:1/-1">Gỡ điểm giao <strong>${esc(address.address)}</strong>? Điểm giao đã dùng trong đơn hàng vẫn được lưu để tra cứu đơn cũ.${address.is_default ? ' Điểm giao còn lại lâu nhất sẽ trở thành mặc định.' : ''}</p>`, 'Gỡ điểm giao');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      try {
+        await apiRequest(`customers/${agent.id}/addresses/${address.id}`, { method: 'DELETE' });
+        close();
+        showToast('Đã gỡ điểm giao hàng');
+        if (alive(revision)) loadAddresses(agent, revision);
+      } catch (error) {
+        document.getElementById('s2FormError').textContent = error.message;
+        submit.disabled = false;
+      }
+    });
+  }
+
+  function openForm(agent, revision) {
+    const value = (key, fallback = '') => agent?.[key] ?? fallback;
+    const regionOptions = masters.regions.map((region) => `<option value="${esc(region)}">`).join('');
+    const body = [
+      renderInputField('code', 'Mã đại lý', value('code')),
+      renderInputField('name', 'Tên đại lý', value('name')),
+      renderInputField('tax_code', 'Mã số thuế', value('tax_code'), 'text', false),
+      renderInputField('phone', 'Số điện thoại', value('phone'), 'tel', false),
+      renderInputField('customer_group_id', 'Nhóm khách hàng', value('customer_group_id'), 'text', true, masters.groups.map((group) => [group.id, group.name])),
+      `<div class="form-group"><label>Khu vực *<input name="region" list="agRegions" value="${esc(value('region'))}" required maxlength="150"></label><datalist id="agRegions">${regionOptions}</datalist></div>`,
+      !agent && masters.canAssign ? renderInputField('sales_rep_id', 'Người phụ trách', '', 'text', false, masters.salesReps.map((rep) => [rep.id, rep.full_name + (rep.territory ? ` · ${rep.territory}` : '')])) : '',
+      renderInputField('status', 'Trạng thái', value('status', 'ACTIVE'), 'text', true, [['ACTIVE', 'Đang giao dịch'], ['INACTIVE', 'Ngừng giao dịch']])
+    ].join('');
+    const { form, close } = openFormDialog(agent ? 'Sửa hồ sơ đại lý' : 'Thêm đại lý', body, 'Lưu hồ sơ đại lý');
+    form.querySelector('[name="code"]').maxLength = 40;
+    form.querySelector('[name="name"]').maxLength = 200;
+    form.querySelector('[name="tax_code"]').placeholder = '10 chữ số, chi nhánh thêm -XXX';
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submit = form.querySelector('[type="submit"]');
+      const errorHost = document.getElementById('s2FormError');
+      submit.disabled = true;
+      errorHost.textContent = '';
+      const data = Object.fromEntries(new FormData(form));
+      try {
+        const result = await apiRequest(agent ? `customers/${agent.id}` : 'customers/', jsonRequestOptions(agent ? 'PUT' : 'POST', data));
+        close();
+        showToast('Đã lưu hồ sơ đại lý');
+        if (alive(revision)) {
+          masters = await apiRequest('customers/masters');
+          renderDetail(result.id, revision);
+        }
+      } catch (error) {
+        errorHost.textContent = error.message;
+        submit.disabled = false;
+      }
+    });
+  }
+
+  function confirmDelete(agent, revision) {
+    const { form, close } = openFormDialog('Xoá đại lý', `<p class="s2-hint" style="grid-column:1/-1">Xoá vĩnh viễn đại lý <strong>${esc(agent.code)} · ${esc(agent.name)}</strong>? Chỉ xoá được đại lý chưa phát sinh giao dịch.</p>`, 'Xoá đại lý');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      try {
+        await apiRequest(`customers/${agent.id}`, { method: 'DELETE' });
+        close();
+        showToast('Đã xoá đại lý');
+        if (alive(revision)) renderList(revision);
+      } catch (error) {
+        document.getElementById('s2FormError').textContent = error.message;
+        submit.disabled = false;
+      }
+    });
+  }
+
+  return { render, renderDetail: (id) => renderDetail(id, generation) };
+})();
+</script>

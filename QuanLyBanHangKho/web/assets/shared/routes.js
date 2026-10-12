@@ -8,6 +8,9 @@ function getAvailableMenu() {
  if (hasPermission('admin.users')) menu.push("Nhập người dùng Excel");
  if (true) menu.push("Hồ sơ cá nhân");
  if (true) menu.push("Đổi mật khẩu");
+ if (hasPermission('prices.write')) menu.push("Chính sách chiết khấu");
+ if (hasPermission('customers.read') || hasPermission('customers.assigned')) menu.push("Đại lý");
+ if (hasPermission('customers.assigned')) menu.push("Điểm giao hàng");
  return menu;
 }
 
@@ -26,5 +29,8 @@ function renderFeatureView(view) {
  if(view==="Nhập người dùng Excel") { renderExcelImport('users'); return true; }
  if(view==="Hồ sơ cá nhân") { renderProfile(); return true; }
  if(view==="Đổi mật khẩu") { renderChangePassword(); return true; }
+ if(view==="Chính sách chiết khấu") { discountFeature.render(); return true; }
+ if(view==="Đại lý") { agentFeature.render(); return true; }
+ if(view==="Điểm giao hàng") { deliveryPointFeature.render(); return true; }
  return false;
 }

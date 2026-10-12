@@ -6,7 +6,12 @@ function getAvailableMenu() {
  return menu;
 }
 
-function renderAccessError(view) { moduleContent.textContent="Bạn không có quyền truy cập chức năng này."; }
+function renderAccessError(view, message = 'Bạn chưa được cấp quyền sử dụng chức năng này.') {
+  dashboardContent.classList.add('is-hidden');
+  moduleContent.classList.remove('is-hidden');
+  moduleContent.innerHTML = `<section class="access-state"><div class="access-state-icon">!</div><span class="eyebrow">KHÔNG THỂ TRUY CẬP</span><h2>${escapeHtml(view || 'Chức năng')}</h2><p>${escapeHtml(message)}</p><button class="orange-button" id="accessBackHome">Về trang tổng quan</button></section>`;
+  document.getElementById('accessBackHome').onclick = () => openView('Tổng quan');
+}
 function renderFeatureView(view) {
  if(view==="Người dùng") { renderUsersModule(); return true; }
  if(view==="Vai trò & quyền") { renderPermissionMatrix(); return true; }

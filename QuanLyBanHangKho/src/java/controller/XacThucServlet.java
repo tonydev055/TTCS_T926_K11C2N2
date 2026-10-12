@@ -49,8 +49,14 @@ public class XacThucServlet extends CoSoServlet {
                 return;
             }
             
-            
-            
+            if ("/forgot-password".equals(path)) {
+                forgot(b, q, r);
+                return;
+            }
+            if ("/reset-password".equals(path)) {
+                reset(b, r);
+                return;
+            }
             
             error(r, 404, "Endpoint không tồn tại");
         } catch (Exception e) {
@@ -133,9 +139,38 @@ public class XacThucServlet extends CoSoServlet {
 
 
 
+    private void forgot(String b, HttpServletRequest q, HttpServletResponse r) throws Exception {
+        Map<String, Object> u = users.findForLogin(YeuCauJson.text(b, "email"));
+        String origin = q
+            .getRequestURL()
+            .substring(0, q.getRequestURL().length() - q.getRequestURI().length());
+        if (u != null && Boolean.TRUE.equals(u.get("active"))) {
+            String token = MatKhauUtil.randomToken();
+            users.createResetToken(
+                ((Number) u.get("id")).longValue(),
+                MatKhauUtil.tokenHash(token),
+                String.valueOf(u.get("email")),
+                token,
+                origin + q.getContextPath() + "/"
+            );
+        }
+        ok(r, "{\"message\":\"Nếu tài khoản tồn tại, hướng dẫn đặt lại mật khẩu đã được gửi.\"}");
+    }
 
-
-
+    private void reset(String b, HttpServletResponse r) throws Exception {
+        String token = YeuCauJson.text(b, "token"),
+            password = YeuCauJson.text(b, "password");
+        if (!MatKhauUtil.isStrong(password)) throw new IllegalArgumentException(
+            "Mật khẩu mới cần ít nhất 8 ký tự, có chữ và số"
+        );
+        Long id = users.consumeResetToken(MatKhauUtil.tokenHash(token));
+        if (id == null) {
+            error(r, 400, "Liên kết không hợp lệ hoặc đã hết hạn");
+            return;
+        }
+        users.changePassword(id, MatKhauUtil.encode(password));
+        ok(r, "{\"message\":\"Đặt lại mật khẩu thành công\"}");
+    }
 
 
 

@@ -132,7 +132,7 @@
     let selectedCategory = '';
     const hasTree = ['products','categories'].includes(endpoint);
     const writable = hasPermission(catalogState.permissions[endpoint]);
-    const tabs = ["categories","products"];
+    const tabs = ["categories","products","price-lists","customer-groups"];
     const descriptions = {
       products: 'SKU, hình ảnh, quy cách đóng gói và trạng thái kinh doanh.',
       categories: 'Cấu trúc nhóm hàng nhiều cấp dùng chung toàn hệ thống.',

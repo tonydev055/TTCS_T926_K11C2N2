@@ -11,6 +11,7 @@ function getAvailableMenu() {
  if (hasPermission('prices.write')) menu.push("Chính sách chiết khấu");
  if (hasPermission('customers.read') || hasPermission('customers.assigned')) menu.push("Đại lý");
  if (hasPermission('customers.assigned')) menu.push("Điểm giao hàng");
+ if (hasPermission('orders.own')) menu.push("Tạo đơn hàng");
  return menu;
 }
 
@@ -32,5 +33,6 @@ function renderFeatureView(view) {
  if(view==="Chính sách chiết khấu") { discountFeature.render(); return true; }
  if(view==="Đại lý") { agentFeature.render(); return true; }
  if(view==="Điểm giao hàng") { deliveryPointFeature.render(); return true; }
+ if(view==="Tạo đơn hàng") { salesOrderFeature.render(); return true; }
  return false;
 }

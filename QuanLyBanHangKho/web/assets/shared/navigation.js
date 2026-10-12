@@ -62,6 +62,7 @@ function openView(view, replaceUrl = false) {
   }
   const feature = {
     'Tổng quan': 'tong-quan', 'Người dùng': 'nguoi-dung',
+"Người dùng": "nguoi-dung","Vai trò & quyền": "phan-quyen","Đổi mật khẩu": "xac-thuc",
     'Sản phẩm & bảng giá': 'danh-muc', 'Nhà cung cấp': 'danh-muc',
     'Vai trò & quyền': 'phan-quyen', 'Nhật ký hệ thống': 'nhat-ky',
     'Nhập người dùng Excel': 'nhap-excel', 'Hồ sơ cá nhân': 'ho-so'

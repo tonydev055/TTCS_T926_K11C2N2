@@ -42,7 +42,12 @@ public class XacThucServlet extends CoSoServlet {
                 login(b, q, r);
                 return;
             }
-            
+            if ("/logout".equals(path)) {
+                HttpSession s = q.getSession(false);
+                if (s != null) s.invalidate();
+                ok(r, "{\"message\":\"Đã đăng xuất\"}");
+                return;
+            }
             
             
             

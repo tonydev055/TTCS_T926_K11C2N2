@@ -45,7 +45,7 @@
         if (revision === viewRevision && host.isConnected) document.getElementById(`homeMetric${index}`).textContent = 'Chưa tải được';
       }
     }));
-    if (true || revision !== viewRevision || !activity.isConnected) return;
+    if (!hasPermission('admin.audit') || revision !== viewRevision || !activity.isConnected) return;
     activity.hidden = false;
     activity.innerHTML = '<div class="panel-heading"><h3>Hoạt động gần đây</h3></div><p class="s2-empty">Đang tải...</p>';
     try {

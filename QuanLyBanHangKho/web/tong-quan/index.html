@@ -25,7 +25,7 @@
     const host = document.getElementById('homeMetrics');
     const activity = document.getElementById('homeActivity');
     const metrics = [];
-    if (false) {
+    if (hasPermission('admin.users')) {
       metrics.push({ label: 'Tài khoản', path: 'users/?page=1&size=1', value: data => data.stats.total });
       metrics.push({ label: 'Tài khoản bị khóa', path: 'users/?page=1&size=1', value: data => data.stats.locked });
     }

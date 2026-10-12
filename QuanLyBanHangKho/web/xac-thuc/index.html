@@ -5,8 +5,99 @@
 .change-password-success:not(:empty){color:#166534;background:#f0fdf4;border:1px solid #bbf7d0}
 </style>
 <script>
+function renderChangePassword() {
+  moduleContent.innerHTML=`<section class="module-head"><div><h2>Đổi mật khẩu</h2><p>Bảo vệ tài khoản của bạn bằng mật khẩu mới.</p></div></section>
+    <section class="inventory-panel" style="max-width:640px">
+      <form id="changePasswordForm" novalidate>
+        <div class="form-fields">
+          <div class="form-group full"><label for="changeCurrentPassword">Mật khẩu hiện tại *</label><input id="changeCurrentPassword" name="currentPassword" type="password" autocomplete="current-password" required></div>
+          <div class="form-group full"><label for="changeNewPassword">Mật khẩu mới *</label><input id="changeNewPassword" name="newPassword" type="password" autocomplete="new-password" minlength="8" aria-describedby="changePasswordHint" required></div>
+          <div class="form-group full"><label for="changeConfirmPassword">Xác nhận mật khẩu mới *</label><input id="changeConfirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required></div>
+        </div>
+     
+        <p id="changePasswordError" class="change-password-notice change-password-error" role="alert" aria-atomic="true"></p>
+        <p id="changePasswordSuccess" class="change-password-notice change-password-success" role="status" aria-atomic="true"></p>
+        <button id="changePasswordSubmit" class="orange-button" type="submit">Đổi mật khẩu</button>
+      </form>
+    </section>`;
+  document.getElementById('changePasswordForm').onsubmit=submitChangePassword;
+  document.getElementById('changeCurrentPassword').focus();
+}
+
+async function submitChangePassword(event) {
+  event.preventDefault();
+  const form=event.currentTarget;
+  const button=document.getElementById('changePasswordSubmit');
+  if(button.disabled)return;
+  const error=document.getElementById('changePasswordError');
+  const success=document.getElementById('changePasswordSuccess');
+  const currentPassword=document.getElementById('changeCurrentPassword').value;
+  const newPassword=document.getElementById('changeNewPassword').value;
+  const confirmPassword=document.getElementById('changeConfirmPassword').value;
+  error.textContent='';success.textContent='';
+  if(!currentPassword){error.textContent='Vui lòng nhập mật khẩu hiện tại.';return;}
+  if(newPassword.length<8||!/[A-Za-z]/.test(newPassword)||!/[0-9]/.test(newPassword)){error.textContent='Mật khẩu mới cần ít nhất 8 ký tự, có chữ cái và chữ số.';return;}
+  if(newPassword!==confirmPassword){error.textContent='Mật khẩu mới và mật khẩu xác nhận không giống nhau. Vui lòng nhập lại.';return;}
+  const user=currentUser;
+  button.disabled=true;button.textContent='Đang đổi mật khẩu...';
+  try {
+    await apiRequest('auth/change-password',jsonRequestOptions('POST',{currentPassword,newPassword}));
+    if(currentUser===user)user.requiresPasswordChange=false;
+    form.reset();
+    success.textContent='Đổi mật khẩu thành công! Các phiên đăng nhập khác đã được đăng xuất.';
+    if(success.isConnected)showToast('Đổi mật khẩu thành công!');
+  } catch(e) {
+    error.textContent=e.message==='Mật khẩu hiện tại không đúng'?'Mật khẩu cũ không đúng. Vui lòng kiểm tra và nhập lại.':e.message==='Failed to fetch'?'Không kết nối được máy chủ. Vui lòng thử lại.':e.message;
+  } finally {
+    button.disabled=false;button.textContent='Đổi mật khẩu';
+  }
+}
+
+loginForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  loginError.textContent = '';
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+  if (!email || !password) {
+    loginError.textContent = 'Vui lòng nhập đầy đủ email và mật khẩu.';
+    return;
+  }
+  const button = loginForm.querySelector('.primary-button');
+  button.disabled = true;
+  button.firstChild.textContent = 'Đang đăng nhập ';
+  try {
+    const response = await apiFetch('api/auth/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.message || 'Không thể đăng nhập.');
+    openApp(payload);
+  } catch (error) {
+    loginError.textContent = error.message === 'Failed to fetch'
+      ? 'Không kết nối được máy chủ. Vui lòng thử lại.'
+      : error.message;
+  } finally {
+    button.disabled = false;
+    button.firstChild.textContent = 'Đăng nhập ';
+  }
+});
+
 document.getElementById('togglePassword').addEventListener('click', () => {
   passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+});
+
+document.getElementById('logoutButton').addEventListener('click', async () => {
+  const button = document.getElementById('logoutButton');
+  if (button.disabled) return;
+  button.disabled = true;
+  try {
+    const response = await apiFetch('api/auth/logout', { method:'POST' });
+    if (!response.ok && response.status !== 401) throw new Error('Không thể đăng xuất. Vui lòng thử lại.');
+    expireSession();
+    loginError.textContent = '';
+  } catch (_) {
+    showToast('Không thể đăng xuất. Kiểm tra kết nối rồi thử lại.');
+  } finally { button.disabled = false; }
 });
 
 </script>

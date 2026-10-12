@@ -5,6 +5,35 @@
 .change-password-success:not(:empty){color:#166534;background:#f0fdf4;border:1px solid #bbf7d0}
 </style>
 <script>
+loginForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  loginError.textContent = '';
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+  if (!email || !password) {
+    loginError.textContent = 'Vui lòng nhập đầy đủ email và mật khẩu.';
+    return;
+  }
+  const button = loginForm.querySelector('.primary-button');
+  button.disabled = true;
+  button.firstChild.textContent = 'Đang đăng nhập ';
+  try {
+    const response = await apiFetch('api/auth/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.message || 'Không thể đăng nhập.');
+    openApp(payload);
+  } catch (error) {
+    loginError.textContent = error.message === 'Failed to fetch'
+      ? 'Không kết nối được máy chủ. Vui lòng thử lại.'
+      : error.message;
+  } finally {
+    button.disabled = false;
+    button.firstChild.textContent = 'Đăng nhập ';
+  }
+});
+
 document.getElementById('togglePassword').addEventListener('click', () => {
   passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
 });

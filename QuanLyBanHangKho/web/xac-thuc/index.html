@@ -1,0 +1,12 @@
+<!-- Loaded by the application shell: ../index.html -->
+<style>
+.change-password-notice:not(:empty){padding:12px 16px;border-radius:8px;line-height:1.6}
+.change-password-error:not(:empty){color:#991b1b;background:#fef2f2;border:1px solid #fecaca}
+.change-password-success:not(:empty){color:#166534;background:#f0fdf4;border:1px solid #bbf7d0}
+</style>
+<script>
+document.getElementById('togglePassword').addEventListener('click', () => {
+  passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+});
+
+</script>

@@ -51,7 +51,10 @@ public class XacThucServlet extends CoSoServlet {
             
             
             
-            
+            if ("/change-password".equals(path)) {
+                change(b, q, r);
+                return;
+            }
             error(r, 404, "Endpoint không tồn tại");
         } catch (Exception e) {
             String message = e.getMessage() == null ? "Không thể xử lý yêu cầu" : e.getMessage();
@@ -137,7 +140,29 @@ public class XacThucServlet extends CoSoServlet {
 
 
 
-
+    private void change(String b, HttpServletRequest q, HttpServletResponse r) throws Exception {
+        HttpSession s = q.getSession(false);
+        if (s == null || s.getAttribute("userId") == null) {
+            error(r, 401, "Chưa đăng nhập");
+            return;
+        }
+        String current = YeuCauJson.text(b, "currentPassword"),
+            password = YeuCauJson.text(b, "newPassword");
+        if (!MatKhauUtil.isStrong(password)) throw new IllegalArgumentException(
+            "Mật khẩu mới cần ít nhất 8 ký tự, có chữ và số"
+        );
+        Map<String, Object> u = users.findForLogin(String.valueOf(s.getAttribute("email")));
+        if (u == null || !MatKhauUtil.verify(current, String.valueOf(u.get("password_hash")))) {
+            error(r, 400, "Mật khẩu hiện tại không đúng");
+            return;
+        }
+        long id = ((Number) s.getAttribute("userId")).longValue();
+        users.changePassword(id, MatKhauUtil.encode(password));
+        int version = users.sessionVersion(id);
+        s.setAttribute("sessionVersion", version);
+        s.setAttribute("requiresPasswordChange", false);
+        ok(r, "{\"message\":\"Đã đổi mật khẩu và thu hồi các phiên đăng nhập khác\"}");
+    }
 
     private void writeUser(HttpServletResponse r, HttpSession s) throws IOException {
         @SuppressWarnings("unchecked")

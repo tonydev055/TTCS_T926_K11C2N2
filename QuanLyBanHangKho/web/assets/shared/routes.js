@@ -2,6 +2,11 @@ function getAvailableMenu() {
  const menu=["Tổng quan"];
  if (hasPermission('admin.users')) menu.push("Người dùng");
  if (hasPermission('admin.roles')) menu.push("Vai trò & quyền");
+ if (hasPermission('products.read')) menu.push("Sản phẩm & bảng giá");
+ if (hasPermission('suppliers.read')) menu.push("Nhà cung cấp");
+ if (hasPermission('admin.audit')) menu.push("Nhật ký hệ thống");
+ if (hasPermission('admin.users')) menu.push("Nhập người dùng Excel");
+ if (true) menu.push("Hồ sơ cá nhân");
  if (true) menu.push("Đổi mật khẩu");
  return menu;
 }
@@ -15,6 +20,11 @@ function renderAccessError(view, message = 'Bạn chưa được cấp quyền s
 function renderFeatureView(view) {
  if(view==="Người dùng") { renderUsersModule(); return true; }
  if(view==="Vai trò & quyền") { renderPermissionMatrix(); return true; }
+ if(view==="Sản phẩm & bảng giá") { renderCatalog('products'); return true; }
+ if(view==="Nhà cung cấp") { renderCatalog('suppliers'); return true; }
+ if(view==="Nhật ký hệ thống") { renderAuditLog(); return true; }
+ if(view==="Nhập người dùng Excel") { renderExcelImport('users'); return true; }
+ if(view==="Hồ sơ cá nhân") { renderProfile(); return true; }
  if(view==="Đổi mật khẩu") { renderChangePassword(); return true; }
  return false;
 }

@@ -30,7 +30,7 @@
       metrics.push({ label: 'Tài khoản bị khóa', path: 'users/?page=1&size=1', value: data => data.stats.locked });
     }
     if (false) metrics.push({ label: 'Sản phẩm', path: 'products/?page=1&size=1', value: data => data.total });
-    if (false) metrics.push({ label: 'Nhà cung cấp', path: 'suppliers/?page=1&size=1', value: data => data.total });
+    if (hasPermission('suppliers.read')) metrics.push({ label: 'Nhà cung cấp', path: 'suppliers/?page=1&size=1', value: data => data.total });
     host.innerHTML = metrics.length ? metrics.map((metric, index) => `<article><span>${String(index + 1).padStart(2, '0')}</span><div><small>${escapeHtml(metric.label)}</small><strong id="homeMetric${index}">Đang tải...</strong><p>Dữ liệu trong phạm vi được cấp quyền</p></div></article>`).join('') : '<p>Chọn một chức năng bên dưới để bắt đầu công việc.</p>';
     const requests = new Map();
     await Promise.allSettled(metrics.map(async (metric, index) => {

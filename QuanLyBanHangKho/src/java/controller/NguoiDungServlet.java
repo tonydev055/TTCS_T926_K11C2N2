@@ -82,7 +82,17 @@ public class NguoiDungServlet extends CoSoServlet {
         try {
             String b = body(q),
                 path = q.getPathInfo();
-            
+            if (path != null && path.matches("/\\d+/(lock|unlock)")) {
+                String[] x = path.split("/");
+                long id = Long.parseLong(x[1]);
+                if (
+                    id == ((Number) q.getSession().getAttribute("userId")).longValue() &&
+                    "lock".equals(x[2])
+                ) throw new IllegalArgumentException("Không thể tự khoá tài khoản của chính mình");
+                db.setLocked(id, "lock".equals(x[2]), YeuCauJson.text(b, "reason"));
+                ok(r, "{\"message\":\"Đã cập nhật trạng thái tài khoản\"}");
+                return;
+            }
             String password = MatKhauUtil.DEFAULT_USER_PASSWORD,
                 email = YeuCauJson.text(b, "email");
             long id = db.create(

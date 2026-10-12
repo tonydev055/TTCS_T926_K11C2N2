@@ -101,9 +101,60 @@ function openView(view, replaceUrl = false) {
 }
 
 function buildNavigation(menu) {
-  document.querySelector('.nav-list').innerHTML=menu.map(view => '<button class="nav-item" data-view="'+escapeHtml(view)+'">'+escapeHtml(view)+'</button>').join('');
-  document.querySelectorAll('.nav-item').forEach(item=>item.addEventListener('click',()=>openView(item.dataset.view)));
- }
+  const accountItems = new Set(['Người dùng', 'Vai trò & quyền', 'Nhật ký hệ thống', 'Nhập người dùng Excel']);
+  const personalItems = new Set(['Hồ sơ cá nhân', 'Đổi mật khẩu']);
+  const main = menu.filter((item) => !accountItems.has(item) && !personalItems.has(item));
+  const control = menu.filter((item) => accountItems.has(item));
+  const personal = menu.filter((item) => personalItems.has(item));
+  const iconMap = {
+    'Tổng quan': '▦',
+    'Tồn kho': '▤',
+    'Nhập kho': '↙',
+    'Xuất kho': '↗',
+    'Chuyển kho': '⇄',
+    'Lô & hạn dùng': '◷',
+    'Kiểm kê': '✓',
+    'Nhà cung cấp': '◇',
+    'Báo cáo kho': '▥',
+    'Sản phẩm & bảng giá': '▤',
+    'Đơn hàng': '▣',
+    'Giao hàng': '↗',
+    'Hóa đơn & công nợ': '₫',
+    'Trả hàng': '↩',
+    'Đại lý phụ trách': '◇',
+    'Thu tiền theo tuyến': '₫',
+    'Chỉ tiêu cá nhân': '◎',
+    'Đại lý & hạn mức': '◇',
+    'Duyệt ngoại lệ': '✓',
+    'Doanh số & chỉ tiêu': '◎',
+    'Báo cáo kinh doanh': '▥',
+    'Hóa đơn': '▤',
+    'Thanh toán': '₫',
+    'Sổ công nợ': '▥',
+    'Đối chiếu công nợ': '✓',
+    'Báo cáo công nợ': '▥',
+    'Người dùng': '♙',
+    'Vai trò & quyền': '⌘',
+    'Danh mục dùng chung': '▤',
+    'Nhật ký hệ thống': '◷',
+    'Cấu hình': '⚙'
+    ,'Hồ sơ cá nhân': '♙'
+    ,'Đổi mật khẩu': '⌁'
+    ,'Nhập người dùng Excel': '⇧'
+  };
+  const items = (values) =>
+    values
+      .map(
+        (view) =>
+          `<button class="nav-item ${view === 'Tổng quan' ? 'active' : ''}" data-view="${view}"><span>${iconMap[view] || '◇'}</span>${view}</button>`
+      )
+      .join('');
+  document.querySelector('.nav-list').innerHTML =
+    `<p class="nav-label">NGHIỆP VỤ</p>${items(main)}${control.length ? `<p class="nav-label">QUẢN TRỊ & KIỂM SOÁT</p>${items(control)}` : ''}${personal.length ? `<p class="nav-label">TÀI KHOẢN</p>${items(personal)}` : ''}`;
+  document
+    .querySelectorAll('.nav-item')
+    .forEach((item) => item.addEventListener('click', () => openView(item.dataset.view)));
+}
 
 document
   .querySelectorAll('[data-toast]')

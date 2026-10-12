@@ -1,0 +1,1666 @@
+
+<!-- Loaded by the application shell: ../index.html -->
+
+<style>
+/* =========================================================
+   DELIVERY POINTS - MODERN UI
+   ========================================================= */
+
+#deliveryPointFeature {
+  --dp-primary: #f26522;
+  --dp-primary-dark: #d94f0f;
+  --dp-primary-soft: #fff3ed;
+
+  --dp-bg: #f8fafc;
+  --dp-card: #ffffff;
+  --dp-border: #e5e7eb;
+
+  --dp-text: #172033;
+  --dp-text-2: #475569;
+  --dp-text-3: #94a3b8;
+
+  --dp-success: #16845b;
+  --dp-success-bg: #ecfdf5;
+
+  --dp-danger: #dc2626;
+  --dp-danger-bg: #fef2f2;
+
+  font-family: "Be Vietnam Pro", Arial, sans-serif;
+  color: var(--dp-text);
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 4px 0 28px;
+}
+
+#deliveryPointFeature *,
+#deliveryPointFeature *::before,
+#deliveryPointFeature *::after {
+  box-sizing: border-box;
+}
+
+#deliveryPointFeature [hidden] {
+  display: none !important;
+}
+
+/* =========================================================
+   CARD
+   ========================================================= */
+
+#deliveryPointFeature .dp-card {
+  background: var(--dp-card);
+  border: 1px solid var(--dp-border);
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow:
+    0 8px 24px rgba(15, 23, 42, .05),
+    0 2px 6px rgba(15, 23, 42, .03);
+}
+
+/* =========================================================
+   HEADINGS
+   ========================================================= */
+
+#deliveryPointFeature h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.35;
+  font-weight: 750;
+  letter-spacing: -.2px;
+}
+
+#deliveryPointFeature .dp-sub {
+  margin: 5px 0 0;
+  color: var(--dp-text-3);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+/* =========================================================
+   CUSTOMER SEARCH
+   ========================================================= */
+
+#deliveryPointFeature .dp-customer-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+#deliveryPointFeature .dp-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--dp-primary-soft);
+  color: var(--dp-primary);
+  font-size: 20px;
+}
+
+#deliveryPointFeature .dp-search-wrap {
+  position: relative;
+}
+
+#deliveryPointFeature input[type="text"],
+#deliveryPointFeature input[type="search"],
+#deliveryPointFeature input[type="tel"],
+#deliveryPointFeature textarea {
+  width: 100%;
+  border: 1px solid #d7dee8;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--dp-text);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  transition:
+    border-color .18s ease,
+    box-shadow .18s ease,
+    background .18s ease;
+}
+
+#deliveryPointFeature input[type="text"],
+#deliveryPointFeature input[type="search"],
+#deliveryPointFeature input[type="tel"] {
+  min-height: 46px;
+  padding: 0 14px;
+}
+
+#deliveryPointFeature textarea {
+  min-height: 82px;
+  padding: 11px 13px;
+  resize: vertical;
+}
+
+#deliveryPointFeature input::placeholder,
+#deliveryPointFeature textarea::placeholder {
+  color: #a5afbd;
+}
+
+#deliveryPointFeature input:focus,
+#deliveryPointFeature textarea:focus {
+  outline: none;
+  border-color: var(--dp-primary);
+  box-shadow: 0 0 0 4px rgba(242, 101, 34, .10);
+}
+
+/* =========================================================
+   SEARCH RESULT
+   ========================================================= */
+
+#deliveryPointFeature .dp-results {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+
+  list-style: none;
+  margin: 0;
+  padding: 5px;
+
+  max-height: 340px;
+  overflow-y: auto;
+
+  background: #fff;
+  border: 1px solid var(--dp-border);
+  border-radius: 14px;
+
+  box-shadow:
+    0 18px 45px rgba(15, 23, 42, .12),
+    0 4px 12px rgba(15, 23, 42, .05);
+}
+
+#deliveryPointFeature .dp-results li + li {
+  border-top: 1px solid #f1f5f9;
+}
+
+#deliveryPointFeature .dp-results button {
+  width: 100%;
+  min-height: 58px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  padding: 9px 11px;
+
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  transition: background .15s ease;
+}
+
+#deliveryPointFeature .dp-results button:hover {
+  background: var(--dp-primary-soft);
+}
+
+#deliveryPointFeature .dp-results button strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 14px;
+}
+
+#deliveryPointFeature .dp-results small {
+  display: block;
+  color: var(--dp-text-3);
+  font-size: 12px;
+}
+
+#deliveryPointFeature .dp-results .dp-side {
+  flex: none;
+  max-width: 45%;
+  color: var(--dp-text-2);
+  font-size: 12px;
+  text-align: right;
+}
+
+#deliveryPointFeature .dp-none {
+  padding: 18px 12px;
+  color: var(--dp-text-3);
+  text-align: center;
+  font-size: 13px;
+}
+
+/* =========================================================
+   SELECTED CUSTOMER
+   ========================================================= */
+
+#deliveryPointFeature .dp-chosen {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 13px 14px;
+
+  border: 1px solid #fed7c3;
+  border-radius: 14px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #fff8f4 0%,
+      #fff 100%
+    );
+}
+
+#deliveryPointFeature .dp-avatar {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 50%;
+
+  background: var(--dp-primary);
+  color: #fff;
+
+  font-size: 16px;
+  font-weight: 750;
+}
+
+#deliveryPointFeature .dp-who {
+  flex: 1;
+  min-width: 0;
+}
+
+#deliveryPointFeature .dp-who strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  font-size: 14px;
+}
+
+#deliveryPointFeature .dp-who span {
+  display: block;
+  margin-top: 2px;
+
+  color: var(--dp-text-3);
+  font-size: 12px;
+}
+
+#deliveryPointFeature .dp-linkbtn {
+  min-height: 38px;
+  padding: 0 10px;
+
+  border: 0;
+  border-radius: 9px;
+
+  background: transparent;
+  color: var(--dp-primary-dark);
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+#deliveryPointFeature .dp-linkbtn:hover {
+  background: var(--dp-primary-soft);
+}
+
+/* =========================================================
+   SECTION HEADER
+   ========================================================= */
+
+#deliveryPointFeature .dp-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+
+  margin-bottom: 16px;
+}
+
+#deliveryPointFeature .dp-section-title {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+#deliveryPointFeature .dp-section-icon {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 11px;
+
+  background: #f1f5f9;
+  color: #475569;
+
+  font-size: 17px;
+}
+
+#deliveryPointFeature .dp-count {
+  margin-top: 3px;
+  color: var(--dp-text-3);
+  font-size: 12px;
+}
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+#deliveryPointFeature .dp-btn {
+  min-height: 40px;
+  padding: 0 13px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  border: 1px solid var(--dp-border);
+  border-radius: 10px;
+
+  background: #fff;
+  color: var(--dp-text);
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 650;
+
+  cursor: pointer;
+
+  transition:
+    background .15s ease,
+    border-color .15s ease,
+    transform .1s ease;
+}
+
+#deliveryPointFeature .dp-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+#deliveryPointFeature .dp-btn:active {
+  transform: translateY(1px);
+}
+
+#deliveryPointFeature .dp-btn.dp-primary {
+  border-color: var(--dp-primary);
+  background: var(--dp-primary);
+  color: #fff;
+  box-shadow: 0 5px 12px rgba(242, 101, 34, .18);
+}
+
+#deliveryPointFeature .dp-btn.dp-primary:hover {
+  border-color: var(--dp-primary-dark);
+  background: var(--dp-primary-dark);
+}
+
+#deliveryPointFeature .dp-btn.dp-danger {
+  border-color: transparent;
+  background: transparent;
+  color: var(--dp-danger);
+}
+
+#deliveryPointFeature .dp-btn.dp-danger:hover {
+  border-color: #fecaca;
+  background: var(--dp-danger-bg);
+}
+
+#deliveryPointFeature .dp-btn:disabled {
+  opacity: .55;
+  cursor: progress;
+}
+
+/* =========================================================
+   FORM
+   ========================================================= */
+
+#deliveryPointFeature .dp-form {
+  margin: 0 0 16px;
+  padding: 18px;
+
+  border: 1px solid #fed7c3;
+  border-radius: 15px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #fffaf7 0%,
+      #fff 100%
+    );
+}
+
+#deliveryPointFeature .dp-form-header {
+  margin-bottom: 4px;
+}
+
+#deliveryPointFeature .dp-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 14px;
+}
+
+#deliveryPointFeature .dp-field.full {
+  grid-column: 1 / -1;
+}
+
+#deliveryPointFeature label {
+  display: block;
+  margin: 13px 0 6px;
+
+  color: var(--dp-text-2);
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#deliveryPointFeature .dp-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  min-height: 40px;
+  margin-top: 12px;
+
+  color: var(--dp-text-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+#deliveryPointFeature .dp-check input {
+  width: 19px;
+  height: 19px;
+  margin: 0;
+
+  accent-color: var(--dp-primary);
+}
+
+#deliveryPointFeature .dp-formbtns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+
+  margin-top: 16px;
+  padding-top: 14px;
+
+  border-top: 1px solid #f1f5f9;
+}
+
+#deliveryPointFeature .dp-error {
+  margin-top: 12px;
+  padding: 10px 12px;
+
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+
+  background: var(--dp-danger-bg);
+  color: var(--dp-danger);
+
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* =========================================================
+   DELIVERY POINT LIST
+   ========================================================= */
+
+#deliveryPointFeature .dp-list {
+  display: grid;
+  gap: 11px;
+}
+
+#deliveryPointFeature .dp-point {
+  position: relative;
+
+  padding: 15px;
+
+  border: 1px solid var(--dp-border);
+  border-radius: 14px;
+
+  background: #fff;
+
+  transition:
+    border-color .18s ease,
+    box-shadow .18s ease,
+    transform .18s ease;
+}
+
+#deliveryPointFeature .dp-point:hover {
+  border-color: #d4dbe5;
+  box-shadow: 0 7px 20px rgba(15, 23, 42, .05);
+}
+
+#deliveryPointFeature .dp-point.is-default {
+  border-color: #fdba96;
+  background:
+    linear-gradient(
+      135deg,
+      #fffaf7 0%,
+      #fff 70%
+    );
+}
+
+#deliveryPointFeature .dp-point.is-default::before {
+  content: "";
+
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+
+  width: 4px;
+
+  border-radius: 14px 0 0 14px;
+
+  background: var(--dp-primary);
+}
+
+#deliveryPointFeature .dp-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+
+  padding-right: 5px;
+}
+
+#deliveryPointFeature .dp-head strong {
+  font-size: 14px;
+  font-weight: 750;
+}
+
+#deliveryPointFeature .dp-badge {
+  display: inline-flex;
+  align-items: center;
+
+  min-height: 23px;
+  padding: 0 8px;
+
+  border-radius: 999px;
+
+  background: var(--dp-success-bg);
+  color: var(--dp-success);
+
+  font-size: 11px;
+  font-weight: 750;
+}
+
+#deliveryPointFeature .dp-phone {
+  display: inline-flex;
+  align-items: center;
+
+  margin-top: 6px;
+
+  color: var(--dp-text-2);
+
+  font-size: 13px;
+  text-decoration: none;
+}
+
+#deliveryPointFeature .dp-phone:hover {
+  color: var(--dp-primary-dark);
+  text-decoration: underline;
+}
+
+#deliveryPointFeature .dp-addr {
+  margin: 9px 0 0;
+
+  color: var(--dp-text);
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+#deliveryPointFeature .dp-note {
+  margin: 9px 0 0;
+  padding: 8px 10px;
+
+  border-radius: 9px;
+
+  background: #f8fafc;
+  border: 1px dashed #d7dee8;
+
+  color: var(--dp-text-2);
+
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+#deliveryPointFeature .dp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+
+  margin-top: 13px;
+  padding-top: 11px;
+
+  border-top: 1px solid #f1f5f9;
+}
+
+#deliveryPointFeature .dp-actions .dp-btn {
+  min-height: 36px;
+  padding: 0 11px;
+
+  font-size: 12px;
+}
+
+/* =========================================================
+   EMPTY
+   ========================================================= */
+
+#deliveryPointFeature .dp-empty {
+  margin: 0;
+  padding: 28px 16px;
+
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+
+  background: #fafafa;
+
+  color: var(--dp-text-3);
+
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+  #deliveryPointFeature {
+    padding: 0 2px 24px;
+  }
+
+  #deliveryPointFeature .dp-card {
+    padding: 15px;
+    border-radius: 15px;
+  }
+
+  #deliveryPointFeature .dp-customer-header {
+    gap: 9px;
+  }
+
+  #deliveryPointFeature .dp-icon {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+    border-radius: 10px;
+  }
+
+  #deliveryPointFeature .dp-section-head {
+    align-items: flex-start;
+  }
+
+  #deliveryPointFeature .dp-section-head > .dp-btn {
+    white-space: nowrap;
+  }
+
+  #deliveryPointFeature .dp-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #deliveryPointFeature .dp-field.full {
+    grid-column: auto;
+  }
+
+  #deliveryPointFeature .dp-form {
+    padding: 14px;
+  }
+
+  #deliveryPointFeature .dp-formbtns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  #deliveryPointFeature .dp-formbtns .dp-btn {
+    width: 100%;
+  }
+
+  #deliveryPointFeature .dp-actions .dp-btn {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 390px) {
+  #deliveryPointFeature .dp-chosen {
+    align-items: flex-start;
+  }
+
+  #deliveryPointFeature .dp-avatar {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+  }
+
+  #deliveryPointFeature .dp-linkbtn {
+    padding: 0 6px;
+  }
+
+  #deliveryPointFeature .dp-section-head {
+    flex-direction: column;
+  }
+
+  #deliveryPointFeature .dp-section-head > .dp-btn {
+    width: 100%;
+  }
+
+  #deliveryPointFeature .dp-results .dp-side {
+    display: none;
+  }
+}
+</style>
+
+<script>
+const deliveryPointFeature = (() => {
+  const state = {
+    customer: null,
+    points: [],
+    editing: null,
+    seq: 0,
+    saving: false
+  };
+
+  let root = null;
+  const ui = {};
+
+  function el(tag, props, ...kids) {
+    const e = document.createElement(tag);
+
+    for (const [k, v] of Object.entries(props || {})) {
+      if (k === "class") {
+        e.className = v;
+      } else if (k === "text") {
+        e.textContent = v;
+      } else if (k.startsWith("on")) {
+        e.addEventListener(k.slice(2), v);
+      } else if (v === true) {
+        e.setAttribute(k, "");
+      } else if (v !== false && v != null) {
+        e.setAttribute(k, v);
+      }
+    }
+
+    for (const kid of kids.flat()) {
+      if (kid != null) e.append(kid);
+    }
+
+    return e;
+  }
+
+  const alive = (seq) =>
+    root &&
+    root.isConnected &&
+    seq === state.seq;
+
+  const debounce = (fn, ms) => {
+    let t;
+
+    return (...a) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn(...a), ms);
+    };
+  };
+
+  function getInitial(name) {
+    return String(name || "?")
+      .trim()
+      .charAt(0)
+      .toUpperCase();
+  }
+
+  /* =======================================================
+     SEARCH CUSTOMER
+     ======================================================= */
+
+  function showResults(items, emptyText, build) {
+    ui.results.replaceChildren(
+      ...(items.length
+        ? items.map((i) => el("li", {}, build(i)))
+        : [
+            el("li", {
+              class: "dp-none",
+              text: emptyText
+            })
+          ])
+    );
+
+    ui.results.hidden = false;
+  }
+
+  function hideResults() {
+    ui.results.hidden = true;
+    ui.results.replaceChildren();
+  }
+
+  const searchCustomers = debounce(async () => {
+    const seq = ++state.seq;
+
+    try {
+      const rows = await apiRequest(
+        "delivery-points/customers?q=" +
+        encodeURIComponent(ui.search.value.trim())
+      );
+
+      if (!alive(seq) || state.customer) return;
+
+      showResults(
+        rows,
+        "Không tìm thấy đại lý phù hợp.",
+        (c) =>
+          el(
+            "button",
+            {
+              type: "button",
+              onclick: () => chooseCustomer(c)
+            },
+
+            el(
+              "span",
+              {},
+              el("strong", {
+                text: c.fullName
+              }),
+              el("small", {
+                text: c.email || "Không có email"
+              })
+            ),
+
+            el("span", {
+              class: "dp-side",
+              text:
+                (c.phone ? c.phone + " • " : "") +
+                c.pointCount +
+                " điểm giao"
+            })
+          )
+      );
+    } catch (e) {
+      if (root && root.isConnected) {
+        showRequestError(e);
+      }
+    }
+  }, 250);
+
+  function chooseCustomer(c) {
+    state.customer = {
+      id: c.id,
+      fullName: c.fullName,
+      phone: c.phone || ""
+    };
+
+    state.editing = null;
+
+    ui.search.value = "";
+    hideResults();
+
+    renderCustomer();
+    loadPoints();
+  }
+
+  /* =======================================================
+     CUSTOMER
+     ======================================================= */
+
+  function renderCustomer() {
+    const c = state.customer;
+
+    ui.chosen.hidden = !c;
+    ui.searchBox.hidden = !!c;
+    ui.pointsCard.hidden = !c;
+
+    if (c) {
+      ui.chosenName.textContent = c.fullName;
+      ui.chosenPhone.textContent =
+        c.phone || "Chưa có số điện thoại";
+      ui.avatar.textContent = getInitial(c.fullName);
+    } else {
+      state.points = [];
+      renderList();
+    }
+
+    renderForm();
+  }
+
+  /* =======================================================
+     LOAD POINTS
+     ======================================================= */
+
+  async function loadPoints() {
+    const seq = ++state.seq;
+
+    ui.list.replaceChildren(
+      el("p", {
+        class: "dp-empty",
+        text: "Đang tải điểm giao hàng..."
+      })
+    );
+
+    try {
+      const rows = await apiRequest(
+        "delivery-points?customerId=" +
+        state.customer.id
+      );
+
+      if (!alive(seq)) return;
+
+      state.points = rows;
+      renderList();
+    } catch (e) {
+      if (!alive(seq)) return;
+
+      ui.list.replaceChildren(
+        el("p", {
+          class: "dp-error",
+          role: "alert",
+          text:
+            e.message ||
+            "Không tải được điểm giao hàng"
+        })
+      );
+    }
+  }
+
+  /* =======================================================
+     LIST
+     ======================================================= */
+
+  function renderList() {
+    if (!state.customer) {
+      ui.list.replaceChildren();
+      return;
+    }
+
+    ui.count.textContent =
+      state.points.length
+        ? state.points.length + " điểm giao"
+        : "Chưa có điểm giao";
+
+    ui.list.replaceChildren(
+      ...(
+        state.points.length
+          ? state.points.map(pointCard)
+          : [
+              el("p", {
+                class: "dp-empty",
+                text:
+                  "Đại lý này chưa có điểm giao hàng. " +
+                  "Bấm “Thêm điểm giao” để tạo điểm đầu tiên."
+              })
+            ]
+      )
+    );
+  }
+
+  function pointCard(p) {
+    return el(
+      "article",
+      {
+        class:
+          "dp-point" +
+          (p.isDefault ? " is-default" : "")
+      },
+
+      el(
+        "div",
+        { class: "dp-head" },
+
+        el("strong", {
+          text: p.receiverName
+        }),
+
+        p.isDefault
+          ? el("span", {
+              class: "dp-badge",
+              text: "✓ Mặc định"
+            })
+          : null
+      ),
+
+      el(
+        "a",
+        {
+          class: "dp-phone",
+          href:
+            "tel:" +
+            String(p.phone).replace(
+              /[^0-9+]/g,
+              ""
+            ),
+          text: p.phone
+        }
+      ),
+
+      el("p", {
+        class: "dp-addr",
+        text: p.address
+      }),
+
+      p.routeNote
+        ? el("p", {
+            class: "dp-note",
+            text: "Đường đi: " + p.routeNote
+          })
+        : null,
+
+      el(
+        "div",
+        { class: "dp-actions" },
+
+        p.isDefault
+          ? null
+          : el("button", {
+              type: "button",
+              class: "dp-btn",
+              text: "☆ Đặt mặc định",
+              onclick: () => makeDefault(p)
+            }),
+
+        el("button", {
+          type: "button",
+          class: "dp-btn",
+          text: "✎ Sửa",
+          onclick: () => openForm(p)
+        }),
+
+        el("button", {
+          type: "button",
+          class: "dp-btn dp-danger",
+          text: "Xóa",
+          onclick: () => remove(p)
+        })
+      )
+    );
+  }
+
+  /* =======================================================
+     FORM
+     ======================================================= */
+
+  function openForm(p) {
+    state.editing = p || "new";
+    renderForm();
+
+    setTimeout(() => {
+      if (ui.receiver) ui.receiver.focus();
+    }, 0);
+  }
+
+  function closeForm() {
+    state.editing = null;
+    renderForm();
+  }
+
+  function renderForm() {
+    const open =
+      state.editing !== null &&
+      !!state.customer;
+
+    ui.form.hidden = !open;
+    ui.error.hidden = true;
+
+    ui.addBtn.hidden =
+      !state.customer || open;
+
+    if (!open) return;
+
+    const p =
+      state.editing === "new"
+        ? null
+        : state.editing;
+
+    ui.formTitle.textContent =
+      p
+        ? "Sửa điểm giao hàng"
+        : "Thêm điểm giao hàng";
+
+    ui.formDescription.textContent =
+      p
+        ? "Cập nhật thông tin điểm giao đang chọn."
+        : "Nhập thông tin địa chỉ nhận hàng của đại lý.";
+
+    ui.receiver.value =
+      p ? p.receiverName : "";
+
+    ui.phone.value =
+      p ? p.phone : "";
+
+    ui.address.value =
+      p ? p.address : "";
+
+    ui.note.value =
+      p ? p.routeNote : "";
+
+    ui.makeDefault.checked =
+      p
+        ? !!p.isDefault
+        : state.points.length === 0;
+
+    ui.makeDefault.disabled =
+      !!(p && p.isDefault);
+  }
+
+  async function submitForm(ev) {
+    ev.preventDefault();
+
+    if (state.saving) return;
+
+    const body = {
+      customerId: state.customer.id,
+      receiverName: ui.receiver.value.trim(),
+      phone: ui.phone.value.trim(),
+      address: ui.address.value.trim(),
+      routeNote: ui.note.value.trim(),
+      isDefault: ui.makeDefault.checked
+    };
+
+    const problem =
+      !body.receiverName
+        ? "Nhập tên người nhận."
+        : !body.address
+          ? "Nhập địa chỉ giao hàng."
+          : !/^[0-9+(). -]{8,20}$/.test(body.phone)
+            ? "Số điện thoại phải có 8 đến 20 chữ số."
+            : "";
+
+    if (problem) {
+      ui.error.textContent = problem;
+      ui.error.hidden = false;
+      return;
+    }
+
+    const editing =
+      state.editing !== "new"
+        ? state.editing
+        : null;
+
+    state.saving = true;
+    ui.save.disabled = true;
+
+    try {
+      await apiRequest(
+        editing
+          ? "delivery-points/" + editing.id
+          : "delivery-points",
+
+        jsonRequestOptions(
+          editing ? "PUT" : "POST",
+          body
+        )
+      );
+
+      showToast(
+        editing
+          ? "Đã lưu thay đổi điểm giao"
+          : "Đã thêm điểm giao hàng"
+      );
+
+      state.editing = null;
+      renderForm();
+
+      await loadPoints();
+    } catch (e) {
+      ui.error.textContent =
+        e.message ||
+        "Không thể lưu điểm giao hàng";
+
+      ui.error.hidden = false;
+    } finally {
+      state.saving = false;
+      ui.save.disabled = false;
+    }
+  }
+
+  /* =======================================================
+     DEFAULT
+     ======================================================= */
+
+  async function makeDefault(p) {
+    try {
+      await apiRequest(
+        "delivery-points/" +
+        p.id +
+        "/default",
+
+        jsonRequestOptions(
+          "POST",
+          {
+            customerId:
+              state.customer.id
+          }
+        )
+      );
+
+      showToast(
+        'Đã đặt "' +
+        p.receiverName +
+        '" làm điểm giao mặc định'
+      );
+
+      await loadPoints();
+    } catch (e) {
+      showRequestError(e);
+    }
+  }
+
+  /* =======================================================
+     DELETE
+     ======================================================= */
+
+  async function remove(p) {
+    const extra =
+      p.isDefault &&
+      state.points.length > 1
+        ? "\nĐiểm mặc định sẽ chuyển sang điểm còn lại cũ nhất."
+        : "";
+
+    if (
+      !confirm(
+        'Xóa điểm giao "' +
+        p.receiverName +
+        '"?\n\n' +
+        "Các đơn cũ vẫn giữ nguyên địa chỉ đã chọn." +
+        extra
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await apiRequest(
+        "delivery-points/" +
+        p.id +
+        "?customerId=" +
+        state.customer.id,
+        {
+          method: "DELETE"
+        }
+      );
+
+      showToast("Đã xóa điểm giao hàng");
+
+      await loadPoints();
+    } catch (e) {
+      showRequestError(e);
+    }
+  }
+
+  /* =======================================================
+     RENDER
+     ======================================================= */
+
+  function render() {
+    state.customer = null;
+    state.points = [];
+    state.editing = null;
+
+    ++state.seq;
+
+    /* Search */
+    ui.search = el("input", {
+      id: "dpSearch",
+      type: "search",
+      autocomplete: "off",
+      placeholder:
+        "Tìm tên, số điện thoại hoặc email...",
+      oninput: searchCustomers,
+      onfocus: searchCustomers
+    });
+
+    ui.results = el("ul", {
+      class: "dp-results",
+      hidden: true
+    });
+
+    ui.searchBox = el(
+      "div",
+      {
+        class: "dp-search-wrap"
+      },
+      ui.search,
+      ui.results
+    );
+
+    /* Selected customer */
+    ui.avatar = el("div", {
+      class: "dp-avatar",
+      text: "?"
+    });
+
+    ui.chosenName = el("strong");
+
+    ui.chosenPhone = el("span");
+
+    ui.chosen = el(
+      "div",
+      {
+        class: "dp-chosen",
+        hidden: true
+      },
+
+      ui.avatar,
+
+      el(
+        "div",
+        {
+          class: "dp-who"
+        },
+        ui.chosenName,
+        ui.chosenPhone
+      ),
+
+      el("button", {
+        type: "button",
+        class: "dp-linkbtn",
+        text: "Đổi đại lý",
+        onclick: () => {
+          state.customer = null;
+          state.editing = null;
+
+          renderCustomer();
+
+          ui.search.focus();
+          searchCustomers();
+        }
+      })
+    );
+
+    /* Form fields */
+    ui.receiver = el("input", {
+      id: "dpReceiver",
+      type: "text",
+      maxlength: "150",
+      autocomplete: "off",
+      placeholder:
+        "Ví dụ: Anh Minh, thủ kho"
+    });
+
+    ui.phone = el("input", {
+      id: "dpPhone",
+      type: "tel",
+      maxlength: "20",
+      autocomplete: "off",
+      placeholder: "09xxxxxxxx"
+    });
+
+    ui.address = el("textarea", {
+      id: "dpAddress",
+      rows: "2",
+      maxlength: "500",
+      placeholder:
+        "Số nhà, đường, phường/xã, tỉnh/thành"
+    });
+
+    ui.note = el("textarea", {
+      id: "dpNote",
+      rows: "2",
+      maxlength: "1000",
+      placeholder:
+        "Ví dụ: vào cổng sau, gọi trước 15 phút..."
+    });
+
+    ui.makeDefault = el("input", {
+      id: "dpDefault",
+      type: "checkbox"
+    });
+
+    ui.formTitle = el("h2");
+
+    ui.formDescription = el("p", {
+      class: "dp-sub"
+    });
+
+    ui.error = el("div", {
+      class: "dp-error",
+      role: "alert",
+      hidden: true
+    });
+
+    ui.save = el("button", {
+      type: "submit",
+      class: "dp-btn dp-primary",
+      text: "Lưu điểm giao"
+    });
+
+    ui.form = el(
+      "form",
+      {
+        class: "dp-form",
+        hidden: true,
+        novalidate: true,
+        onsubmit: submitForm
+      },
+
+      el(
+        "div",
+        {
+          class: "dp-form-header"
+        },
+        ui.formTitle,
+        ui.formDescription
+      ),
+
+      el(
+        "div",
+        {
+          class: "dp-form-grid"
+        },
+
+        el(
+          "div",
+          {
+            class: "dp-field"
+          },
+          el("label", {
+            for: "dpReceiver",
+            text: "Người nhận *"
+          }),
+          ui.receiver
+        ),
+
+        el(
+          "div",
+          {
+            class: "dp-field"
+          },
+          el("label", {
+            for: "dpPhone",
+            text: "Số điện thoại *"
+          }),
+          ui.phone
+        ),
+
+        el(
+          "div",
+          {
+            class: "dp-field full"
+          },
+          el("label", {
+            for: "dpAddress",
+            text: "Địa chỉ giao hàng *"
+          }),
+          ui.address
+        ),
+
+        el(
+          "div",
+          {
+            class: "dp-field full"
+          },
+          el("label", {
+            for: "dpNote",
+            text: "Ghi chú đường đi"
+          }),
+          ui.note
+        )
+      ),
+
+      el(
+        "label",
+        {
+          class: "dp-check",
+          for: "dpDefault"
+        },
+        ui.makeDefault,
+        "Đặt làm điểm giao mặc định"
+      ),
+
+      ui.error,
+
+      el(
+        "div",
+        {
+          class: "dp-formbtns"
+        },
+
+        el("button", {
+          type: "button",
+          class: "dp-btn",
+          text: "Hủy",
+          onclick: closeForm
+        }),
+
+        ui.save
+      )
+    );
+
+    /* List */
+    ui.count = el("p", {
+      class: "dp-count"
+    });
+
+    ui.addBtn = el("button", {
+      type: "button",
+      class: "dp-btn dp-primary",
+      text: "+ Thêm điểm giao",
+      onclick: () => openForm(null)
+    });
+
+    ui.list = el("div", {
+      class: "dp-list"
+    });
+
+    ui.pointsCard = el(
+      "section",
+      {
+        class: "dp-card",
+        hidden: true
+      },
+
+      el(
+        "div",
+        {
+          class: "dp-section-head"
+        },
+
+        el(
+          "div",
+          {
+            class: "dp-section-title"
+          },
+
+          el("div", {
+            class: "dp-section-icon",
+            text: "⌖"
+          }),
+
+          el(
+            "div",
+            {},
+            el("h2", {
+              text: "Điểm giao hàng"
+            }),
+            ui.count
+          )
+        ),
+
+        ui.addBtn
+      ),
+
+      ui.form,
+      ui.list
+    );
+
+    /* Root */
+    root = el(
+      "div",
+      {
+        id: "deliveryPointFeature"
+      },
+
+      el(
+        "section",
+        {
+          class: "dp-card"
+        },
+
+        el(
+          "div",
+          {
+            class: "dp-customer-header"
+          },
+
+          el("div", {
+            class: "dp-icon",
+            text: "⌕"
+          }),
+
+          el(
+            "div",
+            {},
+            el("h2", {
+              text: "Chọn đại lý"
+            }),
+            el("p", {
+              class: "dp-sub",
+              text:
+                "Chọn đại lý để quản lý các địa chỉ giao hàng."
+            })
+          )
+        ),
+
+        ui.searchBox,
+        ui.chosen
+      ),
+
+      ui.pointsCard
+    );
+
+    moduleContent.replaceChildren(root);
+
+    renderCustomer();
+  }
+
+  /* =======================================================
+     CLOSE SEARCH WHEN CLICK OUTSIDE
+     ======================================================= */
+
+  document.addEventListener("click", (e) => {
+    if (
+      root &&
+      root.isConnected &&
+      ui.searchBox &&
+      !ui.searchBox.contains(e.target)
+    ) {
+      hideResults();
+    }
+  });
+
+  return {
+    render
+  };
+})();
+</script>

@@ -133,4 +133,82 @@ public class KhachHangDB {
         )) out.add(String.valueOf(row.get("region")));
         return out;
     }
+
+    // ----- S3-04: điểm giao hàng -----
+
+    public List<Map<String, Object>> addresses(Connection c, long customerId) throws SQLException {
+        return TruyVanDB.rows(
+            c,
+            "SELECT id,customer_id,address,recipient_name,phone,directions,is_default,updated_at " +
+                "FROM customer_addresses WHERE customer_id=? AND active ORDER BY is_default DESC,id",
+            customerId
+        );
+    }
+
+    public Map<String, Object> addressForUpdate(Connection c, long customerId, long addressId) throws SQLException {
+        return TruyVanDB.one(
+            c,
+            "SELECT * FROM customer_addresses WHERE id=? AND customer_id=? AND active FOR UPDATE",
+            addressId, customerId
+        );
+    }
+
+    public int activeAddressCount(Connection c, long customerId) throws SQLException {
+        var row = TruyVanDB.one(c, "SELECT count(*) total FROM customer_addresses WHERE customer_id=? AND active", customerId);
+        return ((Number) row.get("total")).intValue();
+    }
+
+    public long insertAddress(Connection c, long customerId, Map<String, Object> v, boolean isDefault) throws SQLException {
+        var row = TruyVanDB.one(
+            c,
+            "INSERT INTO customer_addresses(customer_id,address,recipient_name,phone,directions,is_default) " +
+                "VALUES(?,?,?,?,?,?) RETURNING id",
+            customerId, v.get("address"), v.get("recipient_name"), v.get("phone"), v.get("directions"), isDefault
+        );
+        return TruyVanDB.id(row);
+    }
+
+    public void updateAddress(Connection c, long addressId, Map<String, Object> v) throws SQLException {
+        TruyVanDB.update(
+            c,
+            "UPDATE customer_addresses SET address=?,recipient_name=?,phone=?,directions=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            v.get("address"), v.get("recipient_name"), v.get("phone"), v.get("directions"), addressId
+        );
+    }
+
+    /** Đặt một điểm giao làm mặc định, bỏ mặc định ở các điểm khác của cùng đại lý. */
+    public void setDefaultAddress(Connection c, long customerId, long addressId) throws SQLException {
+        TruyVanDB.update(
+            c,
+            "UPDATE customer_addresses SET is_default=false,updated_at=CURRENT_TIMESTAMP WHERE customer_id=? AND is_default AND id<>?",
+            customerId, addressId
+        );
+        TruyVanDB.update(
+            c,
+            "UPDATE customer_addresses SET is_default=true,updated_at=CURRENT_TIMESTAMP WHERE id=? AND customer_id=? AND active",
+            addressId, customerId
+        );
+    }
+
+    public boolean addressUsed(Connection c, long addressId) throws SQLException {
+        return TruyVanDB.one(c, "SELECT 1 FROM orders WHERE delivery_address_id=? LIMIT 1", addressId) != null;
+    }
+
+    public void deactivateAddress(Connection c, long addressId) throws SQLException {
+        TruyVanDB.update(
+            c,
+            "UPDATE customer_addresses SET active=false,is_default=false,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            addressId
+        );
+    }
+
+    public void deleteAddress(Connection c, long addressId) throws SQLException {
+        TruyVanDB.update(c, "DELETE FROM customer_addresses WHERE id=?", addressId);
+    }
+
+    /** Điểm giao còn dùng được, ưu tiên cũ nhất, để thay cho điểm mặc định vừa bị gỡ. */
+    public Long firstActiveAddress(Connection c, long customerId) throws SQLException {
+        var row = TruyVanDB.one(c, "SELECT id FROM customer_addresses WHERE customer_id=? AND active ORDER BY id LIMIT 1", customerId);
+        return row == null ? null : TruyVanDB.id(row);
+    }
 }

@@ -39,9 +39,10 @@ public class KhachHangService {
         int page = intParam(q.get("page"), 1, 1, 100_000);
         int size = intParam(q.get("size"), 20, 1, 100);
         String status = Objects.toString(q.get("status"), "").trim().toUpperCase(Locale.ROOT);
-        if (!status.isEmpty() && !STATUSES.contains(status)) throw new IllegalArgumentException("Trạng thái lọc không hợp lệ");
+        if (!status.isEmpty() && !STATUSES.contains(status) && !status.equals("LOCKED"))
+            throw new IllegalArgumentException("Trạng thái lọc không hợp lệ");
         var filter = new KhachHangDB.Filter(
-            limit(q.get("search"), 100),
+            java.text.Normalizer.normalize(limit(q.get("search"), 100), java.text.Normalizer.Form.NFC),
             limit(q.get("region"), 150),
             optionalId(q.get("groupId")),
             optionalId(q.get("salesRepId")),
@@ -68,6 +69,7 @@ public class KhachHangService {
             out.put("canEditCredit", u.can("customers.credit"));
             out.put("canAssign", u.can("customers.assign"));
             out.put("canLock", u.can("customers.lock"));
+            out.put("seesAll", u.seesAll());
             return out;
         }
     }

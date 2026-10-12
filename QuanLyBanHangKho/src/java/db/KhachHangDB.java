@@ -24,15 +24,25 @@ public class KhachHangDB {
         List<Object> params = new ArrayList<>();
         if (f.onlyRep() != null) { sql.append("AND k.sales_rep_id=? "); params.add(f.onlyRep()); }
         if (!f.search().isEmpty()) {
-            String like = "%" + f.search().toLowerCase(Locale.ROOT)
+            String like = "%" + f.search()
                 .replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
-            sql.append("AND (lower(k.code) LIKE ? OR lower(k.name) LIKE ? OR k.phone LIKE ? OR k.tax_code LIKE ?) ");
-            Collections.addAll(params, like, like, like, like);
+            // S3-08: tên tìm không phân biệt hoa/thường và dấu tiếng Việt (hàm khongdau trong sprint3-customer-search.sql)
+            sql.append("AND (lower(k.code) LIKE lower(?) OR khongdau(k.name) LIKE khongdau(?) OR k.tax_code LIKE ?");
+            Collections.addAll(params, like, like, like);
+            // Số điện thoại: bỏ dấu cách/chấm/gạch, coi 84... và +84... như 0...
+            String digits = f.search().replaceAll("[^0-9]", "");
+            if (digits.startsWith("84") && digits.length() >= 10) digits = "0" + digits.substring(2);
+            if (digits.length() >= 3) {
+                sql.append(" OR regexp_replace(k.phone,'^\\+84','0') LIKE ?");
+                params.add("%" + digits + "%");
+            }
+            sql.append(") ");
         }
         if (!f.region().isEmpty()) { sql.append("AND k.region=? "); params.add(f.region()); }
         if (f.groupId() != null) { sql.append("AND k.customer_group_id=? "); params.add(f.groupId()); }
         if (f.salesRepId() != null) { sql.append("AND k.sales_rep_id=? "); params.add(f.salesRepId()); }
-        if (!f.status().isEmpty()) { sql.append("AND k.status=? "); params.add(f.status()); }
+        if (f.status().equals("LOCKED")) sql.append("AND k.trading_locked ");
+        else if (!f.status().isEmpty()) { sql.append("AND k.status=? "); params.add(f.status()); }
         return new Where(sql.toString(), params);
     }
 

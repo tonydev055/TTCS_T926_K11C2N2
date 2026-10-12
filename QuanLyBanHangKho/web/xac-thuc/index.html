@@ -52,4 +52,77 @@ document.getElementById('logoutButton').addEventListener('click', async () => {
   } finally { button.disabled = false; }
 });
 
+const forgotEmailInput = document.getElementById('forgotEmail');
+const forgotPasswordError = document.getElementById('forgotPasswordError');
+const forgotSubmitButton = document.getElementById('forgotSubmitButton');
+
+function openForgotPassword() {
+  loginView.classList.add('is-hidden');
+  registerView.classList.add('is-hidden');
+  forgotPasswordView.classList.remove('is-hidden');
+  document.getElementById('forgotRequestPanel').classList.remove('is-hidden');
+  document.getElementById('forgotSuccessPanel').classList.add('is-hidden');
+  forgotPasswordError.textContent = '';
+  forgotEmailInput.value = emailInput.value.trim();
+  forgotEmailInput.focus();
+}
+
+function closeForgotPassword() {
+  forgotPasswordView.classList.add('is-hidden');
+  loginView.classList.remove('is-hidden');
+  if (forgotEmailInput.value.trim()) emailInput.value = forgotEmailInput.value.trim();
+  passwordInput.focus();
+}
+
+async function sendPasswordReset(email) {
+  const response = await apiFetch('api/auth/forgot-password', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.message || 'Không thể gửi yêu cầu đặt lại mật khẩu.');
+  return result;
+}
+
+document.getElementById('forgotPasswordButton').addEventListener('click', openForgotPassword);
+document.getElementById('backFromForgot').addEventListener('click', closeForgotPassword);
+document.getElementById('backAfterForgot').addEventListener('click', closeForgotPassword);
+document.getElementById('forgotPasswordForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  const email = forgotEmailInput.value.trim();
+  forgotPasswordError.textContent = '';
+  if (!email || !forgotEmailInput.checkValidity()) { forgotPasswordError.textContent = 'Vui lòng nhập địa chỉ email hợp lệ.'; return; }
+  forgotSubmitButton.disabled = true;
+  forgotSubmitButton.firstChild.textContent = 'Đang gửi ';
+  try {
+    await sendPasswordReset(email);
+    document.getElementById('forgotSentEmail').textContent = email;
+    document.getElementById('forgotRequestPanel').classList.add('is-hidden');
+    document.getElementById('forgotSuccessPanel').classList.remove('is-hidden');
+  } catch (error) {
+    forgotPasswordError.textContent = error.message === 'Failed to fetch' ? 'Không kết nối được máy chủ. Vui lòng thử lại.' : error.message;
+  } finally {
+    forgotSubmitButton.disabled = false;
+    forgotSubmitButton.firstChild.textContent = 'Gửi liên kết đặt lại ';
+  }
+});
+document.getElementById('resendForgotPassword').addEventListener('click', async event => {
+  event.currentTarget.disabled = true;
+  try { const result = await sendPasswordReset(forgotEmailInput.value.trim()); showToast(result.message); }
+  catch (_) { showToast('Không thể gửi lại liên kết lúc này.'); }
+  finally { event.currentTarget.disabled = false; }
+});
+document.getElementById('openDevMailbox').addEventListener('click', () => {
+  window.location.href = `mailbox.html?email=${encodeURIComponent(forgotEmailInput.value.trim())}`;
+});
+
+const previewParams = new URLSearchParams(window.location.search);
+if (previewParams.get('resetToken')) {
+  loginView.classList.add('is-hidden');registerView.classList.add('is-hidden');forgotPasswordView.classList.add('is-hidden');appView.classList.add('is-hidden');resetPasswordView.classList.remove('is-hidden');
+}
+const resetPasswordInput=document.getElementById('resetPassword');
+const resetPasswordConfirm=document.getElementById('resetPasswordConfirm');
+function updatePasswordStrength(){const value=resetPasswordInput.value;const checks=[value.length>=8,/[A-Za-zÀ-ỹ]/.test(value),/\d/.test(value)];document.getElementById('ruleLength').classList.toggle('passed',checks[0]);document.getElementById('ruleLength').textContent=`${checks[0]?'✓':'○'} Ít nhất 8 ký tự`;document.getElementById('ruleLetter').classList.toggle('passed',checks[1]);document.getElementById('ruleLetter').textContent=`${checks[1]?'✓':'○'} Có chữ cái`;document.getElementById('ruleNumber').classList.toggle('passed',checks[2]);document.getElementById('ruleNumber').textContent=`${checks[2]?'✓':'○'} Có chữ số`;let score=checks.filter(Boolean).length;if(checks.every(Boolean)&&/[A-Z]/.test(value)&&/[^A-Za-zÀ-ỹ0-9]/.test(value))score=4;document.querySelector('.strength-meter').dataset.score=score;return checks.every(Boolean)}
+resetPasswordInput.addEventListener('input',updatePasswordStrength);
+document.querySelectorAll('.reset-toggle').forEach(button=>button.addEventListener('click',()=>{const input=document.getElementById(button.dataset.passwordTarget);input.type=input.type==='password'?'text':'password';button.textContent=input.type==='password'?'◉':'⊘'}));
+document.getElementById('resetPasswordForm').addEventListener('submit',async event=>{event.preventDefault();const error=document.getElementById('resetPasswordError');const button=document.getElementById('resetSubmitButton');error.textContent='';if(!previewParams.get('resetToken')){error.textContent='Liên kết đặt lại mật khẩu không hợp lệ.';return}if(!updatePasswordStrength()){error.textContent='Mật khẩu cần ít nhất 8 ký tự, có chữ cái và chữ số.';return}if(resetPasswordInput.value!==resetPasswordConfirm.value){error.textContent='Mật khẩu xác nhận không khớp.';return}button.disabled=true;button.firstChild.textContent='Đang cập nhật ';try{const response=await apiFetch('api/auth/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:previewParams.get('resetToken'),password:resetPasswordInput.value})});const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.message||'Không thể đặt lại mật khẩu.');document.getElementById('resetRequestPanel').classList.add('is-hidden');document.getElementById('resetSuccessPanel').classList.remove('is-hidden');history.replaceState(null,'','index.html');}catch(e){error.textContent=e.message==='Failed to fetch'?'Không kết nối được máy chủ. Vui lòng thử lại.':e.message}finally{button.disabled=false;button.firstChild.textContent='Cập nhật mật khẩu '}});
+document.getElementById('loginAfterReset').addEventListener('click',()=>{window.location.href='index.html'});
+
 </script>

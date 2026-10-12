@@ -10,7 +10,7 @@ import service.*;
 import util.*;
 
 @WebServlet(
-    urlPatterns = {"/api/categories/*"}
+    urlPatterns = {"/api/categories/*","/api/products/*","/api/brands/*","/api/product-models/*"}
 )
 @MultipartConfig(maxFileSize = 2097152, maxRequestSize = 2200000)
 public class DanhMucServlet extends CoSoServlet {

@@ -17,7 +17,7 @@
     if (view !== 'Người dùng') return;
     const schema =
       mode === 'edit'
-        ? formSchemas.users.filter(field => ["fullName","phone"].includes(field[0]))
+        ? formSchemas.users.filter(field => ["fullName","phone","role","scope"].includes(field[0]))
         : formSchemas.users.filter(field => field[0] !== "status");
     activeFormContext = { view, mode, recordLabel, ...metadata };
     document.getElementById('formModalEyebrow').textContent =
@@ -126,7 +126,12 @@
     ) {
       const data = Object.fromEntries(new FormData(event.currentTarget).entries());
       const previous=activeFormContext.user;
-      const payload={fullName:data.fullName,phone:data.phone,territory:previous.territory || '',roles:previous.roles,warehouses:previous.warehouses || []};
+      const roleByLabel=Object.fromEntries(Object.entries(roleConfigs).map(([code,item])=>[item.label,code]));
+      const role=roleByLabel[data.role] || previous.roles[0];
+      const roles=role===previous.roles[0] ? previous.roles : [role];
+      const warehouseRole=roles.some(code=>['WAREHOUSE','WH_MANAGER'].includes(code));
+      const warehouses=warehouseRole ? String(data.scope || '').split(',').map(x=>x.trim()).filter(Boolean) : [];
+      const payload={fullName:data.fullName,phone:data.phone,territory:warehouseRole ? previous.territory || '' : data.scope || previous.territory || '',roles,warehouses};
       submit.disabled = true;
       try {
         const response = await apiFetch(`api/users/${activeFormContext.userId}`, {

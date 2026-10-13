@@ -336,6 +336,48 @@
   line-height:1.45;
 }
 
+/* S4-02: công nợ của đại lý */
+#salesOrderFeatureRoot .credit{
+  margin-top:10px;
+  padding:12px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--surface);
+}
+
+#salesOrderFeatureRoot .credit-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin:0;
+}
+
+#salesOrderFeatureRoot .credit-grid dt{
+  color:var(--text3);
+  font-size:10px;
+}
+
+#salesOrderFeatureRoot .credit-grid dd{
+  margin:3px 0 0;
+  color:var(--text);
+  font-size:13px;
+  font-weight:700;
+}
+
+#salesOrderFeatureRoot .credit-grid dd.neg{
+  color:var(--red);
+}
+
+#salesOrderFeatureRoot .credit .lock-warn{
+  margin-top:10px;
+}
+
+@media(max-width:720px){
+  #salesOrderFeatureRoot .credit-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
 #salesOrderFeatureRoot .lock-tag{
   display:inline-block;
   margin-left:6px;
@@ -1078,6 +1120,28 @@
           hidden>
         </div>
 
+        <div
+          id="creditBox"
+          class="credit"
+          aria-live="polite"
+          hidden>
+
+          <dl class="credit-grid">
+            <div><dt>Công nợ hiện tại</dt><dd id="crOutstanding">—</dd></div>
+            <div><dt>Hạn mức</dt><dd id="crLimit">—</dd></div>
+            <div><dt>Còn lại</dt><dd id="crAvailable">—</dd></div>
+            <div><dt>Còn lại sau đơn này</dt><dd id="crAfter">—</dd></div>
+          </dl>
+
+          <p
+            id="crBlocked"
+            class="lock-warn"
+            role="alert"
+            hidden>
+          </p>
+
+        </div>
+
 
         <div id="customerSearch">
 
@@ -1547,6 +1611,8 @@ window.salesOrderFeature = (() => {
 
     flags:[],
 
+    credit:null,
+
     dirty:false,
 
     quoteSeq:0,
@@ -1750,6 +1816,50 @@ window.salesOrderFeature = (() => {
      CUSTOMER
      ======================================================== */
 
+  /* S4-02: công nợ hiện tại, hạn mức, còn lại; nợ quá hạn thì chặn tạo/gửi đơn. */
+  let creditSeq = 0;
+
+  function renderCredit(){
+    const box = $('creditBox');
+    if (!box) return;
+    const credit = S.customer ? S.credit : null;
+    box.hidden = !credit;
+    const blocked = !!credit?.blocked;
+    $('btnComplete').disabled = blocked;
+    $('btnSave').disabled = blocked && !S.id;
+    if (S.customer) $('productQ').disabled = blocked && !S.id;
+    if (!credit) return;
+    const limit = Number(credit.creditLimit);
+    $('crOutstanding').textContent = money(credit.outstanding);
+    $('crLimit').textContent = limit > 0 ? money(limit) : 'Không cho nợ';
+    $('crAvailable').textContent = money(credit.available);
+    $('crAvailable').classList.toggle('neg', Number(credit.available) < 0);
+    const after = credit.remainingAfterOrder;
+    $('crAfter').textContent = after == null ? '—' : money(after);
+    $('crAfter').classList.toggle('neg', after != null && Number(after) < 0);
+    $('crBlocked').hidden = !blocked;
+    $('crBlocked').textContent = blocked
+      ? credit.blockReason + (S.id ? '. Có thể lưu nháp này nhưng chưa gửi được.' : '.')
+      : '';
+  }
+
+  async function loadCredit(){
+    const seq = ++creditSeq;
+    S.credit = null;
+    renderCredit();
+    if (!S.customer) return;
+    try {
+      const credit = await api('GET', '/customers/' + S.customer.id + '/credit');
+      if (seq !== creditSeq) return;
+      S.credit = credit;
+      renderCredit();
+    } catch (error) {
+      if (seq !== creditSeq || handleAuth(error)) return;
+      toast('Không tải được công nợ của đại lý: ' + error.message, 'error');
+    }
+  }
+
+
   function renderCustomer(){
 
     const customer =
@@ -1822,6 +1932,8 @@ window.salesOrderFeature = (() => {
         'productResults'
       );
     }
+
+    renderCredit();
   }
 
 
@@ -1870,6 +1982,8 @@ window.salesOrderFeature = (() => {
       }
     );
 
+
+    loadCredit();
 
     scheduleQuote(0);
 
@@ -3338,6 +3452,13 @@ window.salesOrderFeature = (() => {
 
       renderApproval();
 
+      /* Báo giá mang công nợ mới nhất kèm số còn lại sau đơn này. */
+      if (result.credit) {
+        ++creditSeq;
+        S.credit = result.credit;
+        renderCredit();
+      }
+
 
       showQuoteError('');
 
@@ -3714,6 +3835,10 @@ window.salesOrderFeature = (() => {
 
     S.flags = [];
 
+    S.credit = null;
+
+    ++creditSeq;
+
     S.dirty = false;
 
     ++S.quoteSeq;
@@ -3889,6 +4014,8 @@ window.salesOrderFeature = (() => {
 
       updateOrderUrl(S.id);
 
+
+      loadCredit();
 
       scheduleQuote(0);
 
@@ -4291,6 +4418,10 @@ window.salesOrderFeature = (() => {
           S.points = [];
 
           S.totals = null;
+
+          S.credit = null;
+
+          ++creditSeq;
 
           ++pointsSeq;
 

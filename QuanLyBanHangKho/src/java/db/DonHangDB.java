@@ -133,7 +133,8 @@ public class DonHangDB extends CoSoDB {
         }
     }
 
-    /** Điểm mở rộng: các phần giữ chỗ gắn với đơn được nhả trong cùng giao dịch huỷ. */
+    /** S4-03: huỷ đơn thì nhả tồn đang giữ chỗ cho đơn trong cùng giao dịch. */
     protected void afterCancel(Connection c, long orderId) throws SQLException {
+        GiuChoTonDB.release(c, orderId);
     }
 }

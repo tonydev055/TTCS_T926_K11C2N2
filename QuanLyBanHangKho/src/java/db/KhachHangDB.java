@@ -10,9 +10,10 @@ public class KhachHangDB {
         "SELECT k.id,k.code,k.name,k.tax_code,k.customer_group_id,g.code group_code,g.name group_name," +
         "k.region,k.phone,k.sales_rep_id,u.full_name sales_rep_name,u.email sales_rep_email," +
         "k.status,k.credit_limit,k.credit_days,k.trading_locked,k.lock_reason,k.locked_at," +
-        "lu.full_name locked_by_name,k.created_at,k.updated_at " +
+        "lu.full_name locked_by_name,k.created_at,k.updated_at,k.warehouse_id,wh.name warehouse_name " +
         "FROM customers k JOIN customer_groups g ON g.id=k.customer_group_id " +
-        "LEFT JOIN users u ON u.id=k.sales_rep_id LEFT JOIN users lu ON lu.id=k.locked_by ";
+        "LEFT JOIN users u ON u.id=k.sales_rep_id LEFT JOIN users lu ON lu.id=k.locked_by " +
+        "LEFT JOIN warehouses wh ON wh.id=k.warehouse_id ";
 
     /** Bộ lọc danh sách; {@code onlyRep} giới hạn đại lý của một nhân viên phụ trách. */
     public record Filter(String search, String region, Long groupId, Long salesRepId, String status, Long onlyRep) {}
@@ -99,10 +100,10 @@ public class KhachHangDB {
     public long insert(Connection c, Map<String, Object> v) throws SQLException {
         var row = TruyVanDB.one(
             c,
-            "INSERT INTO customers(code,name,tax_code,customer_group_id,region,phone,sales_rep_id,status) " +
-                "VALUES(?,?,?,?,?,?,?,?) RETURNING id",
+            "INSERT INTO customers(code,name,tax_code,customer_group_id,region,phone,sales_rep_id,status,warehouse_id) " +
+                "VALUES(?,?,?,?,?,?,?,?,?) RETURNING id",
             v.get("code"), v.get("name"), v.get("tax_code"), v.get("customer_group_id"),
-            v.get("region"), v.get("phone"), v.get("sales_rep_id"), v.get("status")
+            v.get("region"), v.get("phone"), v.get("sales_rep_id"), v.get("status"), v.get("warehouse_id")
         );
         return TruyVanDB.id(row);
     }
@@ -111,14 +112,25 @@ public class KhachHangDB {
         TruyVanDB.update(
             c,
             "UPDATE customers SET code=?,name=?,tax_code=?,customer_group_id=?,region=?,phone=?," +
-                "sales_rep_id=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                "sales_rep_id=?,status=?,warehouse_id=CASE WHEN ? THEN ? ELSE warehouse_id END," +
+                "updated_at=CURRENT_TIMESTAMP WHERE id=?",
             v.get("code"), v.get("name"), v.get("tax_code"), v.get("customer_group_id"),
-            v.get("region"), v.get("phone"), v.get("sales_rep_id"), v.get("status"), id
+            v.get("region"), v.get("phone"), v.get("sales_rep_id"), v.get("status"),
+            v.containsKey("warehouse_id"), v.get("warehouse_id"), id
         );
     }
 
     public void delete(Connection c, long id) throws SQLException {
         TruyVanDB.update(c, "DELETE FROM customers WHERE id=?", id);
+    }
+
+    /** Kho đang hoạt động để chọn làm kho phục vụ của đại lý (S4-03). */
+    public List<Map<String, Object>> warehouses(Connection c) throws SQLException {
+        return TruyVanDB.rows(c, "SELECT id,code,name FROM warehouses WHERE active ORDER BY name");
+    }
+
+    public boolean isActiveWarehouse(Connection c, long id) throws SQLException {
+        return TruyVanDB.one(c, "SELECT 1 FROM warehouses WHERE id=? AND active", id) != null;
     }
 
     public List<Map<String, Object>> groups(Connection c) throws SQLException {

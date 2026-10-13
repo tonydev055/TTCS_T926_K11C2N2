@@ -86,6 +86,48 @@ public class TaoDonHangService {
     }
 
     /**
+     * S4-03: tồn khả dụng tại kho phục vụ của đại lý cho từng dòng. Mỗi dòng có available (theo đơn vị đã chọn),
+     * maxQuantity (tối đa còn đặt được sau khi trừ các dòng khác cùng SKU) và stockShort. Thiếu tồn chặn gửi đơn.
+     */
+    Map<String, Object> kiemTraTon(long customerId, List<Map<String, Object>> lines) throws SQLException {
+        Map<String, Object> stock = new LinkedHashMap<>();
+        List<String> errors = new ArrayList<>();
+        var warehouse = db.GiuChoTonDB.customerWarehouse(customerId);
+        stock.put("warehouseId", warehouse == null ? null : warehouse.get("id"));
+        stock.put("warehouseName", warehouse == null ? "" : warehouse.get("name"));
+        stock.put("errors", errors);
+        if (warehouse == null) {
+            errors.add("Đại lý chưa được gán kho phục vụ nên chưa xác định được tồn khả dụng. " +
+                "Hãy gán kho phục vụ trong hồ sơ đại lý");
+            for (var line : lines) line.put("stockShort", false);
+            stock.put("ok", false);
+            return stock;
+        }
+        Map<Long, BigDecimal> totalBase = new HashMap<>();
+        for (var line : lines) totalBase.merge(((Number) line.get("productId")).longValue(),
+            ((BigDecimal) line.get("quantity")).multiply((BigDecimal) line.get("conversionFactor")), BigDecimal::add);
+        Map<Long, BigDecimal> available = db.GiuChoTonDB.available(((Number) warehouse.get("id")).longValue(), totalBase.keySet());
+        for (int i = 0; i < lines.size(); i++) {
+            var line = lines.get(i);
+            long product = ((Number) line.get("productId")).longValue();
+            BigDecimal factor = (BigDecimal) line.get("conversionFactor");
+            BigDecimal own = ((BigDecimal) line.get("quantity")).multiply(factor);
+            BigDecimal avail = available.get(product);
+            BigDecimal forThisLine = avail.subtract(totalBase.get(product).subtract(own));
+            BigDecimal max = db.GiuChoTonDB.inUnit(forThisLine, factor);
+            boolean shortage = totalBase.get(product).compareTo(avail) > 0;
+            line.put("available", db.GiuChoTonDB.inUnit(avail, factor));
+            line.put("maxQuantity", max);
+            line.put("stockShort", shortage);
+            if (shortage) errors.add("Dòng " + (i + 1) + " · " + line.get("sku") + ": vượt tồn khả dụng, " +
+                (max.signum() > 0 ? "chỉ đặt được tối đa " + clean(max).toPlainString() + " " + line.get("unitName")
+                    : "đã hết hàng") + " tại " + warehouse.get("name"));
+        }
+        stock.put("ok", errors.isEmpty());
+        return stock;
+    }
+
+    /**
      * Tính giá, chiết khấu, phải thu cho các dòng hàng; không ghi gì vào database.
      * Kết quả có "flags": các lý do khiến đơn cần duyệt nếu gửi ngay.
      */
@@ -205,6 +247,7 @@ public class TaoDonHangService {
         out.put("discount", discount);
         out.put("payable", payable);
         out.put("credit", kiemTraHanMuc(customerId, payable, flags));
+        out.put("stock", kiemTraTon(customerId, lines));
         out.put("flags", flags);
         out.put("needsApproval", !flags.isEmpty());
         return out;
@@ -238,6 +281,13 @@ public class TaoDonHangService {
         Map<?, ?> credit = (Map<?, ?>) priced.get("credit");
         if ((orderId == null || complete) && Boolean.TRUE.equals(credit.get("blocked")))
             throw new IllegalArgumentException(String.valueOf(credit.get("blockReason")));
+        // S4-03: vượt tồn khả dụng thì chặn gửi đơn, kèm số lượng tối đa còn đặt được.
+        Map<?, ?> stock = (Map<?, ?>) priced.get("stock");
+        if (complete && !Boolean.TRUE.equals(stock.get("ok"))) {
+            @SuppressWarnings("unchecked")
+            List<String> errors = (List<String>) stock.get("errors");
+            throw new IllegalArgumentException(String.join("; ", errors));
+        }
 
         // Điểm giao phải nằm trong danh sách của ĐÚNG đại lý này (kiểm tra ở máy chủ, không chỉ ẩn trên giao diện).
         Long pointId = null;

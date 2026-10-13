@@ -255,8 +255,13 @@ public class DonHangNhapDB extends CoSoDB {
         return status;
     }
 
-    /** Điểm mở rộng: việc cần làm trong cùng giao dịch trước khi đơn chuyển sang trạng thái mới khi gửi. */
+    /**
+     * Trong cùng giao dịch, trước khi đơn chuyển trạng thái khi gửi: chốt kho phục vụ của đại lý vào đơn (S4-03)
+     * và nếu đơn được duyệt ngay thì giữ chỗ tồn (thiếu tồn thì cả giao dịch huỷ, đơn vẫn là nháp).
+     */
     static void beforeApprove(Connection c, long id, String status) throws SQLException {
+        TruyVanDB.update(c, "UPDATE orders o SET warehouse_id=k.warehouse_id FROM customers k WHERE k.id=o.agent_id AND o.id=?", id);
+        if (service.TrangThaiDonHang.APPROVED.equals(status)) GiuChoTonDB.reserve(c, id);
     }
 
     /** Mở lại một đơn nháp của chính người dùng (kèm dòng hàng và các đơn vị tính để sửa tiếp). */

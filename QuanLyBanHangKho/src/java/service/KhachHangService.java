@@ -65,6 +65,7 @@ public class KhachHangService {
             out.put("groups", db.groups(c));
             out.put("salesReps", db.salesReps(c, u.onlyRep()));
             out.put("regions", db.regions(c, u.onlyRep()));
+            out.put("warehouses", db.warehouses(c));
             out.put("canWrite", u.can("customers.write"));
             out.put("canEditCredit", u.can("customers.credit"));
             out.put("canAssign", u.can("customers.assign"));
@@ -498,6 +499,13 @@ public class KhachHangService {
         if (rep != null && !db.isActiveSalesRep(c, rep))
             throw new IllegalArgumentException("Người phụ trách phải là Nhân viên kinh doanh đang hoạt động");
         v.put("sales_rep_id", rep);
+        // S4-03: kho phục vụ — tồn khả dụng trên đơn của đại lý lấy từ kho này. Không gửi trường thì giữ nguyên.
+        if (data.containsKey("warehouse_id")) {
+            Long warehouse = optionalId(data.get("warehouse_id"));
+            if (warehouse != null && !db.isActiveWarehouse(c, warehouse))
+                throw new IllegalArgumentException("Kho phục vụ phải là kho đang hoạt động");
+            v.put("warehouse_id", warehouse);
+        }
         String status = Objects.toString(data.getOrDefault("status", "ACTIVE"), "").trim().toUpperCase(Locale.ROOT);
         if (!STATUSES.contains(status)) throw new IllegalArgumentException("Trạng thái đại lý không hợp lệ");
         v.put("status", status);

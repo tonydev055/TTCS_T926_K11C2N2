@@ -221,6 +221,7 @@ window.agentFeature = (() => {
           <div><dt>Mã số thuế</dt><dd>${esc(agent.tax_code || '—')}</dd></div>
           <div><dt>Số điện thoại</dt><dd>${esc(agent.phone || '—')}</dd></div>
           <div><dt>Khu vực</dt><dd>${esc(agent.region)}</dd></div>
+          <div><dt>Kho phục vụ</dt><dd>${agent.warehouse_name ? esc(agent.warehouse_name) : 'Chưa gán — chưa gửi được đơn'}</dd></div>
           <div><dt>Người phụ trách</dt><dd>${agent.sales_rep_name ? `${esc(agent.sales_rep_name)}` : 'Chưa phân công'}</dd></div>
         </dl></div>
         <div class="ag-section"><h4>Nhóm khách hàng & bảng giá</h4><dl class="ag-grid">
@@ -520,6 +521,7 @@ window.agentFeature = (() => {
       renderInputField('customer_group_id', 'Nhóm khách hàng', value('customer_group_id'), 'text', true, masters.groups.map((group) => [group.id, group.name])),
       `<div class="form-group"><label>Khu vực *<input name="region" list="agRegions" value="${esc(value('region'))}" required maxlength="150"></label><datalist id="agRegions">${regionOptions}</datalist></div>`,
       !agent && masters.canAssign ? renderInputField('sales_rep_id', 'Người phụ trách', '', 'text', false, masters.salesReps.map((rep) => [rep.id, rep.full_name + (rep.territory ? ` · ${rep.territory}` : '')])) : '',
+      renderInputField('warehouse_id', 'Kho phục vụ', value('warehouse_id'), 'text', false, (masters.warehouses || []).map((w) => [w.id, w.name])),
       renderInputField('status', 'Trạng thái', value('status', 'ACTIVE'), 'text', true, [['ACTIVE', 'Đang giao dịch'], ['INACTIVE', 'Ngừng giao dịch']])
     ].join('');
     const { form, close } = openFormDialog(agent ? 'Sửa hồ sơ đại lý' : 'Thêm đại lý', body, 'Lưu hồ sơ đại lý');

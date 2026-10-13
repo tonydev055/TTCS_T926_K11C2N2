@@ -556,6 +556,43 @@
   line-height:1.45;
 }
 
+/* S4-03: tồn khả dụng */
+#salesOrderFeatureRoot .stock-warn{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:6px 10px;
+  margin:8px 0 0;
+  padding:8px 10px;
+  border:1px solid #fecaca;
+  border-radius:8px;
+  background:#fef2f2;
+  color:#991b1b;
+  font-size:11px;
+  line-height:1.45;
+}
+
+#salesOrderFeatureRoot .stock-warn button{
+  padding:0;
+  font-size:11px;
+}
+
+#salesOrderFeatureRoot .stock-note{
+  margin:6px 0 0;
+  color:var(--text3);
+  font-size:11px;
+}
+
+#salesOrderFeatureRoot .stock-note.bad{
+  margin-top:12px;
+  padding:10px 12px;
+  border:1px solid #fecaca;
+  border-radius:8px;
+  background:#fef2f2;
+  color:#991b1b;
+  font-size:12px;
+}
+
 #salesOrderFeatureRoot .approval-note{
   margin-top:12px;
   padding:10px 12px;
@@ -1237,6 +1274,13 @@
           hidden>
         </ul>
 
+        <p
+          id="stockNote"
+          class="stock-note"
+          role="status"
+          hidden>
+        </p>
+
 
         <div
           id="lines"
@@ -1613,6 +1657,8 @@ window.salesOrderFeature = (() => {
 
     credit:null,
 
+    stock:null,
+
     dirty:false,
 
     quoteSeq:0,
@@ -1816,6 +1862,22 @@ window.salesOrderFeature = (() => {
      CUSTOMER
      ======================================================== */
 
+  /* S4-03: kho phục vụ và lỗi tồn chung (chưa gán kho). Lỗi từng dòng hiện ngay dưới dòng hàng. */
+  function renderStock(){
+    const note = $('stockNote');
+    if (!note) return;
+    const stock = S.customer && S.lines.length ? S.stock : null;
+    note.hidden = !stock;
+    note.classList.toggle('bad', !!stock && !stock.warehouseId);
+    if (stock) {
+      note.textContent = stock.warehouseId
+        ? 'Tồn khả dụng tính tại ' + stock.warehouseName + ' (đã trừ hàng đang giữ cho đơn khác).'
+        : (stock.errors || []).join(' ');
+    }
+    $('btnComplete').disabled = !!S.credit?.blocked || (!!stock && !stock.ok);
+  }
+
+
   /* S4-02: công nợ hiện tại, hạn mức, còn lại; nợ quá hạn thì chặn tạo/gửi đơn. */
   let creditSeq = 0;
 
@@ -1825,7 +1887,7 @@ window.salesOrderFeature = (() => {
     const credit = S.customer ? S.credit : null;
     box.hidden = !credit;
     const blocked = !!credit?.blocked;
-    $('btnComplete').disabled = blocked;
+    $('btnComplete').disabled = blocked || (!!S.stock && !S.stock.ok);
     $('btnSave').disabled = blocked && !S.id;
     if (S.customer) $('productQ').disabled = blocked && !S.id;
     if (!credit) return;
@@ -2619,6 +2681,8 @@ window.salesOrderFeature = (() => {
 
       elements.floor.hidden = true;
 
+      elements.stock.hidden = true;
+
 
       elements.sub.textContent =
         '—';
@@ -2657,7 +2721,36 @@ window.salesOrderFeature = (() => {
 
     elements.meta.textContent =
       'Giá bảng giá ' + money(calc.listPrice) +
-      ' · Giá sàn ' + money(calc.floorPrice);
+      ' · Giá sàn ' + money(calc.floorPrice) +
+      (calc.available != null
+        ? ' · Tồn khả dụng ' + nf.format(Number(calc.available)) + ' ' + unitName
+        : '');
+
+    elements.stock.hidden = !calc.stockShort;
+    elements.stock.replaceChildren();
+    if (calc.stockShort) {
+      const max = Number(calc.maxQuantity) || 0;
+      elements.stock.append(
+        el('span', {
+          text: max > 0
+            ? 'Vượt tồn khả dụng. Chỉ đặt được tối đa ' + nf.format(max) + ' ' + unitName + '.'
+            : 'Đã hết hàng khả dụng cho dòng này.'
+        }),
+        max > 0
+          ? el('button', {
+              type:'button',
+              class:'linkbtn',
+              text:'Đặt ' + nf.format(max) + ' ' + unitName,
+              onclick:() => elements.setQty(max)
+            })
+          : el('button', {
+              type:'button',
+              class:'linkbtn',
+              text:'Xoá dòng',
+              onclick:() => removeLine(line)
+            })
+      );
+    }
 
     elements.reset.hidden = !calc.priceOverridden && line.manualPrice == null;
     elements.price.classList.toggle('overridden', !!calc.priceOverridden);
@@ -2822,6 +2915,9 @@ window.salesOrderFeature = (() => {
     const floor =
       el('p', { class:'floor-warn', role:'status', hidden:true });
 
+    const stockWarn =
+      el('div', { class:'stock-warn', role:'alert', hidden:true });
+
     const unitprice =
       el(
         'div',
@@ -2845,7 +2941,9 @@ window.salesOrderFeature = (() => {
       unitLabel,
       meta,
       reset,
-      floor
+      floor,
+      stock:stockWarn,
+      setQty:value => setQty(value)
     };
 
 
@@ -3046,6 +3144,8 @@ window.salesOrderFeature = (() => {
         unitprice,
 
         floor,
+
+        stockWarn,
 
         el(
           'dl',
@@ -3311,6 +3411,8 @@ window.salesOrderFeature = (() => {
       S.quoting = false;
       S.flags = [];
       renderApproval();
+      S.stock = null;
+      renderStock();
 
       renderTotals();
 
@@ -3341,6 +3443,10 @@ window.salesOrderFeature = (() => {
       S.flags = [];
 
       renderApproval();
+
+      S.stock = null;
+
+      renderStock();
 
 
       S.quoting = false;
@@ -3451,6 +3557,10 @@ window.salesOrderFeature = (() => {
       S.flags = result.flags || [];
 
       renderApproval();
+
+      S.stock = result.stock || null;
+
+      renderStock();
 
       /* Báo giá mang công nợ mới nhất kèm số còn lại sau đơn này. */
       if (result.credit) {
@@ -3839,6 +3949,8 @@ window.salesOrderFeature = (() => {
 
     ++creditSeq;
 
+    S.stock = null;
+
     S.dirty = false;
 
     ++S.quoteSeq;
@@ -3863,6 +3975,8 @@ window.salesOrderFeature = (() => {
     showQuoteError('');
 
     renderApproval();
+
+    renderStock();
 
     renderCustomer();
 

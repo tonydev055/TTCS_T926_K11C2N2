@@ -9,7 +9,7 @@ import util.KetNoiDB;
 public class KhoService {
     public static boolean manager(Collection<String> roles){return PhanQuyen.allows(roles,"warehouses.manage");}
     public static void access(Connection c,long warehouse,long actor,Collection<String> roles)throws SQLException{
-        var w=TruyVanDB.one(c,"SELECT id,active FROM warehouses WHERE id=?",warehouse);
+        var w=TruyVanDB.one(c,"SELECT id,active FROM warehouses WHERE id=? FOR SHARE",warehouse);
         if(w==null||(!manager(roles)&&TruyVanDB.one(c,"SELECT 1 FROM user_warehouses WHERE user_id=? AND warehouse_id=?",actor,warehouse)==null))throw new NoSuchElementException("Không tìm thấy kho trong phạm vi được phân công");
         if(!Boolean.TRUE.equals(w.get("active")))throw new IllegalArgumentException("Kho đã ngừng hoạt động");
     }

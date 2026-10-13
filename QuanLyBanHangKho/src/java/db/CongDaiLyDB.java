@@ -120,8 +120,29 @@ public class CongDaiLyDB extends CoSoDB {
             line.put("deliveryShort",base!=null&&base.compareTo((BigDecimal)line.get("baseQuantity"))<0);
         }
         order.put("lines", lines);
-        order.put("history", new DonHangDB().history(id));
+        order.put("history", dealerHistory(customerId, id));
         return order;
+    }
+
+    /**
+     * Tiến trình hiển thị cho đại lý: giữ mốc trạng thái và thời gian, chỉ giữ lý do/người thực hiện khi do chính tài khoản
+     * đại lý thao tác, hoặc lý do huỷ đơn. Lý do duyệt, ý kiến quản lý và ghi chú giữ chỗ là thông tin nội bộ.
+     */
+    List<Map<String, Object>> dealerHistory(long customerId, long orderId) throws SQLException {
+        var history = new DonHangDB().history(orderId);
+        // Cùng thứ tự với DonHangDB.history: đánh dấu mốc do tài khoản cổng của chính đại lý thực hiện.
+        var marks = query("SELECT k.id IS NOT NULL AS mine FROM order_status_history h " +
+            "LEFT JOIN customers k ON k.id=? AND k.portal_user_id=h.changed_by WHERE h.order_id=? ORDER BY h.changed_at, h.id",
+            customerId, orderId);
+        for (int i = 0; i < history.size(); i++) {
+            var h = history.get(i);
+            boolean mine = i < marks.size() && Boolean.TRUE.equals(marks.get(i).get("mine"));
+            if (!mine) {
+                h.remove("changedByName");
+                if (!TrangThaiDonHang.CANCELLED.equals(h.get("toStatus"))) h.put("reason", "");
+            }
+        }
+        return history;
     }
 
     /** Đại lý huỷ đơn của mình khi nhân viên chưa xác nhận (Chờ nhân viên xác nhận). */

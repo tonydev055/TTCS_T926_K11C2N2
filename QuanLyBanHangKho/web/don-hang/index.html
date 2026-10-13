@@ -168,6 +168,23 @@ window.orderListFeature = (() => {
     } catch (_) { /* Ô lọc đại lý/khu vực để trống; danh sách đơn vẫn hiện lỗi riêng nếu có */ }
   }
 
+  // S4-10: nhắc nhân viên phụ trách có đơn đại lý tự đặt đang chờ xác nhận.
+  async function loadPortalNotice(revision) {
+    if (!hasPermission('orders.own')) return;
+    try {
+      const result = await apiRequest('orders/?status=PENDING_CONFIRM&pageSize=1');
+      const notice = document.getElementById('olPortalNotice');
+      if (!alive(revision) || !notice || !Number(result.total)) return;
+      notice.hidden = false;
+      notice.innerHTML = `<strong>${esc(result.total)} đơn đại lý tự đặt đang chờ bạn xác nhận</strong><button type="button" class="ol-btn" id="olShowPending" style="margin-top:6px">Xem các đơn này</button>`;
+      document.getElementById('olShowPending').onclick = () => {
+        state.filters = { status: 'PENDING_CONFIRM' };
+        state.page = 1;
+        renderList(revision);
+      };
+    } catch (_) { /* nhắc nhở phụ, lỗi đã hiện ở danh sách chính */ }
+  }
+
   function bindClear(revision) {
     document.getElementById('olClear').onclick = () => {
       state.filters = {};
@@ -181,6 +198,7 @@ window.orderListFeature = (() => {
         <p>Tình hình bán hàng trong một màn hình: lọc theo trạng thái, đại lý, nhân viên, khu vực và thời gian; xem lịch sử xử lý và huỷ đơn chưa xuất kho.</p></div></header>
       <div class="ol-card">
         <form class="ol-toolbar" id="olFilters" aria-label="Lọc đơn hàng">${filterFields()}</form>
+        <p class="ol-banner info" id="olPortalNotice" role="status" hidden></p>
         <div class="ol-summary" id="olSummary" aria-live="polite">Đang tải…</div>
         <div id="olList"><div class="ol-empty"><strong>Đang tải danh sách đơn…</strong></div></div>
         <div class="ol-footer" id="olFooter" hidden></div>
@@ -200,6 +218,7 @@ window.orderListFeature = (() => {
     form.addEventListener('submit', (event) => event.preventDefault());
     bindClear(revision);
     loadFilterOptions(revision);
+    loadPortalNotice(revision);
     loadList(revision);
   }
 
@@ -280,6 +299,7 @@ window.orderListFeature = (() => {
             ${a.canCopy ? '<button type="button" class="ol-btn" id="olCopy" title="Tạo đơn nháp mới với cùng đại lý và dòng hàng, giá tính lại theo bảng giá hiện hành">Sao chép thành đơn mới</button>' : ''}
             <button type="button" class="ol-btn" id="olPrint" title="Chọn &quot;Lưu dưới dạng PDF&quot; trong hộp thoại in để xuất PDF">In / Xuất PDF</button>
             ${a.canCancel ? '<button type="button" class="ol-btn danger" id="olCancel">Huỷ đơn</button>' : ''}
+            ${a.canConfirm ? '<button type="button" class="ol-btn primary" id="olConfirm">Xác nhận đơn</button>' : ''}
             ${a.canApprove ? `<button type="button" class="ol-btn danger" data-decide="reject">Từ chối</button>
               <button type="button" class="ol-btn" data-decide="return">Trả lại sửa</button>
               <button type="button" class="ol-btn primary" data-decide="approve">Duyệt</button>` : ''}
@@ -324,10 +344,25 @@ window.orderListFeature = (() => {
       document.getElementById('olCancel')?.addEventListener('click', () => openCancel(order, revision));
       document.getElementById('olPrint').addEventListener('click', () => window.orderPrint.printOrder(order));
       document.getElementById('olCopy')?.addEventListener('click', (event) => copyOrder(order, event.currentTarget));
+      document.getElementById('olConfirm')?.addEventListener('click', (event) => confirmPortal(order, event.currentTarget, revision));
       host.querySelectorAll('[data-decide]').forEach((button) => button.addEventListener('click', () =>
         window.orderApprovalFeature.decide(order, button.dataset.decide, () => { if (alive(revision)) renderDetail(order.id, revision); })));
     } catch (error) {
       if (alive(revision) && host.isConnected) host.innerHTML = `<p class="ol-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  // S4-10: nhân viên phụ trách xác nhận đơn đại lý tự đặt; hệ thống kiểm tra hạn mức và giữ chỗ tồn.
+  async function confirmPortal(order, button, revision) {
+    if (!confirm(`Xác nhận đơn ${order.code} của ${order.customerName} (${money(order.payable)})?\nĐơn trong hạn mức sẽ được duyệt và giữ hàng ngay; vượt hạn mức sẽ chuyển quản lý duyệt.`)) return;
+    button.disabled = true;
+    try {
+      const result = await apiRequest(`sales-orders/${order.id}/confirm`, jsonRequestOptions('POST', {}));
+      showToast(`Đã xác nhận đơn ${order.code} · ${result.statusLabel}`);
+      if (alive(revision)) renderDetail(order.id, revision);
+    } catch (error) {
+      showToast(error.message, 'error');
+      button.disabled = false;
     }
   }
 

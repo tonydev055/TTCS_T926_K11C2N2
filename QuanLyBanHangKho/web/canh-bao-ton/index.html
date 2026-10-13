@@ -1,0 +1,14 @@
+<script>
+window.sprint5Features=window.sprint5Features||{};
+window.lowStockFeature={async marks(){const d=await apiRequest('stock-alerts');return new Map(d.items.filter(r=>r.low).map(r=>[`${r.warehouse_id}-${r.product_id}`,r.minimum_quantity]));}};
+window.sprint5Features['Cảnh báo tồn thấp']={path:'canh-bao-ton',permission:'inventory.read',render:()=>warehouseUi.screen('Cảnh báo tồn thấp','Cảnh báo khi tồn khả dụng thấp hơn ngưỡng theo đơn vị cơ sở. Ngưỡng 0 tắt cảnh báo.',async()=>({data:await apiRequest('stock-alerts'),masters:await apiRequest('stock-alerts/masters')}),(host,{data,masters})=>{
+ const ui=warehouseUi,esc=ui.esc,reload=()=>sprint5Features['Cảnh báo tồn thấp'].render();
+ const low=data.items.filter(r=>r.low),groups=new Map();for(const r of low){groups.set(r.warehouse_name,(groups.get(r.warehouse_name)||0)+1);}
+ host.innerHTML=`<div class="wh-toolbar"><strong>${low.length} sản phẩm cần bổ sung</strong>${data.canManage?'<button class="orange-button" id="thresholdNew">Thiết lập ngưỡng</button>':''}</div><p>${[...groups].map(([name,n])=>`${esc(name)}: ${n} sản phẩm`).join(' · ')||'Các ngưỡng đã thiết lập chưa có sản phẩm tồn thấp.'}</p>${ui.table(['Kho','SKU','Sản phẩm','Đơn vị cơ sở','Tồn thực tế','Giữ chỗ','Khả dụng','Ngưỡng','Cảnh báo',''],data.items.map(r=>`<tr class="${r.low?'wh-low':''}"><td>${esc(r.warehouse_name)}</td><td>${esc(r.sku)}</td><td>${esc(r.name)}</td><td>${esc(r.base_unit)}</td><td>${esc(r.on_hand)}</td><td>${esc(r.reserved)}</td><td>${esc(r.available)}</td><td>${esc(r.minimum_quantity)}</td><td>${r.low?'Cần bổ sung':'Đủ ngưỡng'}</td><td>${data.canManage?`<button data-edit="${r.warehouse_id}-${r.product_id}">Sửa ngưỡng</button>`:''}</td></tr>`))}`;
+ function edit(row){const {form,close}=openFormDialog('Ngưỡng tồn tối thiểu',ui.field('warehouseId','Kho',row?.warehouse_id,'text',true,ui.opts(masters.warehouses))+ui.field('productId','Sản phẩm',row?.product_id,'text',true,masters.products.map(p=>[p.id,`${p.sku} — ${p.name} (${p.base_unit})`]))+ui.field('minimumQuantity','Ngưỡng theo đơn vị cơ sở',row?.minimum_quantity??0,'number'));
+  if(row){form.elements.warehouseId.disabled=true;form.elements.productId.disabled=true;}form.elements.minimumQuantity.min='0';form.elements.minimumQuantity.step='1';
+  form.onsubmit=e=>{e.preventDefault();const wh=Number(form.elements.warehouseId.value),p=Number(form.elements.productId.value);ui.submit(form,`stock-alerts/${wh}/${p}`,'PUT',{minimumQuantity:form.elements.minimumQuantity.value},close,reload);};
+ }
+ host.querySelector('#thresholdNew')?.addEventListener('click',()=>edit());host.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>edit(data.items.find(r=>`${r.warehouse_id}-${r.product_id}`===b.dataset.edit)));
+})};
+</script>

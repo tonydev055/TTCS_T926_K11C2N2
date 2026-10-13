@@ -122,19 +122,23 @@ JOIN price_lists pl ON pl.name = 'Bảng giá bán lẻ 2026' AND pl.version = 1
 ON CONFLICT(price_list_id, product_id) DO UPDATE
 SET price = EXCLUDED.price, floor_price = EXCLUDED.floor_price;
 
+-- Đơn mới luôn bắt đầu ở Nháp (S4-06); đơn mẫu 001 chuyển tiếp sang Chờ duyệt bằng bước hợp lệ.
+-- Chạy lại không ghi đè trạng thái đơn đã xử lý.
 INSERT INTO orders(code, customer_id, price_list_id, status, created_at)
-SELECT 'DH-MAU-001', u.id, pl.id, 'CONFIRMED', CURRENT_TIMESTAMP - INTERVAL '2 days'
+SELECT 'DH-MAU-001', u.id, pl.id, 'DRAFT', CURRENT_TIMESTAMP - INTERVAL '2 days'
 FROM users u
 JOIN price_lists pl ON pl.name = 'Bảng giá đại lý 2026' AND pl.version = 1
 WHERE u.email = 'customer@khoflow.local'
-ON CONFLICT(code) DO UPDATE SET status = EXCLUDED.status;
+ON CONFLICT(code) DO NOTHING;
+
+UPDATE orders SET status = 'PENDING_APPROVAL' WHERE code = 'DH-MAU-001' AND status = 'DRAFT';
 
 INSERT INTO orders(code, customer_id, price_list_id, status, created_at)
 SELECT 'DH-MAU-002', u.id, pl.id, 'DRAFT', CURRENT_TIMESTAMP - INTERVAL '3 hours'
 FROM users u
 JOIN price_lists pl ON pl.name = 'Bảng giá đại lý 2026' AND pl.version = 1
 WHERE u.email = 'customer@khoflow.local'
-ON CONFLICT(code) DO UPDATE SET status = EXCLUDED.status;
+ON CONFLICT(code) DO NOTHING;
 
 INSERT INTO order_lines(order_id, product_id, unit_id, quantity, conversion_factor)
 SELECT o.id, p.id, pu.id, v.quantity, pu.factor

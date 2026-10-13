@@ -53,6 +53,9 @@
   #orderListFeature .ol-banner { margin: 0; padding: 12px 22px; border-bottom: 1px solid #fecdca; background: #fef3f2; color: #912018; font-size: 13px; }
   #orderListFeature .ol-banner.info { border-color: #fedf89; background: #fffaeb; color: #93370d; }
   #orderListFeature .ol-banner strong { display: block; margin-bottom: 2px; }
+  #orderListFeature .ol-banner ul { margin: 4px 0 0; padding-left: 18px; }
+  #orderListFeature .ol-flag { display: inline-block; margin-top: 3px; padding: 1px 7px; border-radius: 999px; background: #fffaeb; color: #b54708; font-size: 11px; font-weight: 700; }
+  #orderListFeature .ol-flag.danger { background: #fef3f2; color: #b42318; }
   #orderListFeature .ol-section { padding: 20px 22px; border-bottom: 1px solid #edf1f5; }
   #orderListFeature .ol-section:last-child { border-bottom: 0; }
   #orderListFeature .ol-section h4 { margin: 0 0 14px; color: #172033; font-size: 15px; }
@@ -73,7 +76,7 @@
   #orderListFeature .ol-timeline li:last-child::before { background: var(--orange); box-shadow: 0 0 0 4px rgba(244, 122, 0, .15); }
   #orderListFeature .ol-timeline strong { color: #172033; font-size: 14px; }
   #orderListFeature .ol-timeline span { display: block; margin-top: 2px; color: #64748b; font-size: 12px; }
-  #orderListFeature .ol-timeline q { display: block; margin-top: 6px; padding: 8px 10px; border-radius: 8px; background: #f8fafc; color: #334155; font-size: 13px; quotes: none; }
+  #orderListFeature .ol-timeline q { display: block; margin-top: 6px; padding: 8px 10px; border-radius: 8px; background: #f8fafc; color: #334155; font-size: 13px; white-space: pre-line; quotes: none; }
   #orderListFeature .ol-steps { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 16px; padding: 0; list-style: none; }
   #orderListFeature .ol-steps li { padding: 4px 10px; border: 1px solid #e5eaf0; border-radius: 999px; color: #94a3b8; font-size: 12px; font-weight: 600; }
   #orderListFeature .ol-steps li.done { border-color: #c7e3d4; background: #ecfdf3; color: #067647; }
@@ -217,6 +220,9 @@ window.orderListFeature = (() => {
         ? `<p class="ol-banner" role="status"><strong>Đơn đã huỷ</strong>Lý do: ${esc(order.cancelReason)} · ${esc(when(order.cancelledAt))}</p>`
         : order.status === 'REJECTED' ? '<p class="ol-banner" role="status"><strong>Đơn bị từ chối</strong>Xem ý kiến người duyệt ở lịch sử xử lý bên dưới.</p>'
         : order.status === 'PENDING_CONFIRM' ? '<p class="ol-banner info" role="status"><strong>Đại lý tự đặt trên cổng</strong>Đơn chờ nhân viên phụ trách xác nhận.</p>' : '';
+      const flags = order.approvalFlags || [];
+      const flagBanner = flags.length && ['PENDING_APPROVAL', 'DRAFT'].includes(order.status)
+        ? `<div class="ol-banner info" role="status"><strong>${order.status === 'DRAFT' ? 'Lần gửi trước cần duyệt vì' : 'Đơn cần quản lý kinh doanh duyệt vì'}</strong><ul>${flags.map((f) => `<li>${esc(f.message)}</li>`).join('')}</ul></div>` : '';
       host.innerHTML = `<div class="ol-detail-head">
           <div><h3>${esc(order.code)} ${statusChip(order.status, order.statusLabel)}</h3>
             <p>${esc(order.customerName)}${order.customerCode ? ` · ${esc(order.customerCode)}` : ''} · Tạo lúc ${esc(when(order.createdAt))}${order.createdByName ? ` bởi ${esc(order.createdByName)}` : ''}</p></div>
@@ -224,7 +230,7 @@ window.orderListFeature = (() => {
             ${a.canCancel ? '<button type="button" class="ol-btn danger" id="olCancel">Huỷ đơn</button>' : ''}
           </div>
         </div>
-        ${banner}
+        ${banner}${flagBanner}
         <div class="ol-section">${stepper(order)}
           <dl class="ol-grid">
             <div><dt>Đại lý</dt><dd>${esc(order.customerName || '—')}</dd></div>
@@ -240,7 +246,7 @@ window.orderListFeature = (() => {
           </tr></thead><tbody>${order.lines.map((l) => `<tr>
             <td><strong>${esc(l.name)}</strong><small>${esc(l.sku)}</small></td>
             <td class="num">${esc(qty(l.quantity))} ${esc(l.unitName)}</td>
-            <td class="num">${esc(money(l.unitPrice))}</td>
+            <td class="num">${esc(money(l.unitPrice))}${l.priceOverridden ? `<small>Giá sửa tay · bảng giá ${esc(money(l.listPrice))}</small>${Number(l.unitPrice) < Number(l.floorPrice) ? `<span class="ol-flag danger">Dưới giá sàn ${esc(money(l.floorPrice))}</span>` : ''}` : ''}</td>
             <td class="num">${esc(money(l.subtotal))}</td>
             <td class="num">${Number(l.discount) > 0 ? '−' + esc(money(l.discount)) : '—'}</td>
             <td class="num"><strong>${esc(money(l.payable))}</strong></td></tr>`).join('')}</tbody></table></div>

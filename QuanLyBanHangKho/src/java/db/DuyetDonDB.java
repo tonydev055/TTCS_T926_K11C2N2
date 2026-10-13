@@ -107,6 +107,7 @@ public class DuyetDonDB extends CoSoDB {
                 if (!TrangThaiDonHang.PENDING_APPROVAL.equals(order.get("status")))
                     throw new IllegalArgumentException("Đơn " + order.get("code") + " đang ở trạng thái " +
                         TrangThaiDonHang.label(order.get("status")) + ", không còn chờ duyệt");
+                TruyVanDB.one(c, "SELECT id FROM customers WHERE id=? FOR UPDATE", order.get("agent_id"));
                 var credit = TruyVanDB.one(c, "SELECT outstanding, credit_limit FROM customer_credit_status WHERE customer_id=?",
                     order.get("agent_id"));
                 var name = TruyVanDB.one(c, "SELECT full_name FROM users WHERE id=?", actor);

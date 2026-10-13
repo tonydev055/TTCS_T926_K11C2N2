@@ -241,6 +241,28 @@ public class DonHangNhapDB extends CoSoDB {
      * Không có lý do cần duyệt: hệ thống tự duyệt. Có: Chờ duyệt, lưu lý do để quản lý xem. Trả về trạng thái mới.
      */
     public static String submit(Connection c, long id, long actor, List<Map<String, Object>> flags, String who) throws SQLException {
+        // Khoá đại lý trước khi đọc lại công nợ: báo giá trước giao dịch có thể đã cũ
+        // khi một đơn khác vừa được duyệt. Mọi kênh gửi đơn dùng cùng chốt kiểm tra.
+        var order = TruyVanDB.one(c, "SELECT agent_id, payable FROM orders WHERE id=? FOR UPDATE", id);
+        if (order == null) throw new NoSuchElementException("Không tìm thấy đơn hàng");
+        TruyVanDB.one(c, "SELECT id FROM customers WHERE id=? FOR UPDATE", order.get("agent_id"));
+        var credit = TruyVanDB.one(c,
+            "SELECT outstanding, credit_limit FROM customer_credit_status WHERE customer_id=?", order.get("agent_id"));
+        BigDecimal payable = (BigDecimal) order.get("payable");
+        BigDecimal limit = (BigDecimal) credit.get("credit_limit");
+        BigDecimal after = ((BigDecimal) credit.get("outstanding")).add(payable);
+        flags = new ArrayList<>(flags);
+        flags.removeIf(flag -> "OVER_CREDIT".equals(flag.get("code")));
+        if (payable.signum() > 0 && after.compareTo(limit) > 0) {
+            Map<String, Object> flag = new LinkedHashMap<>();
+            flag.put("code", "OVER_CREDIT");
+            flag.put("message", "Vượt hạn mức công nợ " + service.TaoDonHangService.tien(after.subtract(limit)) +
+                ": công nợ hiện tại " + service.TaoDonHangService.tien((BigDecimal) credit.get("outstanding")) +
+                " + đơn này " + service.TaoDonHangService.tien(payable) + ", hạn mức " +
+                service.TaoDonHangService.tien(limit));
+            flags.add(flag);
+        }
+
         String status = flags.isEmpty() ? service.TrangThaiDonHang.APPROVED : service.TrangThaiDonHang.PENDING_APPROVAL;
         StringBuilder reason = new StringBuilder(who);
         if (flags.isEmpty()) reason.append(". Tự động duyệt: không có vi phạm cần duyệt");

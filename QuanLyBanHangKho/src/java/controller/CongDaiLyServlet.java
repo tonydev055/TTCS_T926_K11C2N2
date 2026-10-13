@@ -45,6 +45,8 @@ public class CongDaiLyServlet extends DonHangServlet {
             Map<String, Object> in = XuLyJson.object(body(q));
             if (p.equals("/quote")) ok(r, XuLyJson.stringify(portal.tinhTien(uid, in.get("lines"))));
             else if (p.equals("/orders")) created(r, XuLyJson.stringify(portal.guiDon(uid, in)));
+            else if(p.matches("/orders/\\d+/reorder"))
+                ok(r,XuLyJson.stringify(portal.datLai(uid,parseId(p.split("/")[2]),in.get("lineIds"))));
             else if (p.matches("/orders/\\d+/cancel"))
                 ok(r, XuLyJson.stringify(portal.huy(uid, parseId(p.split("/")[2]), in.get("reason"))));
             else throw new NoSuchElementException("Không tìm thấy chức năng");

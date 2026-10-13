@@ -159,6 +159,35 @@ public class CongDaiLyService {
         return db.order(customerId, id);
     }
 
+    /** S5-02: POST /portal/orders/{id}/reorder {lineIds?}; trả giỏ mới, không tự gửi đơn. */
+    public Map<String,Object> datLai(long userId,long sourceId,Object rawIds)throws SQLException{
+        long customerId=id(customer(userId));var source=db.order(customerId,sourceId);
+        if(source==null)throw new NoSuchElementException("Không tìm thấy đơn của đại lý");
+        if(!Set.of("DELIVERED","CLOSED").contains(source.get("status")))throw new IllegalArgumentException("Chỉ đặt lại đơn đã giao hoặc đã đóng");
+        Long priceListId=orders.currentPriceListId(customerId);
+        if(priceListId==null)throw new IllegalArgumentException("Đại lý chưa có bảng giá hiện hành");
+        Set<Long> selected=null;
+        if(rawIds!=null){
+            if(!(rawIds instanceof List<?> ids)||ids.isEmpty()||ids.size()>200)throw new IllegalArgumentException("Vui lòng chọn ít nhất một dòng hàng");
+            selected=new HashSet<>();for(Object value:ids)selected.add(ChinhSachChietKhauService.positiveId(value));
+        }
+        @SuppressWarnings("unchecked") var oldLines=(List<Map<String,Object>>)source.get("lines");
+        Set<Long> existing=new HashSet<>();for(var l:oldLines)existing.add(((Number)l.get("id")).longValue());
+        if(selected!=null&&!existing.containsAll(selected))throw new IllegalArgumentException("Dòng hàng không thuộc đơn đã chọn");
+        List<Map<String,Object>> cart=new ArrayList<>(),skipped=new ArrayList<>();
+        for(var old:oldLines){
+            if(selected!=null&&!selected.contains(((Number)old.get("id")).longValue()))continue;
+            long product=((Number)old.get("productId")).longValue();
+            var candidates=orders.products(String.valueOf(old.get("sku")),priceListId);
+            Map<String,Object> p=candidates.stream().filter(x->((Number)x.get("id")).longValue()==product&&Boolean.TRUE.equals(x.get("priced"))).findFirst().orElse(null);
+            var unitRows=new db.CoSoDB().query("SELECT u.id,u.name,u.factor FROM order_lines l JOIN product_units u ON u.id=l.unit_id AND u.active WHERE l.id=?",old.get("id"));
+            if(p==null||unitRows.isEmpty()){skipped.add(Map.of("sku",old.get("sku"),"reason","Sản phẩm đã ngừng bán, chưa có giá hiện hành hoặc đơn vị đã ngừng dùng"));continue;}
+            var row=new LinkedHashMap<String,Object>();row.put("productId",product);row.put("unitId",unitRows.get(0).get("id"));row.put("quantity",old.get("quantity"));row.put("name",p.get("name"));row.put("sku",p.get("sku"));row.put("units",p.get("units"));cart.add(row);
+        }
+        if(cart.isEmpty())throw new IllegalArgumentException("Không còn dòng hàng nào có thể đặt lại theo bảng giá hiện hành");
+        return Map.of("lines",cart,"skipped",skipped,"sourceCode",source.get("code"),"quote",anToan(pricing.tinhTienDaiLy(customerId,cart,false)));
+    }
+
     public List<Map<String, Object>> donCuaToi(long userId) throws SQLException {
         return db.orders(id(customer(userId)));
     }

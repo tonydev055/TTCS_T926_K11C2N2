@@ -390,9 +390,19 @@ window.dealerPortalFeature = (() => {
           <table class="dp-detail-lines"><tbody>${o.lines.map((l) => `<tr><td>${esc(l.name)}<small>${esc(num(l.quantity))} ${esc(l.unitName)} × ${esc(money(l.unitPrice))}${Number(l.discount) > 0 ? ` · CK −${esc(money(l.discount))}` : ''}</small><small>${l.deliveredQuantity == null ? 'Thực giao: chưa ghi nhận' : `Thực giao: ${esc(num(l.deliveredQuantity))} ${esc(l.unitName)}${l.deliveryShort ? ' · Giao thiếu' : ''}`}</small></td><td>${esc(money(l.payable))}</td></tr>`).join('')}
             <tr><td><strong>Phải thu</strong></td><td><strong>${esc(money(o.payable))}</strong></td></tr></tbody></table></div>
         <div class="dp-section"><h3>Tiến trình</h3><ol class="dp-timeline">${o.history.map((h) => `<li>${esc(h.toLabel)}<small>${esc(when(h.changedAt))}${h.reason ? ' · ' + esc(h.reason) : ''}</small></li>`).join('')}</ol>
+          ${['DELIVERED','CLOSED'].includes(o.status) ? '<button type="button" class="dp-btn primary" id="dpReorder">Đặt lại đơn này</button>' : ''}
           ${o.canCancel ? '<button type="button" class="dp-btn danger" id="dpCancel">Huỷ đơn</button>' : ''}</div>
       </div>`;
       document.getElementById('dpBack').onclick = () => renderMine(revision);
+      document.getElementById('dpReorder')?.addEventListener('click',()=>{
+        const {form,close}=openFormDialog(`Đặt lại ${o.code}`,`<p class="s2-hint">Chọn các dòng muốn đặt lại. Giá được tính theo bảng giá hiện hành; bạn có thể sửa số lượng trong giỏ mới.</p>${o.lines.map(l=>`<div class="form-group full"><label><input type="checkbox" name="lineIds" value="${esc(l.id)}" checked> ${esc(l.sku)} · ${esc(l.name)} · ${esc(num(l.quantity))} ${esc(l.unitName)}</label></div>`).join('')}`,'Đưa vào giỏ');
+        form.onsubmit=async event=>{event.preventDefault();const ids=new FormData(form).getAll('lineIds').map(Number);if(!ids.length){form.querySelector('#s2FormError').textContent='Vui lòng chọn ít nhất một dòng hàng.';return;}
+          if(cart.length&&!confirm('Giỏ đang có hàng. Thay giỏ bằng các dòng đã chọn?'))return;
+          const b=form.querySelector('[type=submit]');if(b.disabled)return;b.disabled=true;
+          try{const result=await apiRequest(`portal/orders/${o.id}/reorder`,jsonRequestOptions('POST',{lineIds:ids}));if(!alive(revision)){close();return;}cart=result.lines.map(l=>({...l,quantity:Number(l.quantity)}));quote=null;++quoteSeq;clearTimeout(quoteTimer);close();tab='order';shell(revision);showToast(result.skipped.length?`Đã đưa vào giỏ. Bỏ qua: ${result.skipped.map(l=>l.sku+' ('+l.reason+')').join('; ')}`:'Đã đưa đơn cũ vào giỏ, áp giá hiện hành.');}
+          catch(e){if(form.isConnected)form.querySelector('#s2FormError').textContent=e.message;}finally{if(b.isConnected)b.disabled=false;}
+        };
+      });
       document.getElementById('dpCancel')?.addEventListener('click', () => {
         const { form, close } = openFormDialog(`Huỷ đơn ${o.code}`,
           '<div class="form-group full"><label>Lý do huỷ *<textarea name="reason" maxlength="500" required placeholder="Ví dụ: đặt nhầm số lượng"></textarea></label></div><p class="s2-hint" style="grid-column:1/-1">Chỉ huỷ được khi nhân viên chưa xác nhận đơn.</p>', 'Huỷ đơn');

@@ -72,6 +72,13 @@ public class PhieuNhapKhoService {
             long wh=((Number)r.get("warehouse_id")).longValue();KhoService.access(c,wh,user,roles);KhoService.actor(c,user);
             if(!"DRAFT".equals(r.get("status")))throw new IllegalArgumentException("Phiếu đã xác nhận");
             var ls=TruyVanDB.rows(c,"SELECT * FROM stock_receipt_lines WHERE receipt_id=? ORDER BY product_id,id",id);if(ls.isEmpty())throw new IllegalArgumentException("Phiếu không có hàng");
+            // Dữ liệu danh mục có thể đổi trong thời gian phiếu còn nháp.
+            for(var l:ls){
+                var product=TruyVanDB.one(c,"SELECT lot_managed FROM products WHERE id=? AND active FOR SHARE",l.get("product_id"));
+                if(product==null)throw new IllegalArgumentException("Sản phẩm của phiếu đã ngừng hoạt động");
+                if(TruyVanDB.one(c,"SELECT id FROM warehouse_locations WHERE id=? AND warehouse_id=? AND active FOR SHARE",l.get("location_id"),wh)==null)throw new IllegalArgumentException("Vị trí của phiếu không còn hoạt động trong kho nhập");
+                if(Boolean.TRUE.equals(product.get("lot_managed"))&&(Objects.toString(l.get("lot_number"),"").isBlank()||l.get("expiry_date")==null))throw new IllegalArgumentException("Sản phẩm đã chuyển sang quản lý lô; sửa nháp để bổ sung số lô và hạn sử dụng");
+            }
             for(var l:ls){long product=((Number)l.get("product_id")).longValue();StockLedgerDB.lockStock(c,wh,product);long bin=StockLedgerDB.bin(c,wh,product,l.get("location_id"),String.valueOf(l.get("lot_number")),l.get("expiry_date"));
                 StockLedgerDB.change(c,wh,product,bin,((BigDecimal)l.get("base_quantity")).multiply(new BigDecimal(r.get("direction").toString())),"RECEIPT",id,TruyVanDB.id(l),user,String.valueOf(r.get("note")));}
             TruyVanDB.update(c,"UPDATE stock_receipts SET status='POSTED',posted_at=CURRENT_TIMESTAMP WHERE id=?",id);c.commit();

@@ -1,41 +1,17 @@
 package controller;
-
-import db.TonKhoDB;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-import java.io.*;
-
+import java.io.IOException;
+import java.util.*;
+import service.TonKhoService;
+/** S5-05: GET /api/inventory?q=&warehouseId=&categoryId=&state=&page=&pageSize=; /masters; /ledger?warehouseId=&productId=. Không ghi/xoá tồn trực tiếp. */
 @WebServlet("/api/inventory/*")
-public class TonKhoServlet extends CoSoServlet {
-
-    private final TonKhoDB db = new TonKhoDB();
-
-    protected void doGet(HttpServletRequest q, HttpServletResponse r) throws IOException {
-        try {
-            String p = q.getPathInfo();
-            if (p == null || p.equals("/")) {
-                ok(r, jsonRows(db.findAll()));
-                return;
-            }
-            long id = Long.parseLong(p.substring(1));
-            var row = db.findById(id);
-            if (row == null) {
-                error(r, 404, "Không tìm thấy dữ liệu");
-                return;
-            }
-            ok(r, jsonRows(java.util.List.of(row)));
-        } catch (Exception e) {
-            error(r, 500, e.getMessage());
-        }
-    }
-
-    protected void doDelete(HttpServletRequest q, HttpServletResponse r) throws IOException {
-        try {
-            long id = Long.parseLong(q.getPathInfo().substring(1));
-            db.delete(id);
-            ok(r, "{\"deleted\":true}");
-        } catch (Exception e) {
-            error(r, 400, e.getMessage());
-        }
-    }
+public class TonKhoServlet extends NghiepVuKhoServlet {
+    private final TonKhoService service=new TonKhoService();
+    protected void doGet(HttpServletRequest q,HttpServletResponse r)throws IOException{try{
+        if(path(q).equals("/masters"))send(r,service.masters(user(q),roles(q)));
+        else if(path(q).equals("/ledger"))send(r,service.ledger(id(q.getParameter("warehouseId")),id(q.getParameter("productId")),user(q),roles(q)));
+        else if(path(q).equals("/")){Map<String,String> filters=new HashMap<>();for(String key:List.of("q","warehouseId","categoryId","state","page","pageSize"))filters.put(key,q.getParameter(key));send(r,service.list(user(q),roles(q),filters));}
+        else throw new NoSuchElementException("Không tìm thấy chức năng");
+    }catch(Exception e){fail(r,e);}}
 }

@@ -96,6 +96,9 @@ public final class PhanQuyen {
     /** Quyền gộp cho /api/customers, không lưu trong ma trận. */
     public static final String CUSTOMERS_ACCESS = "customers.access";
 
+    /** Quyền gộp cho /api/orders: xem mọi đơn (orders.read) hoặc đơn của đại lý mình phụ trách (orders.own). */
+    public static final String ORDERS_ACCESS = "orders.access";
+
     private static final Set<String> KNOWN_PERMISSIONS;
     private static volatile Map<String, Set<String>> configuredPermissions;
 
@@ -117,6 +120,9 @@ public final class PhanQuyen {
         // Phạm vi bản ghi và thao tác ghi được kiểm tra tiếp trong KhachHangService.
         if (permission.equals(CUSTOMERS_ACCESS)) return
             allows(roles, "customers.read") || allows(roles, "customers.assigned");
+        // Phạm vi bản ghi của đơn hàng được kiểm tra tiếp trong DonHangService.
+        if (permission.equals(ORDERS_ACCESS)) return
+            allows(roles, "orders.read") || allows(roles, "orders.own");
         Map<String, Set<String>> matrix = effectivePermissions();
         for (String role : roles)
             if (matrix.getOrDefault(role, Set.of()).contains(permission)) return true;
@@ -277,10 +283,13 @@ public final class PhanQuyen {
         if (under(path, "/api/sales-orders")) return "orders.own";
         if (under(path, "/api/delivery-points")) return "customers.assigned";
         if (under(path, "/api/customers")) return CUSTOMERS_ACCESS;
-        if (under(path, "/api/orders")) return "orders.read";
+        if (under(path, "/api/order-approvals")) return "orders.approve";
+        if (under(path, "/api/orders")) return ORDERS_ACCESS;
         if (under(path, "/api/invoices")) return "invoices.write";
         if (under(path, "/api/payments")) return "payments.write";
         if (under(path, "/api/returns")) return "returns.self";
+        // S4-10: cổng đặt hàng của đại lý; phạm vi luôn là đại lý gắn với tài khoản (CongDaiLyService).
+        if (under(path, "/api/portal")) return "orders.self";
         return null;
     }
 

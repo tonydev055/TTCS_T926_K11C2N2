@@ -41,22 +41,62 @@ public class DonHangNhapDB extends CoSoDB {
         return rows.isEmpty() ? null : ((Number) rows.get(0).get("id")).longValue();
     }
 
-    /** Sản phẩm có giá trong bảng giá, kèm các đơn vị tính đang dùng. Giá (price) tính theo đơn vị cơ bản. */
+    /**
+     * Sản phẩm đang kinh doanh khớp từ khoá, kèm các đơn vị tính đang dùng. Giá (price) và giá sàn tính theo đơn vị cơ bản.
+     * S4-01: trả cả sản phẩm chưa có giá trong bảng giá (priced=false) để giao diện báo rõ lý do không thêm được.
+     */
     public List<Map<String, Object>> products(String q, long priceListId) throws SQLException {
         String k = like(q);
         var rows = query(
-            "SELECT p.id, p.sku, p.name, p.base_unit AS \"baseUnit\", pll.price " +
-            "FROM products p JOIN price_list_lines pll ON pll.product_id=p.id AND pll.price_list_id=? " +
+            "SELECT p.id, p.sku, p.name, p.base_unit AS \"baseUnit\", pll.price, pll.floor_price AS \"floorPrice\", " +
+            "(pll.id IS NOT NULL) AS priced " +
+            "FROM products p LEFT JOIN price_list_lines pll ON pll.product_id=p.id AND pll.price_list_id=? " +
             "WHERE p.active AND (p.sku ILIKE ? ESCAPE '\\' OR p.name ILIKE ? ESCAPE '\\') " +
-            "ORDER BY p.sku LIMIT 20", priceListId, k, k);
+            "ORDER BY (pll.id IS NULL), p.sku LIMIT 20", priceListId, k, k);
         attachUnits(rows, "id");
         return rows;
+    }
+
+    /**
+     * Công nợ của đại lý (S4-02) từ view customer_credit_status. blocked=true khi có khoản quá hạn:
+     * khi đó không được tạo đơn mới hay gửi đơn.
+     */
+    public Map<String, Object> creditStatus(long customerId) throws SQLException {
+        var rows = query(
+            "SELECT c.code, s.credit_limit, s.credit_days, s.outstanding, s.available, s.overdue_amount, " +
+            "s.overdue_orders, s.max_overdue_days FROM customer_credit_status s JOIN customers c ON c.id=s.customer_id " +
+            "WHERE s.customer_id=?", customerId);
+        if (rows.isEmpty()) throw new NoSuchElementException("Không tìm thấy đại lý");
+        var r = rows.get(0);
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("creditLimit", r.get("credit_limit"));
+        out.put("creditDays", r.get("credit_days"));
+        out.put("outstanding", r.get("outstanding"));
+        out.put("available", r.get("available"));
+        out.put("overdueAmount", r.get("overdue_amount"));
+        out.put("overdueOrders", r.get("overdue_orders"));
+        out.put("maxOverdueDays", r.get("max_overdue_days"));
+        boolean blocked = ((Number) r.get("overdue_orders")).intValue() > 0;
+        out.put("blocked", blocked);
+        out.put("blockReason", blocked
+            ? "Đại lý " + r.get("code") + " có " + r.get("overdue_orders") + " đơn nợ quá hạn (quá " + r.get("max_overdue_days") +
+              " ngày so với " + r.get("credit_days") + " ngày được nợ, tổng " +
+              service.TaoDonHangService.tien((java.math.BigDecimal) r.get("overdue_amount")) +
+              "). Không thể tạo hoặc gửi đơn mới cho tới khi thu hồi công nợ"
+            : "");
+        return out;
+    }
+
+    /** Tên hiển thị "SKU — Tên" của sản phẩm để báo lỗi; null nếu không có. */
+    public String productName(long productId) throws SQLException {
+        var rows = query("SELECT sku || ' — ' || name AS n FROM products WHERE id=?", productId);
+        return rows.isEmpty() ? null : (String) rows.get(0).get("n");
     }
 
     /** Thông tin một dòng: sản phẩm + giá cơ bản trong bảng giá + đơn vị tính chọn. Null nếu không hợp lệ. */
     public Map<String, Object> lineInfo(long priceListId, long productId, long unitId) throws SQLException {
         var rows = query(
-            "SELECT p.id, p.sku, p.name, p.category_id, pll.price, u.id AS unit_id, u.name AS unit_name, u.factor " +
+            "SELECT p.id, p.sku, p.name, p.category_id, pll.price, pll.floor_price, u.id AS unit_id, u.name AS unit_name, u.factor " +
             "FROM products p " +
             "JOIN price_list_lines pll ON pll.product_id=p.id AND pll.price_list_id=? " +
             "JOIN product_units u ON u.product_id=p.id AND u.id=? AND u.active " +
@@ -83,10 +123,14 @@ public class DonHangNhapDB extends CoSoDB {
         }
     }
 
-    /** Tạo mới (orderId == null) hoặc cập nhật đơn nháp của chính người dùng. Trả về id đơn. */
+    /**
+     * Tạo mới (orderId == null) hoặc cập nhật đơn nháp của chính người dùng. Trả về id đơn.
+     * flags != null nghĩa là gửi đơn: không có lý do cần duyệt thì hệ thống tự duyệt, ngược lại chuyển Chờ duyệt.
+     */
     public long saveDraft(Long orderId, long userId, long customerId, long priceListId, Long pointId, String address,
                           LocalDate desiredDate, String note, BigDecimal subtotal, BigDecimal discount,
-                          BigDecimal payable, List<Map<String, Object>> lines, boolean complete) throws SQLException {
+                          BigDecimal payable, List<Map<String, Object>> lines, List<Map<String, Object>> flags) throws SQLException {
+        boolean complete = flags != null;
         try (Connection c = KetNoiDB.getConnection()) {
             c.setAutoCommit(false);
             try {
@@ -160,7 +204,8 @@ public class DonHangNhapDB extends CoSoDB {
                 }
                 try (PreparedStatement p = c.prepareStatement(
                         "INSERT INTO order_lines(order_id,product_id,unit_id,quantity,conversion_factor," +
-                        "base_price,discount_amount,line_total,policy_id) VALUES(?,?,?,?,?,?,?,?,?)")) {
+                        "base_price,discount_amount,line_total,policy_id,list_price,floor_price,price_overridden) " +
+                        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)")) {
                     for (var l : lines) {
                         p.setLong(1, id);
                         p.setLong(2, ((Number) l.get("productId")).longValue());
@@ -171,18 +216,154 @@ public class DonHangNhapDB extends CoSoDB {
                         p.setBigDecimal(7, (BigDecimal) l.get("discount"));
                         p.setBigDecimal(8, (BigDecimal) l.get("payable"));
                         p.setObject(9, l.get("policyId"), Types.BIGINT);
+                        p.setBigDecimal(10, (BigDecimal) l.get("listBasePrice"));
+                        p.setBigDecimal(11, (BigDecimal) l.get("floorBasePrice"));
+                        p.setBoolean(12, Boolean.TRUE.equals(l.get("priceOverridden")));
                         p.addBatch();
                     }
                     p.executeBatch();
                 }
-                if (complete) TruyVanDB.update(c, "UPDATE orders SET status='COMPLETED',updated_at=CURRENT_TIMESTAMP WHERE id=?", id);
+                if (complete) submit(c, id, userId, flags, "Nhân viên gửi đơn");
                 c.commit();
                 return id;
-            } catch (SQLException | RuntimeException e) {
+            } catch (SQLException e) {
+                c.rollback();
+                throw service.TrangThaiDonHang.rethrow(e);
+            } catch (RuntimeException e) {
                 c.rollback();
                 throw e;
             }
         }
+    }
+
+    /**
+     * Chuyển đơn đang ở Nháp/Chờ xác nhận sang bước duyệt trong giao dịch c (S4-01, S4-06).
+     * Không có lý do cần duyệt: hệ thống tự duyệt. Có: Chờ duyệt, lưu lý do để quản lý xem. Trả về trạng thái mới.
+     */
+    public static String submit(Connection c, long id, long actor, List<Map<String, Object>> flags, String who) throws SQLException {
+        String status = flags.isEmpty() ? service.TrangThaiDonHang.APPROVED : service.TrangThaiDonHang.PENDING_APPROVAL;
+        StringBuilder reason = new StringBuilder(who);
+        if (flags.isEmpty()) reason.append(". Tự động duyệt: không có vi phạm cần duyệt");
+        else {
+            reason.append(". Cần duyệt:");
+            for (var f : flags) reason.append("\n• ").append(f.get("message"));
+        }
+        service.TrangThaiDonHang.setContext(c, actor, reason.toString());
+        beforeApprove(c, id, status);
+        TruyVanDB.update(c, "UPDATE orders SET status=?, approval_flags=?::jsonb WHERE id=?",
+            status, util.XuLyJson.stringify(flags), id);
+        return status;
+    }
+
+    /**
+     * Trong cùng giao dịch, trước khi đơn chuyển trạng thái khi gửi: chốt kho phục vụ của đại lý vào đơn (S4-03)
+     * và nếu đơn được duyệt ngay thì giữ chỗ tồn (thiếu tồn thì cả giao dịch huỷ, đơn vẫn là nháp).
+     */
+    static void beforeApprove(Connection c, long id, String status) throws SQLException {
+        TruyVanDB.update(c, "UPDATE orders o SET warehouse_id=k.warehouse_id FROM customers k WHERE k.id=o.agent_id AND o.id=?", id);
+        if (service.TrangThaiDonHang.APPROVED.equals(status)) GiuChoTonDB.reserve(c, id);
+    }
+
+    /**
+     * S4-10: nhân viên phụ trách xác nhận đơn đại lý tự đặt, trong một giao dịch. Vượt hạn mức thì chuyển Chờ duyệt
+     * (OVER_CREDIT); không vi phạm thì tự duyệt và giữ chỗ tồn. Đại lý có nợ quá hạn bị trigger chặn.
+     */
+    public String confirmPortalOrder(long id, long userId) throws SQLException {
+        try (Connection c = KetNoiDB.getConnection()) {
+            c.setAutoCommit(false);
+            try {
+                var row = TruyVanDB.one(c, "SELECT o.code, o.status, o.payable, o.agent_id FROM orders o JOIN customers k " +
+                    "ON k.id=o.agent_id WHERE o.id=? AND k.sales_rep_id=? FOR UPDATE OF o", id, userId);
+                if (row == null) throw new NoSuchElementException("Không tìm thấy đơn hàng");
+                if (!service.TrangThaiDonHang.PENDING_CONFIRM.equals(row.get("status")))
+                    throw new IllegalArgumentException("Đơn " + row.get("code") + " không ở trạng thái Chờ nhân viên xác nhận");
+                var credit = TruyVanDB.one(c, "SELECT outstanding, credit_limit FROM customer_credit_status WHERE customer_id=?",
+                    row.get("agent_id"));
+                BigDecimal payable = (BigDecimal) row.get("payable");
+                BigDecimal outstanding = (BigDecimal) credit.get("outstanding"), limit = (BigDecimal) credit.get("credit_limit");
+                BigDecimal after = outstanding.add(payable);
+                List<Map<String, Object>> flags = new ArrayList<>();
+                if (payable.signum() > 0 && after.compareTo(limit) > 0) {
+                    Map<String, Object> f = new LinkedHashMap<>();
+                    f.put("code", "OVER_CREDIT");
+                    f.put("message", limit.signum() == 0
+                        ? "Đại lý không được nợ (hạn mức 0 đ): đơn " + service.TaoDonHangService.tien(payable) + " cần duyệt"
+                        : "Vượt hạn mức công nợ " + service.TaoDonHangService.tien(after.subtract(limit)) + ": công nợ hiện tại " +
+                          service.TaoDonHangService.tien(outstanding) + " + đơn này " + service.TaoDonHangService.tien(payable) +
+                          " = " + service.TaoDonHangService.tien(after) + ", hạn mức " + service.TaoDonHangService.tien(limit));
+                    flags.add(f);
+                }
+                String status = submit(c, id, userId, flags, "Nhân viên xác nhận đơn đại lý tự đặt");
+                c.commit();
+                return status;
+            } catch (SQLException e) {
+                c.rollback();
+                throw service.TrangThaiDonHang.rethrow(e);
+            } catch (RuntimeException e) {
+                c.rollback();
+                throw e;
+            }
+        }
+    }
+
+    /** Trạng thái được tính là "đã mua": đơn đã duyệt trở đi, không tính nháp, chờ duyệt, từ chối, huỷ. */
+    static final String PURCHASED = "('APPROVED','PICKING','SHIPPED','DELIVERED','CLOSED')";
+
+    /**
+     * Lịch sử mua 3 tháng gần nhất của đại lý (S4-04): mỗi sản phẩm có số đơn, tổng và bình quân số lượng mỗi đơn
+     * (đơn vị cơ bản), lần mua gần nhất; kèm đơn mua gần nhất để thêm nhanh cả nhóm hàng. priced cho biết sản phẩm
+     * còn giá trong bảng giá hiện hành hay không.
+     */
+    public Map<String, Object> purchaseHistory(long customerId, Long priceListId) throws SQLException {
+        var items = query(
+            "SELECT p.id AS \"productId\", p.sku, p.name, p.base_unit AS \"baseUnit\", p.active, " +
+            "count(DISTINCT o.id) AS orders, trim_scale(sum(l.base_quantity)) AS \"totalQuantity\", " +
+            "trim_scale(round(sum(l.base_quantity) / count(DISTINCT o.id), 2)) AS \"averageQuantity\", " +
+            DonHangDB.iso("max(o.created_at)") + " AS \"lastOrderedAt\", " +
+            "EXISTS (SELECT 1 FROM price_list_lines pll WHERE pll.product_id=p.id AND pll.price_list_id=?) AS priced " +
+            "FROM orders o JOIN order_lines l ON l.order_id=o.id JOIN products p ON p.id=l.product_id " +
+            "WHERE o.agent_id=? AND o.status IN " + PURCHASED + " AND o.created_at >= CURRENT_DATE - INTERVAL '3 months' " +
+            "GROUP BY p.id ORDER BY count(DISTINCT o.id) DESC, sum(l.base_quantity) DESC, p.sku LIMIT 50",
+            priceListId, customerId);
+        attachUnits(items, "productId");
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("months", 3);
+        out.put("items", items);
+        var last = query("SELECT o.id, o.code, " + DonHangDB.iso("o.created_at") + " AS \"createdAt\" FROM orders o " +
+            "WHERE o.agent_id=? AND o.status IN " + PURCHASED + " ORDER BY o.created_at DESC, o.id DESC LIMIT 1", customerId);
+        if (last.isEmpty()) out.put("lastOrder", null);
+        else {
+            Map<String, Object> order = new LinkedHashMap<>(last.get(0));
+            var lines = query(
+                "SELECT l.product_id AS \"productId\", p.sku, p.name, p.base_unit AS \"baseUnit\", l.unit_id AS \"unitId\", " +
+                "trim_scale(l.quantity) AS quantity, (p.active AND u.active AND EXISTS (SELECT 1 FROM price_list_lines pll " +
+                "WHERE pll.product_id=p.id AND pll.price_list_id=?)) AS available " +
+                "FROM order_lines l JOIN products p ON p.id=l.product_id JOIN product_units u ON u.id=l.unit_id " +
+                "WHERE l.order_id=? ORDER BY l.id", priceListId, order.get("id"));
+            attachUnits(lines, "productId");
+            order.put("lines", lines);
+            out.put("lastOrder", order);
+        }
+        return out;
+    }
+
+    /**
+     * Đơn nguồn để sao chép (S4-09): đơn bất kỳ trạng thái của đại lý do nhân viên này phụ trách (nháp thì phải là
+     * của chính người đó). Điểm giao chỉ giữ nếu còn đang dùng. Null nếu không có hoặc ngoài phạm vi.
+     */
+    public Map<String, Object> copySource(long id, long userId) throws SQLException {
+        var rows = query(
+            "SELECT o.id, o.code, o.agent_id AS \"customerId\", o.note, " +
+            "(SELECT a.id FROM customer_addresses a WHERE a.id=o.delivery_address_id AND a.customer_id=o.agent_id AND a.active) " +
+            "AS \"deliveryPointId\" FROM orders o JOIN customers k ON k.id=o.agent_id " +
+            "WHERE o.id=? AND k.sales_rep_id=? AND (o.status<>'DRAFT' OR o.created_by=?)", id, userId, userId);
+        if (rows.isEmpty()) return null;
+        Map<String, Object> order = new LinkedHashMap<>(rows.get(0));
+        order.put("lines", query(
+            "SELECT l.product_id AS \"productId\", l.unit_id AS \"unitId\", trim_scale(l.quantity) AS quantity, " +
+            "p.sku, p.name, p.active AS \"productActive\" FROM order_lines l JOIN products p ON p.id=l.product_id " +
+            "WHERE l.order_id=? ORDER BY l.id", id));
+        return order;
     }
 
     /** Mở lại một đơn nháp của chính người dùng (kèm dòng hàng và các đơn vị tính để sửa tiếp). */
@@ -191,12 +372,21 @@ public class DonHangNhapDB extends CoSoDB {
             "SELECT o.id, o.code, o.status, o.agent_id AS \"customerId\", u.name AS \"customerName\", " +
             "COALESCE(u.phone,'') AS \"customerPhone\", o.delivery_address AS \"deliveryAddress\", o.delivery_address_id AS \"deliveryPointId\", " +
             "u.trading_locked AS \"tradingLocked\", COALESCE(u.lock_reason,'') AS \"lockReason\", " +
-            "o.desired_delivery_date AS \"desiredDate\", o.note, o.subtotal, o.discount_total AS discount, o.payable " +
+            "o.desired_delivery_date AS \"desiredDate\", o.note, o.subtotal, o.discount_total AS discount, o.payable, " +
+            "o.approval_flags::text AS \"approvalFlagsJson\" " +
             "FROM orders o LEFT JOIN customers u ON u.id=o.agent_id WHERE o.id=? AND o.created_by=? AND u.sales_rep_id=?", id, userId, userId);
         if (rows.isEmpty()) return null;
         Map<String, Object> order = new LinkedHashMap<>(rows.get(0));
+        order.put("statusLabel", service.TrangThaiDonHang.label(order.get("status")));
+        order.put("approvalFlags", util.XuLyJson.parse(Objects.toString(order.remove("approvalFlagsJson"), "[]")));
+        // S4-05: nháp bị quản lý trả lại → ý kiến gần nhất để nhân viên biết cần sửa gì.
+        var review = query("SELECT comment, decided_by_name AS \"decidedByName\", " + DonHangDB.iso("decided_at") +
+            " AS \"decidedAt\" FROM order_approvals WHERE order_id=? AND action='RETURN' ORDER BY decided_at DESC, id DESC LIMIT 1", id);
+        order.put("lastReturn", "DRAFT".equals(order.get("status")) && !review.isEmpty() ? review.get(0) : null);
+        // Giá sửa thủ công được trả lại để mở nháp vẫn giữ nguyên; giá bảng giá thì để máy chủ tính lại.
         var lines = query(
-            "SELECT l.product_id AS \"productId\", p.sku, p.name, l.unit_id AS \"unitId\", trim_scale(l.quantity) AS quantity " +
+            "SELECT l.product_id AS \"productId\", p.sku, p.name, l.unit_id AS \"unitId\", trim_scale(l.quantity) AS quantity, " +
+            "CASE WHEN l.price_overridden THEN round(l.base_price*l.conversion_factor,2) END AS \"unitPrice\" " +
             "FROM order_lines l JOIN products p ON p.id=l.product_id WHERE l.order_id=? ORDER BY l.id", id);
         attachUnits(lines, "productId");
         order.put("lines", lines);

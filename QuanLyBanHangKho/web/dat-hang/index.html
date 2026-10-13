@@ -1,0 +1,421 @@
+<!-- Loaded by the application shell: ../index.html -->
+<style>
+  #dealerPortal { display: flex; flex-direction: column; gap: 16px; padding-bottom: 120px; }
+  #dealerPortal .dp-card { border: 1px solid var(--app-border, #e4e9ef); border-radius: 16px; background: #fff; box-shadow: 0 8px 24px rgba(15, 23, 42, .04); }
+  #dealerPortal .dp-hello { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px 20px; padding: 18px 20px; }
+  #dealerPortal .dp-hello h2 { margin: 0 0 4px; color: #172033; font-size: 19px; }
+  #dealerPortal .dp-hello p { margin: 0; color: #64748b; font-size: 13px; }
+  #dealerPortal .dp-credit { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-top: 1px solid #edf1f5; }
+  #dealerPortal .dp-credit div { padding: 12px 20px; }
+  #dealerPortal .dp-credit div + div { border-left: 1px solid #edf1f5; }
+  #dealerPortal .dp-credit dt { color: #7a8699; font-size: 11px; }
+  #dealerPortal .dp-credit dd { margin: 3px 0 0; color: #172033; font-size: 15px; font-weight: 700; }
+  #dealerPortal .dp-credit dd.neg { color: #b42318; }
+  #dealerPortal .dp-banner { margin: 0; padding: 12px 16px; border: 1px solid #fecdca; border-radius: 12px; background: #fef3f2; color: #912018; font-size: 13px; }
+  #dealerPortal .dp-tabs { display: flex; gap: 6px; padding: 4px; border-radius: 12px; background: #eef2f6; }
+  #dealerPortal .dp-tab { flex: 1 1 0; min-height: 42px; border: 0; border-radius: 9px; background: transparent; color: #475569; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  #dealerPortal .dp-tab[aria-selected="true"] { background: #fff; color: #172033; box-shadow: 0 1px 3px rgba(15, 23, 42, .12); }
+  #dealerPortal .dp-tab:focus-visible { outline: 3px solid rgba(244, 122, 0, .3); }
+  #dealerPortal .dp-section { padding: 16px 20px; }
+  #dealerPortal .dp-section + .dp-section { border-top: 1px solid #edf1f5; }
+  #dealerPortal .dp-section h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; color: #172033; font-size: 15px; }
+  #dealerPortal .dp-section h3 small { color: #7a8699; font-size: 12px; font-weight: 500; }
+  #dealerPortal .dp-search { width: 100%; min-height: 46px; padding: 0 14px; border: 1px solid #dce3ea; border-radius: 10px; font: inherit; font-size: 15px; }
+  #dealerPortal .dp-search:focus,
+  #dealerPortal .dp-field select:focus,
+  #dealerPortal .dp-field input:focus,
+  #dealerPortal .dp-field textarea:focus { border-color: var(--orange); outline: 3px solid rgba(244, 122, 0, .13); }
+  #dealerPortal .dp-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; margin: 12px 0 0; padding: 0; list-style: none; }
+  #dealerPortal .dp-product { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid #e5eaf0; border-radius: 12px; }
+  #dealerPortal .dp-product strong { color: #172033; font-size: 14px; }
+  #dealerPortal .dp-product small { display: block; color: #8490a2; font-size: 11px; }
+  #dealerPortal .dp-price { color: var(--orange-dark, #d96500); font-size: 15px; font-weight: 700; }
+  #dealerPortal .dp-row { display: flex; align-items: center; gap: 8px; }
+  #dealerPortal .dp-row select { flex: 1 1 auto; min-width: 0; min-height: 40px; padding: 0 8px; border: 1px solid #dce3ea; border-radius: 9px; background: #fff; font: inherit; font-size: 13px; }
+  #dealerPortal .dp-step { display: inline-flex; align-items: center; overflow: hidden; border: 1px solid #dce3ea; border-radius: 9px; }
+  #dealerPortal .dp-step button { width: 38px; height: 40px; border: 0; background: #f8fafc; color: #334155; font-size: 18px; cursor: pointer; }
+  #dealerPortal .dp-step input { width: 52px; height: 40px; border: 0; border-left: 1px solid #dce3ea; border-right: 1px solid #dce3ea; text-align: center; font: inherit; font-size: 14px; }
+  #dealerPortal .dp-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; padding: 0 16px; border: 1px solid #dce3ea; border-radius: 10px; background: #fff; color: #334155; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  #dealerPortal .dp-btn:hover:not(:disabled) { background: #f8fafc; }
+  #dealerPortal .dp-btn:focus-visible { outline: 3px solid rgba(244, 122, 0, .3); }
+  #dealerPortal .dp-btn.primary { border-color: var(--orange); background: var(--orange); color: #fff; }
+  #dealerPortal .dp-btn.primary:hover:not(:disabled) { background: var(--orange-dark); }
+  #dealerPortal .dp-btn.danger { border-color: #f3c4c0; color: #b42318; }
+  #dealerPortal .dp-btn:disabled { opacity: .5; cursor: not-allowed; }
+  #dealerPortal .dp-btn.block { width: 100%; }
+  #dealerPortal .dp-empty { margin: 0; padding: 22px 12px; border: 1px dashed #d0d8e2; border-radius: 12px; color: #7a8699; text-align: center; font-size: 13px; }
+  #dealerPortal .dp-cart { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+  #dealerPortal .dp-line { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; padding: 12px; border: 1px solid #e5eaf0; border-radius: 12px; }
+  #dealerPortal .dp-line.short { border-color: #fecdca; background: #fffbfa; }
+  #dealerPortal .dp-line strong { color: #172033; font-size: 14px; }
+  #dealerPortal .dp-line small { display: block; margin-top: 2px; color: #8490a2; font-size: 12px; }
+  #dealerPortal .dp-line .amount { text-align: right; }
+  #dealerPortal .dp-line .amount strong { display: block; color: #172033; }
+  #dealerPortal .dp-line .amount small { color: #067647; font-size: 11px; }
+  #dealerPortal .dp-line .controls { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  #dealerPortal .dp-line .remove { margin-left: auto; padding: 0 4px; border: 0; background: none; color: #b42318; font: inherit; font-size: 13px; cursor: pointer; }
+  #dealerPortal .dp-line .warn { grid-column: 1 / -1; margin: 0; color: #b42318; font-size: 12px; }
+  #dealerPortal .dp-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  #dealerPortal .dp-field label { color: #334155; font-size: 13px; font-weight: 600; }
+  #dealerPortal .dp-field select,
+  #dealerPortal .dp-field input,
+  #dealerPortal .dp-field textarea { min-height: 44px; padding: 8px 12px; border: 1px solid #dce3ea; border-radius: 10px; background: #fff; font: inherit; font-size: 15px; }
+  #dealerPortal .dp-bar { position: fixed; z-index: 30; right: 0; bottom: 0; left: var(--dp-bar-left, 0); padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid #e2e8f0; background: rgba(255, 255, 255, .97); box-shadow: 0 -10px 30px rgba(15, 23, 42, .08); }
+  #dealerPortal .dp-bar-in { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; max-width: 980px; margin: 0 auto; }
+  #dealerPortal .dp-total { flex: 1 1 200px; display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0; }
+  #dealerPortal .dp-total dt { color: #7a8699; font-size: 11px; }
+  #dealerPortal .dp-total dd { margin: 0; color: #172033; font-size: 14px; font-weight: 700; }
+  #dealerPortal .dp-total .pay dd { color: var(--orange-dark, #d96500); font-size: 18px; }
+  #dealerPortal .dp-total dd.neg { color: #b42318; }
+  #dealerPortal .dp-bar .dp-btn { flex: 0 0 auto; min-width: 150px; min-height: 46px; }
+  #dealerPortal .dp-orders { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+  #dealerPortal .dp-order { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 14px; border: 1px solid #e5eaf0; border-radius: 12px; background: #fff; font: inherit; text-align: left; cursor: pointer; }
+  #dealerPortal .dp-order:hover { background: #fffaf6; }
+  #dealerPortal .dp-order strong { display: block; color: #172033; }
+  #dealerPortal .dp-order small { color: #7a8699; font-size: 12px; }
+  #dealerPortal .dp-order .right { text-align: right; }
+  #dealerPortal .dp-status { display: inline-block; margin-top: 3px; padding: 2px 8px; border-radius: 999px; background: #f2f4f7; color: #475467; font-size: 11px; font-weight: 700; }
+  #dealerPortal .dp-status.s-PENDING_CONFIRM,
+  #dealerPortal .dp-status.s-PENDING_APPROVAL { background: #fffaeb; color: #b54708; }
+  #dealerPortal .dp-status.s-APPROVED,
+  #dealerPortal .dp-status.s-PICKING { background: #eff8ff; color: #175cd3; }
+  #dealerPortal .dp-status.s-SHIPPED,
+  #dealerPortal .dp-status.s-DELIVERED,
+  #dealerPortal .dp-status.s-CLOSED { background: #ecfdf3; color: #067647; }
+  #dealerPortal .dp-status.s-REJECTED,
+  #dealerPortal .dp-status.s-CANCELLED { background: #fef3f2; color: #b42318; }
+  #dealerPortal .dp-detail-lines { width: 100%; border-collapse: collapse; font-size: 13px; }
+  #dealerPortal .dp-detail-lines td { padding: 8px 0; border-bottom: 1px solid #edf1f5; vertical-align: top; }
+  #dealerPortal .dp-detail-lines td:last-child { text-align: right; white-space: nowrap; }
+  #dealerPortal .dp-detail-lines small { display: block; color: #8490a2; }
+  #dealerPortal .dp-timeline { margin: 0; padding-left: 18px; color: #334155; font-size: 13px; }
+  #dealerPortal .dp-timeline li { margin-bottom: 8px; }
+  #dealerPortal .dp-timeline small { display: block; color: #7a8699; }
+  @media (max-width: 720px) {
+    #dealerPortal .dp-hello,
+    #dealerPortal .dp-section { padding: 14px 16px; }
+    #dealerPortal .dp-credit div { padding: 10px 12px; }
+    #dealerPortal .dp-credit dd { font-size: 13px; }
+    #dealerPortal .dp-products { grid-template-columns: minmax(0, 1fr); }
+    #dealerPortal .dp-product { min-width: 0; }
+    #dealerPortal .dp-row { flex-wrap: wrap; }
+    #dealerPortal .dp-row select { flex: 1 1 120px; }
+    #dealerPortal .dp-row .dp-step { flex: 0 0 auto; }
+    #dealerPortal .dp-bar .dp-btn { flex: 1 1 100%; }
+  }
+  @media (min-width: 1025px) { #dealerPortal { --dp-bar-left: 272px; } }
+</style>
+<script>
+window.dealerPortalFeature = (() => {
+  let generation = 0;
+  let me = null;
+  let products = [];
+  let cart = [];
+  let quote = null;
+  let quoteSeq = 0;
+  let quoteTimer = null;
+  let submitting = false;
+  let tab = 'order';
+
+  const esc = (value) => escapeHtml(value == null ? '' : String(value));
+  const money = (value) => value == null ? '—' : `${Number(value).toLocaleString('vi-VN', { maximumFractionDigits: 2 })} đ`;
+  const num = (value) => Number(value).toLocaleString('vi-VN', { maximumFractionDigits: 6 });
+  const when = (value) => value ? new Date(value).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+  const alive = (revision) => revision === generation && !!document.getElementById('dealerPortal');
+  const today = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
+  async function render() {
+    const revision = ++generation;
+    ++quoteSeq;
+    clearTimeout(quoteTimer);
+    submitting = false;
+    cart = [];
+    quote = null;
+    tab = 'order';
+    moduleContent.innerHTML = '<section id="dealerPortal"><div class="dp-card dp-hello"><div><h2>Đang tải…</h2></div></div></section>';
+    try {
+      me = await apiRequest('portal/me');
+      if (!alive(revision)) return;
+      shell(revision);
+    } catch (error) {
+      if (alive(revision)) document.getElementById('dealerPortal').innerHTML = `<p class="dp-banner" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  function creditCells(credit, after) {
+    const limit = Number(credit.creditLimit);
+    return `<div><dt>Công nợ hiện tại</dt><dd>${esc(money(credit.outstanding))}</dd></div>
+      <div><dt>Hạn mức</dt><dd>${limit > 0 ? esc(money(limit)) : 'Thanh toán ngay'}</dd></div>
+      <div><dt>${after == null ? 'Còn được nợ' : 'Còn được nợ sau đơn này'}</dt><dd class="${Number(after ?? credit.available) < 0 ? 'neg' : ''}">${esc(money(after ?? credit.available))}</dd></div>`;
+  }
+
+  function shell(revision) {
+    const host = document.getElementById('dealerPortal');
+    host.innerHTML = `<div class="dp-card">
+        <div class="dp-hello"><div><h2>${esc(me.name)}</h2>
+          <p>${esc(me.code)} · ${esc(me.groupName)}${me.priceList ? ` · ${esc(me.priceList.name)}` : ''}</p>
+          <p>Nhân viên phụ trách: ${esc(me.salesRepName || 'chưa có')}${me.salesRepPhone ? ` · <a href="tel:${esc(me.salesRepPhone)}">${esc(me.salesRepPhone)}</a>` : ''}</p></div></div>
+        <dl class="dp-credit" id="dpCredit">${creditCells(me.credit)}</dl>
+      </div>
+      ${!me.canOrder || me.cannotOrderReason ? `<p class="dp-banner" role="alert">${esc(me.cannotOrderReason || 'Hiện chưa đặt hàng được.')}</p>` : ''}
+      <div class="dp-tabs" role="tablist">
+        <button type="button" class="dp-tab" role="tab" id="dpTabOrder" aria-selected="${tab === 'order'}" aria-controls="dpPanel">Đặt hàng</button>
+        <button type="button" class="dp-tab" role="tab" id="dpTabMine" aria-selected="${tab === 'mine'}" aria-controls="dpPanel">Đơn của tôi</button>
+      </div>
+      <div id="dpPanel" role="tabpanel"></div>`;
+    document.getElementById('dpTabOrder').onclick = () => { tab = 'order'; shell(revision); };
+    document.getElementById('dpTabMine').onclick = () => { tab = 'mine'; shell(revision); };
+    if (tab === 'order') renderOrder(revision);
+    else renderMine(revision);
+  }
+
+  // ----- Đặt hàng -----
+  function renderOrder(revision) {
+    const locked = !me.canOrder || !!me.cannotOrderReason;
+    const points = me.deliveryPoints || [];
+    document.getElementById('dpPanel').innerHTML = `<div class="dp-card">
+        <div class="dp-section"><h3>Sản phẩm <small>giá theo nhóm ${esc(me.groupName)}</small></h3>
+          <input class="dp-search" id="dpSearch" type="search" placeholder="Tìm theo tên hoặc mã sản phẩm" aria-label="Tìm sản phẩm" ${locked ? 'disabled' : ''}>
+          <ul class="dp-products" id="dpProducts"><li class="dp-empty">Đang tải sản phẩm…</li></ul></div>
+        <div class="dp-section"><h3>Giỏ hàng <small id="dpCartCount"></small></h3><ul class="dp-cart" id="dpCart"></ul></div>
+        <div class="dp-section"><h3>Giao hàng</h3>
+          <div class="dp-field"><label for="dpPoint">Điểm giao *</label>
+            <select id="dpPoint">${points.length ? points.map((p) => `<option value="${esc(p.id)}" ${p.isDefault ? 'selected' : ''}>${esc(p.receiverName)} — ${esc(p.address)}</option>`).join('') : '<option value="">Chưa có điểm giao — liên hệ nhân viên phụ trách</option>'}</select></div>
+          <div class="dp-field"><label for="dpDate">Ngày giao mong muốn *</label><input id="dpDate" type="date" min="${today()}"></div>
+          <div class="dp-field"><label for="dpNote">Ghi chú</label><textarea id="dpNote" rows="2" maxlength="1000" placeholder="Ví dụ: giao buổi sáng, gọi trước khi đến"></textarea></div>
+        </div>
+      </div>
+      <div class="dp-bar" id="dpBar"><div class="dp-bar-in">
+        <dl class="dp-total" aria-live="polite">
+          <div><dt>Tiền hàng</dt><dd id="dpSub">0 đ</dd></div>
+          <div><dt>Chiết khấu</dt><dd id="dpDisc">0 đ</dd></div>
+          <div class="pay"><dt>Phải thu</dt><dd id="dpPay">0 đ</dd></div>
+          <div><dt>Còn được nợ sau đơn</dt><dd id="dpAfter">—</dd></div>
+        </dl>
+        <button type="button" class="dp-btn primary" id="dpSubmit" disabled>Gửi đơn</button>
+      </div></div>`;
+    let searchTimer;
+    document.getElementById('dpSearch').addEventListener('input', (event) => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => loadProducts(revision, event.target.value.trim()), 250);
+    });
+    document.getElementById('dpSubmit').onclick = () => submit(revision);
+    loadProducts(revision, '');
+    renderCart(revision);
+  }
+
+  async function loadProducts(revision, q) {
+    const host = document.getElementById('dpProducts');
+    try {
+      products = await apiRequest(`portal/products?q=${encodeURIComponent(q)}`);
+      if (!alive(revision) || !host.isConnected) return;
+      const locked = !me.canOrder || !!me.cannotOrderReason;
+      host.innerHTML = products.length ? products.map((p) => `<li class="dp-product" data-id="${esc(p.id)}">
+          <div><strong>${esc(p.name)}</strong><small>${esc(p.sku)}</small></div>
+          <div class="dp-price" data-price>${esc(money(p.price))} / ${esc(p.baseUnit)}</div>
+          <div class="dp-row"><select aria-label="Đơn vị tính ${esc(p.name)}">${(p.units || []).map((u) => `<option value="${esc(u.id)}" data-factor="${esc(u.factor)}">${esc(u.name)}${Number(u.factor) !== 1 ? ` (${esc(num(u.factor))} ${esc(p.baseUnit)})` : ''}</option>`).join('')}</select>
+            <span class="dp-step"><button type="button" data-step="-1" aria-label="Giảm">−</button><input type="number" min="1" step="1" value="1" inputmode="numeric" aria-label="Số lượng ${esc(p.name)}"><button type="button" data-step="1" aria-label="Tăng">+</button></span></div>
+          <button type="button" class="dp-btn block" data-add ${locked ? 'disabled' : ''}>Thêm vào giỏ</button>
+        </li>`).join('') : `<li class="dp-empty">${q ? 'Không có sản phẩm nào khớp.' : 'Chưa có sản phẩm trong bảng giá của đại lý.'}</li>`;
+      host.querySelectorAll('.dp-product').forEach((card) => {
+        const product = products.find((p) => String(p.id) === card.dataset.id);
+        const select = card.querySelector('select');
+        const input = card.querySelector('input');
+        const price = card.querySelector('[data-price]');
+        select.onchange = () => {
+          const unit = product.units.find((u) => String(u.id) === select.value);
+          price.textContent = `${money(Number(product.price) * Number(unit.factor))} / ${unit.name}`;
+        };
+        select.onchange();
+        card.querySelectorAll('[data-step]').forEach((b) => b.onclick = () => { input.value = Math.max(1, (Number(input.value) || 1) + Number(b.dataset.step)); });
+        card.querySelector('[data-add]').onclick = () => {
+          const quantity = Math.floor(Number(input.value));
+          if (!(quantity > 0)) { showToast('Số lượng phải lớn hơn 0', 'error'); input.focus(); return; }
+          const unit = product.units.find((u) => String(u.id) === select.value);
+          const existing = cart.find((c) => c.productId === product.id && c.unitId === unit.id);
+          if (existing) existing.quantity += quantity;
+          else cart.push({ productId: product.id, unitId: unit.id, quantity, name: product.name, sku: product.sku, units: product.units });
+          input.value = 1;
+          showToast(`Đã thêm ${product.name} vào giỏ`);
+          renderCart(revision);
+        };
+      });
+    } catch (error) {
+      if (alive(revision) && host.isConnected) host.innerHTML = `<li class="dp-empty" role="alert">${esc(error.message)}</li>`;
+    }
+  }
+
+  /** Vẽ lại giỏ hàng; requote=false khi vừa nhận kết quả tính tiền (tránh tính lại vòng lặp). */
+  function renderCart(revision, requote = true) {
+    if (requote) {
+      ++quoteSeq;
+      clearTimeout(quoteTimer);
+      quote = null;
+    }
+    const host = document.getElementById('dpCart');
+    if (!host) return;
+    document.getElementById('dpCartCount').textContent = cart.length ? `${cart.length} dòng` : '';
+    if (!cart.length) {
+      host.innerHTML = '<li class="dp-empty">Giỏ hàng trống. Chọn sản phẩm ở trên để thêm vào giỏ.</li>';
+      quote = null;
+      renderTotals();
+      return;
+    }
+    host.innerHTML = cart.map((c, index) => {
+      const q = quote?.lines?.[index];
+      const unit = c.units.find((u) => u.id === c.unitId);
+      return `<li class="dp-line ${q?.stockShort ? 'short' : ''}" data-index="${index}">
+        <div><strong>${esc(c.name)}</strong><small>${esc(c.sku)}${q ? ` · ${esc(money(q.unitPrice))} / ${esc(unit?.name)}` : ''}</small></div>
+        <div class="amount"><strong>${q ? esc(money(q.payable)) : '…'}</strong>${q && Number(q.discount) > 0 ? `<small>Chiết khấu −${esc(money(q.discount))}</small>` : ''}</div>
+        <div class="controls"><span class="dp-step"><button type="button" data-step="-1" aria-label="Giảm">−</button><input type="number" min="1" step="1" value="${esc(c.quantity)}" inputmode="numeric" aria-label="Số lượng ${esc(c.name)}"><button type="button" data-step="1" aria-label="Tăng">+</button></span>
+          <span>${esc(unit?.name || '')}</span><button type="button" class="remove" data-remove>Xoá</button></div>
+        ${q?.stockShort ? `<p class="warn" role="alert">${Number(q.maxQuantity) > 0 ? `Kho chỉ còn đặt được tối đa ${esc(num(q.maxQuantity))} ${esc(unit?.name || '')}.` : 'Mặt hàng tạm hết.'}</p>` : ''}
+      </li>`;
+    }).join('');
+    host.querySelectorAll('.dp-line').forEach((row) => {
+      const item = cart[Number(row.dataset.index)];
+      const input = row.querySelector('input');
+      const update = (value) => { item.quantity = Math.max(1, Math.floor(Number(value)) || 1); scheduleQuote(revision); };
+      row.querySelectorAll('[data-step]').forEach((b) => b.onclick = () => { input.value = Math.max(1, (Number(input.value) || 1) + Number(b.dataset.step)); update(input.value); });
+      input.onchange = () => update(input.value);
+      row.querySelector('[data-remove]').onclick = () => { cart.splice(cart.indexOf(item), 1); quote = null; renderCart(revision); };
+    });
+    renderTotals();
+    if (requote) scheduleQuote(revision);
+  }
+
+  function scheduleQuote(revision) {
+    ++quoteSeq;
+    quote = null;
+    renderTotals();
+    clearTimeout(quoteTimer);
+    // Giỏ vừa đổi: chưa cho gửi tới khi máy chủ tính lại tiền và tồn.
+    const submitButton = document.getElementById('dpSubmit');
+    if (submitButton) submitButton.disabled = true;
+    quoteTimer = setTimeout(() => runQuote(revision), 300);
+  }
+
+  async function runQuote(revision) {
+    if (!cart.length || !alive(revision)) return;
+    const seq = ++quoteSeq;
+    try {
+      const result = await apiRequest('portal/quote', jsonRequestOptions('POST', { lines: cart.map(({ productId, unitId, quantity }) => ({ productId, unitId, quantity })) }));
+      if (seq !== quoteSeq || !alive(revision)) return;
+      quote = result;
+      renderCart(revision, false);
+    } catch (error) {
+      if (seq === quoteSeq && alive(revision)) showToast(error.message, 'error');
+    }
+  }
+
+  function renderTotals() {
+    const sub = document.getElementById('dpSub');
+    if (!sub) return;
+    sub.textContent = money(quote?.subtotal ?? 0);
+    document.getElementById('dpDisc').textContent = Number(quote?.discount) > 0 ? '−' + money(quote.discount) : money(0);
+    document.getElementById('dpPay').textContent = money(quote?.payable ?? 0);
+    const after = quote?.credit?.remainingAfterOrder;
+    const afterEl = document.getElementById('dpAfter');
+    afterEl.textContent = after == null ? '—' : money(after);
+    afterEl.classList.toggle('neg', after != null && Number(after) < 0);
+    if (quote?.credit) document.getElementById('dpCredit').innerHTML = creditCells(quote.credit, quote.credit.remainingAfterOrder);
+    const stockOk = !quote || quote.stock?.ok !== false;
+    document.getElementById('dpSubmit').disabled = submitting || !cart.length || !quote || !stockOk || !me.canOrder || !!me.cannotOrderReason;
+  }
+
+  async function submit(revision) {
+    if (submitting || !quote || !cart.length || !alive(revision)) return;
+    const point = document.getElementById('dpPoint').value;
+    const date = document.getElementById('dpDate').value;
+    if (!point) { showToast('Chưa có điểm giao hàng. Hãy liên hệ nhân viên phụ trách', 'error'); return; }
+    if (!date) { showToast('Vui lòng chọn ngày giao mong muốn', 'error'); document.getElementById('dpDate').focus(); return; }
+    if (date < today()) { showToast('Ngày giao mong muốn không được ở quá khứ', 'error'); return; }
+    const over = Number(quote?.credit?.remainingAfterOrder) < 0;
+    if (!confirm(`Gửi đơn ${money(quote?.payable)} cho nhân viên phụ trách xác nhận?${over ? '\n\nĐơn vượt hạn mức công nợ nên có thể phải chờ quản lý duyệt.' : ''}`)) return;
+    submitting = true;
+    const button = document.getElementById('dpSubmit');
+    button.disabled = true;
+    button.textContent = 'Đang gửi…';
+    try {
+      const order = await apiRequest('portal/orders', jsonRequestOptions('POST', {
+        deliveryPointId: Number(point), desiredDate: date, note: document.getElementById('dpNote').value.trim(),
+        lines: cart.map(({ productId, unitId, quantity }) => ({ productId, unitId, quantity }))
+      }));
+      if (!alive(revision)) return;
+      showToast(`Đã gửi đơn ${order.code} · ${order.statusLabel}`);
+      cart = [];
+      quote = null;
+      me = await apiRequest('portal/me');
+      if (!alive(revision)) return;
+      tab = 'mine';
+      submitting = false;
+      shell(revision);
+    } catch (error) {
+      showToast(error.message, 'error');
+      if (alive(revision)) {
+        submitting = false;
+        button.textContent = 'Gửi đơn';
+        renderTotals();
+      }
+    }
+  }
+
+  // ----- Đơn của tôi -----
+  async function renderMine(revision) {
+    const panel = document.getElementById('dpPanel');
+    panel.innerHTML = '<div class="dp-card dp-section"><p class="dp-empty">Đang tải đơn…</p></div>';
+    try {
+      const rows = await apiRequest('portal/orders');
+      if (!alive(revision) || !panel.isConnected) return;
+      panel.innerHTML = `<div class="dp-card dp-section"><h3>Đơn của tôi <small>${esc(rows.length)} đơn gần nhất</small></h3>
+        ${rows.length ? `<ul class="dp-orders">${rows.map((o) => `<li><button type="button" class="dp-order" data-id="${esc(o.id)}">
+          <span><strong>${esc(o.code)}</strong><small>${esc(when(o.createdAt))} · ${esc(o.lineCount)} dòng${o.source === 'STAFF' ? ' · NV lập' : ''}</small></span>
+          <span class="right"><strong>${esc(money(o.payable))}</strong><span class="dp-status s-${esc(o.status)}">${esc(o.statusLabel)}</span></span>
+        </button></li>`).join('')}</ul>` : '<p class="dp-empty">Chưa có đơn nào. Chọn tab Đặt hàng để đặt đơn đầu tiên.</p>'}</div>`;
+      panel.querySelectorAll('.dp-order').forEach((b) => b.onclick = () => renderOrderDetail(revision, b.dataset.id));
+    } catch (error) {
+      if (alive(revision) && panel.isConnected) panel.innerHTML = `<p class="dp-banner" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  async function renderOrderDetail(revision, id) {
+    const panel = document.getElementById('dpPanel');
+    try {
+      const o = await apiRequest(`portal/orders/${encodeURIComponent(id)}`);
+      if (!alive(revision) || !panel.isConnected) return;
+      panel.innerHTML = `<div class="dp-card">
+        <div class="dp-section"><button type="button" class="dp-btn" id="dpBack">← Đơn của tôi</button></div>
+        <div class="dp-section"><h3>${esc(o.code)} <span class="dp-status s-${esc(o.status)}">${esc(o.statusLabel)}</span></h3>
+          <p style="margin:0 0 12px;color:#64748b;font-size:13px">${esc(o.deliveryAddress)} · Giao ${esc(o.desiredDate ? o.desiredDate.split('-').reverse().join('/') : '—')}</p>
+          <table class="dp-detail-lines"><tbody>${o.lines.map((l) => `<tr><td>${esc(l.name)}<small>${esc(num(l.quantity))} ${esc(l.unitName)} × ${esc(money(l.unitPrice))}${Number(l.discount) > 0 ? ` · CK −${esc(money(l.discount))}` : ''}</small></td><td>${esc(money(l.payable))}</td></tr>`).join('')}
+            <tr><td><strong>Phải thu</strong></td><td><strong>${esc(money(o.payable))}</strong></td></tr></tbody></table></div>
+        <div class="dp-section"><h3>Tiến trình</h3><ol class="dp-timeline">${o.history.map((h) => `<li>${esc(h.toLabel)}<small>${esc(when(h.changedAt))}${h.reason ? ' · ' + esc(h.reason) : ''}</small></li>`).join('')}</ol>
+          ${o.canCancel ? '<button type="button" class="dp-btn danger" id="dpCancel">Huỷ đơn</button>' : ''}</div>
+      </div>`;
+      document.getElementById('dpBack').onclick = () => renderMine(revision);
+      document.getElementById('dpCancel')?.addEventListener('click', () => {
+        const { form, close } = openFormDialog(`Huỷ đơn ${o.code}`,
+          '<div class="form-group full"><label>Lý do huỷ *<textarea name="reason" maxlength="500" required placeholder="Ví dụ: đặt nhầm số lượng"></textarea></label></div><p class="s2-hint" style="grid-column:1/-1">Chỉ huỷ được khi nhân viên chưa xác nhận đơn.</p>', 'Huỷ đơn');
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const submitButton = form.querySelector('[type="submit"]');
+          submitButton.disabled = true;
+          try {
+            await apiRequest(`portal/orders/${o.id}/cancel`, jsonRequestOptions('POST', { reason: form.reason.value }));
+            close();
+            showToast(`Đã huỷ đơn ${o.code}`);
+            if (alive(revision)) renderOrderDetail(revision, o.id);
+          } catch (error) {
+            document.getElementById('s2FormError').textContent = error.message;
+            submitButton.disabled = false;
+          }
+        });
+      });
+    } catch (error) {
+      showToast(error.message, 'error');
+    }
+  }
+
+  return { render };
+})();
+</script>

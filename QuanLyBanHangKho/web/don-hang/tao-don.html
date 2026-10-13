@@ -232,6 +232,24 @@
   position:relative;
 }
 
+/* Kết quả tìm sản phẩm bám theo khung Hàng hoá, không tràn ra ngoài (để thấy giá và nhãn "Chưa có giá"). */
+#salesOrderFeatureRoot section[aria-labelledby="hLines"]{
+  position:relative;
+}
+
+#salesOrderFeatureRoot #productResults{
+  left:20px;
+  right:20px;
+  width:auto;
+}
+
+@media(max-width:720px){
+  #salesOrderFeatureRoot #productResults{
+    left:16px;
+    right:16px;
+  }
+}
+
 #salesOrderFeatureRoot .results{
   position:absolute;
   z-index:40;
@@ -316,6 +334,48 @@
   color:#991b1b;
   font-size:12px;
   line-height:1.45;
+}
+
+/* S4-02: công nợ của đại lý */
+#salesOrderFeatureRoot .credit{
+  margin-top:10px;
+  padding:12px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--surface);
+}
+
+#salesOrderFeatureRoot .credit-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin:0;
+}
+
+#salesOrderFeatureRoot .credit-grid dt{
+  color:var(--text3);
+  font-size:10px;
+}
+
+#salesOrderFeatureRoot .credit-grid dd{
+  margin:3px 0 0;
+  color:var(--text);
+  font-size:13px;
+  font-weight:700;
+}
+
+#salesOrderFeatureRoot .credit-grid dd.neg{
+  color:var(--red);
+}
+
+#salesOrderFeatureRoot .credit .lock-warn{
+  margin-top:10px;
+}
+
+@media(max-width:720px){
+  #salesOrderFeatureRoot .credit-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
 }
 
 #salesOrderFeatureRoot .lock-tag{
@@ -444,9 +504,249 @@
 }
 
 #salesOrderFeatureRoot .unitprice{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px 12px;
   margin-top:12px;
   color:var(--text3);
   font-size:11px;
+}
+
+/* S4-01: đơn giá sửa được, giá bảng giá / giá sàn */
+#salesOrderFeatureRoot .price-field{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:0;
+  color:var(--text2);
+  font-size:12px;
+  font-weight:600;
+}
+
+#salesOrderFeatureRoot .price-field input{
+  width:140px!important;
+  min-height:36px!important;
+  text-align:right;
+}
+
+#salesOrderFeatureRoot .price-field input.overridden{
+  border-color:var(--orange)!important;
+  background:var(--orange-light)!important;
+}
+
+#salesOrderFeatureRoot .price-meta{
+  color:var(--text3);
+  font-size:11px;
+}
+
+#salesOrderFeatureRoot .price-reset{
+  padding:0;
+  font-size:11px;
+}
+
+#salesOrderFeatureRoot .floor-warn{
+  margin:8px 0 0;
+  padding:8px 10px;
+  border:1px solid #fde68a;
+  border-radius:8px;
+  background:#fffbeb;
+  color:#92400e;
+  font-size:11px;
+  line-height:1.45;
+}
+
+/* S4-04: lịch sử mua hàng của đại lý */
+#salesOrderFeatureRoot .history{
+  margin:0 0 14px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--surface);
+}
+
+#salesOrderFeatureRoot .history summary{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 12px;
+  color:var(--text);
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+#salesOrderFeatureRoot .history summary small{
+  color:var(--text3);
+  font-weight:500;
+}
+
+#salesOrderFeatureRoot .history-body{
+  display:grid;
+  gap:8px;
+  padding:0 12px 12px;
+}
+
+#salesOrderFeatureRoot .history-last{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:8px 10px;
+  border:1px dashed #cbd5e1;
+  border-radius:8px;
+  background:#fff;
+  font-size:11px;
+  color:var(--text2);
+}
+
+#salesOrderFeatureRoot .history-list{
+  display:grid;
+  gap:6px;
+  margin:0;
+  padding:0;
+  list-style:none;
+}
+
+#salesOrderFeatureRoot .history-list li{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:8px 10px;
+  border-radius:8px;
+  background:#fff;
+}
+
+#salesOrderFeatureRoot .history-list .info{
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
+
+#salesOrderFeatureRoot .history-list strong{
+  font-size:12px;
+}
+
+#salesOrderFeatureRoot .history-list small{
+  color:var(--text3);
+  font-size:10px;
+}
+
+#salesOrderFeatureRoot .history .add{
+  flex:none;
+  padding:6px 10px;
+  border:1px solid var(--orange);
+  border-radius:7px;
+  background:#fff;
+  color:var(--orange-dark);
+  font-size:11px;
+  font-weight:700;
+}
+
+#salesOrderFeatureRoot .history .add:hover:not(:disabled){
+  background:var(--orange-light);
+}
+
+#salesOrderFeatureRoot .history .add:disabled{
+  border-color:var(--border);
+  color:var(--text3);
+}
+
+/* S4-03: tồn khả dụng */
+#salesOrderFeatureRoot .stock-warn{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:6px 10px;
+  margin:8px 0 0;
+  padding:8px 10px;
+  border:1px solid #fecaca;
+  border-radius:8px;
+  background:#fef2f2;
+  color:#991b1b;
+  font-size:11px;
+  line-height:1.45;
+}
+
+#salesOrderFeatureRoot .stock-warn button{
+  padding:0;
+  font-size:11px;
+}
+
+#salesOrderFeatureRoot .stock-note{
+  margin:6px 0 0;
+  color:var(--text3);
+  font-size:11px;
+}
+
+#salesOrderFeatureRoot .stock-note.bad{
+  margin-top:12px;
+  padding:10px 12px;
+  border:1px solid #fecaca;
+  border-radius:8px;
+  background:#fef2f2;
+  color:#991b1b;
+  font-size:12px;
+}
+
+/* S4-05: ý kiến của quản lý khi trả lại đơn để sửa */
+#salesOrderFeatureRoot .return-note{
+  margin:0 0 16px;
+  padding:12px 14px;
+  border:1px solid #fde68a;
+  border-left:4px solid #f59e0b;
+  border-radius:10px;
+  background:#fffbeb;
+  color:#78350f;
+  font-size:12px;
+  line-height:1.5;
+}
+
+#salesOrderFeatureRoot .return-note strong{
+  display:block;
+  margin-bottom:3px;
+  font-size:13px;
+}
+
+#salesOrderFeatureRoot .return-note q{
+  display:block;
+  margin-top:4px;
+  color:#451a03;
+  font-size:13px;
+  white-space:pre-line;
+  quotes:none;
+}
+
+#salesOrderFeatureRoot .approval-note{
+  margin-top:12px;
+  padding:10px 12px;
+  border:1px solid #fde68a;
+  border-radius:8px;
+  background:#fffbeb;
+  color:#92400e;
+  font-size:12px;
+  line-height:1.5;
+}
+
+#salesOrderFeatureRoot .approval-note strong{
+  display:block;
+  margin-bottom:4px;
+}
+
+#salesOrderFeatureRoot .approval-note ul{
+  margin:0;
+  padding-left:18px;
+}
+
+#salesOrderFeatureRoot .results button.unpriced{
+  cursor:not-allowed;
+  opacity:.7;
+}
+
+#salesOrderFeatureRoot .results button.unpriced .side{
+  color:#b45309;
+  font-weight:600;
 }
 
 #salesOrderFeatureRoot .calc{
@@ -486,7 +786,7 @@
 /* =========================================================
    BOTTOM BAR
    Hàng 1:  Tiền hàng | Chiết khấu | Phải thu  (sát mép trái/phải)
-   Hàng 2:  [ Lưu nháp ] [ Hoàn tất đơn ]      (căn giữa)
+   Hàng 2:  [ Lưu nháp ] [ Gửi đơn ]      (căn giữa)
 
    left + width do JS (syncOrderBottomBar) gán theo .order-content
    nên thanh luôn khớp mép trái/phải của form.
@@ -607,6 +907,18 @@
 
 #salesOrderFeatureRoot .order-bottom-wrap #btnSave:hover:not(:disabled){
   background:#f1f5f9;
+}
+
+/* S4-08: in / xuất PDF — thao tác phụ, nhẹ hơn Lưu nháp */
+#salesOrderFeatureRoot .order-bottom-wrap #btnPrint{
+  width:120px;
+  border:1px solid #dbe2e8;
+  background:#fff;
+  color:#475569;
+}
+
+#salesOrderFeatureRoot .order-bottom-wrap #btnPrint:hover:not(:disabled){
+  background:#f8fafc;
 }
 
 #salesOrderFeatureRoot .order-bottom-wrap #btnComplete{
@@ -938,6 +1250,15 @@
       </div>
 
 
+      <!-- Ý KIẾN TRẢ LẠI (S4-05) -->
+      <div
+        id="returnNote"
+        class="return-note"
+        role="status"
+        hidden>
+      </div>
+
+
       <!-- THÔNG TIN GIAO HÀNG -->
       <section
         class="card"
@@ -980,6 +1301,28 @@
           class="lock-warn"
           role="alert"
           hidden>
+        </div>
+
+        <div
+          id="creditBox"
+          class="credit"
+          aria-live="polite"
+          hidden>
+
+          <dl class="credit-grid">
+            <div><dt>Công nợ hiện tại</dt><dd id="crOutstanding">—</dd></div>
+            <div><dt>Hạn mức</dt><dd id="crLimit">—</dd></div>
+            <div><dt>Còn lại</dt><dd id="crAvailable">—</dd></div>
+            <div><dt>Còn lại sau đơn này</dt><dd id="crAfter">—</dd></div>
+          </dl>
+
+          <p
+            id="crBlocked"
+            class="lock-warn"
+            role="alert"
+            hidden>
+          </p>
+
         </div>
 
 
@@ -1059,6 +1402,24 @@
         </h2>
 
 
+        <details
+          id="historyBox"
+          class="history"
+          hidden>
+
+          <summary>
+            Đại lý hay mua
+            <small id="historyMeta"></small>
+          </summary>
+
+          <div
+            id="historyBody"
+            class="history-body">
+          </div>
+
+        </details>
+
+
         <label for="productQ">
           Thêm sản phẩm
         </label>
@@ -1076,6 +1437,13 @@
           class="results"
           hidden>
         </ul>
+
+        <p
+          id="stockNote"
+          class="stock-note"
+          role="status"
+          hidden>
+        </p>
 
 
         <div
@@ -1095,6 +1463,13 @@
           id="quoteError"
           class="msg"
           role="alert"
+          hidden>
+        </div>
+
+        <div
+          id="approvalNote"
+          class="approval-note"
+          role="status"
           hidden>
         </div>
 
@@ -1132,6 +1507,13 @@
           <div class="order-actions">
             <button
               type="button"
+              id="btnPrint"
+              title="Lưu nháp trước, rồi in hoặc chọn Lưu dưới dạng PDF để đưa đại lý xem lại">
+              In / PDF
+            </button>
+
+            <button
+              type="button"
               id="btnSave">
               Lưu nháp
             </button>
@@ -1139,7 +1521,7 @@
             <button
               type="button"
               id="btnComplete">
-              Hoàn tất đơn
+              Gửi đơn
             </button>
           </div>
 
@@ -1442,6 +1824,12 @@ window.salesOrderFeature = (() => {
 
     totals:null,
 
+    flags:[],
+
+    credit:null,
+
+    stock:null,
+
     dirty:false,
 
     quoteSeq:0,
@@ -1611,6 +1999,39 @@ window.salesOrderFeature = (() => {
   }
 
 
+  /* S4-05: nháp bị quản lý trả lại → hiện ý kiến để nhân viên biết cần sửa gì. */
+  function renderReturnNote(review){
+    const box = $('returnNote');
+    if (!box) return;
+    box.replaceChildren();
+    box.hidden = !review;
+    if (!review) return;
+    box.append(
+      el('strong', { text:'Quản lý kinh doanh đã trả lại đơn này để sửa' }),
+      el('span', {
+        text:(review.decidedByName || '') +
+          (review.decidedAt ? ' · ' + new Date(review.decidedAt).toLocaleString('vi-VN', { dateStyle:'short', timeStyle:'short' }) : '')
+      }),
+      el('q', { text:review.comment || '' })
+    );
+  }
+
+
+  /* S4-01: lý do đơn sẽ cần quản lý kinh doanh duyệt nếu gửi ngay. */
+  function renderApproval(){
+    const box = $('approvalNote');
+    if (!box) return;
+    const flags = S.flags || [];
+    box.replaceChildren();
+    box.hidden = !flags.length;
+    if (!flags.length) return;
+    box.append(
+      el('strong', { text:'Đơn này sẽ chuyển sang Chờ duyệt khi gửi' }),
+      el('ul', {}, flags.map(flag => el('li', { text:flag.message })))
+    );
+  }
+
+
   function showQuoteError(
     message
   ){
@@ -1629,6 +2050,172 @@ window.salesOrderFeature = (() => {
   /* ========================================================
      CUSTOMER
      ======================================================== */
+
+  /* S4-03: kho phục vụ và lỗi tồn chung (chưa gán kho). Lỗi từng dòng hiện ngay dưới dòng hàng. */
+  function renderStock(){
+    const note = $('stockNote');
+    if (!note) return;
+    const stock = S.customer && S.lines.length ? S.stock : null;
+    note.hidden = !stock;
+    note.classList.toggle('bad', !!stock && !stock.warehouseId);
+    if (stock) {
+      note.textContent = stock.warehouseId
+        ? 'Tồn khả dụng tính tại ' + stock.warehouseName + ' (đã trừ hàng đang giữ cho đơn khác).'
+        : (stock.errors || []).join(' ');
+    }
+    $('btnComplete').disabled = !!S.credit?.blocked || (!!stock && !stock.ok);
+  }
+
+
+  /* S4-04: lịch sử mua 3 tháng của đại lý; thêm nhanh từng mặt hàng (số lượng bình quân) hoặc cả đơn gần nhất. */
+  let historySeq = 0;
+
+  function addQuantity(product, unitId, quantity){
+    const unit = (product.units || []).find(item => item.id === unitId) || product.units?.[0];
+    if (!unit) return false;
+    const existing = S.lines.find(line => line.productId === product.productId && line.unitId === unit.id);
+    if (existing) {
+      existing.quantity = String((Number(existing.quantity) || 0) + quantity);
+      existing.els.qty.value = existing.quantity;
+      existing.calc = null;
+      renderLineCalc(existing);
+    } else {
+      const line = {
+        key:++S.keySeq,
+        productId:product.productId,
+        sku:product.sku,
+        name:product.name,
+        unitId:unit.id,
+        units:product.units,
+        quantity:String(quantity),
+        manualPrice:null,
+        calc:null
+      };
+      S.lines.push(line);
+      $('lines').append(buildLine(line));
+    }
+    return true;
+  }
+
+  function baseUnitId(item){
+    return ((item.units || []).find(unit => Number(unit.factor) === 1) || item.units?.[0])?.id;
+  }
+
+  function renderHistory(history){
+    const box = $('historyBox');
+    if (!box) return;
+    const items = history?.items || [];
+    const last = history?.lastOrder;
+    box.hidden = !S.customer || (!items.length && !last);
+    if (box.hidden) return;
+    $('historyMeta').textContent = items.length ? '· ' + items.length + ' mặt hàng trong 3 tháng' : '· chưa mua trong 3 tháng';
+    const body = $('historyBody');
+    body.replaceChildren();
+    if (last) {
+      const usable = last.lines.filter(line => line.available);
+      body.append(el('div', { class:'history-last' },
+        el('span', { text:'Đơn gần nhất ' + last.code + ' · ' + new Date(last.createdAt).toLocaleDateString('vi-VN') +
+          ' · ' + last.lines.length + ' dòng' + (usable.length < last.lines.length ? ' (' + (last.lines.length - usable.length) + ' dòng không còn bán)' : '') }),
+        el('button', {
+          type:'button',
+          class:'add',
+          text:'Thêm lại cả đơn',
+          disabled:!usable.length,
+          onclick:() => {
+            usable.forEach(line => addQuantity(line, line.unitId, Number(line.quantity)));
+            syncLineChrome();
+            S.dirty = true;
+            scheduleQuote(0);
+            toast('Đã thêm ' + usable.length + ' dòng từ đơn ' + last.code);
+          }
+        })));
+    }
+    if (items.length) {
+      body.append(el('ul', { class:'history-list' }, items.map(item => {
+        const unit = (item.units || []).find(u => u.id === baseUnitId(item));
+        const avg = Math.max(1, Math.round(Number(item.averageQuantity)));
+        return el('li', {},
+          el('span', { class:'info' },
+            el('strong', { text:item.name }),
+            el('small', { text:item.sku + ' · ' + item.orders + ' đơn · bình quân ' + nf.format(Number(item.averageQuantity)) + ' ' +
+              item.baseUnit + '/đơn · lần cuối ' + new Date(item.lastOrderedAt).toLocaleDateString('vi-VN') })),
+          el('button', {
+            type:'button',
+            class:'add',
+            text:item.active && item.priced ? '+ ' + nf.format(avg) + ' ' + (unit?.name || item.baseUnit) : (item.active ? 'Chưa có giá' : 'Ngừng bán'),
+            disabled:!(item.active && item.priced),
+            'aria-label':'Thêm ' + avg + ' ' + (unit?.name || item.baseUnit) + ' ' + item.name,
+            onclick:() => {
+              addQuantity(item, baseUnitId(item), avg);
+              syncLineChrome();
+              S.dirty = true;
+              scheduleQuote(0);
+              toast('Đã thêm ' + item.name);
+            }
+          }));
+      })));
+    }
+  }
+
+  async function loadHistory(){
+    const seq = ++historySeq;
+    renderHistory(null);
+    if (!S.customer) return;
+    try {
+      const history = await api('GET', '/customers/' + S.customer.id + '/purchase-history');
+      if (seq !== historySeq) return;
+      renderHistory(history);
+      $('historyBox').open = !S.lines.length;
+    } catch (error) {
+      if (seq !== historySeq || handleAuth(error)) return;
+      renderHistory(null);
+    }
+  }
+
+
+  /* S4-02: công nợ hiện tại, hạn mức, còn lại; nợ quá hạn thì chặn tạo/gửi đơn. */
+  let creditSeq = 0;
+
+  function renderCredit(){
+    const box = $('creditBox');
+    if (!box) return;
+    const credit = S.customer ? S.credit : null;
+    box.hidden = !credit;
+    const blocked = !!credit?.blocked;
+    $('btnComplete').disabled = blocked || (!!S.stock && !S.stock.ok);
+    $('btnSave').disabled = blocked && !S.id;
+    if (S.customer) $('productQ').disabled = blocked && !S.id;
+    if (!credit) return;
+    const limit = Number(credit.creditLimit);
+    $('crOutstanding').textContent = money(credit.outstanding);
+    $('crLimit').textContent = limit > 0 ? money(limit) : 'Không cho nợ';
+    $('crAvailable').textContent = money(credit.available);
+    $('crAvailable').classList.toggle('neg', Number(credit.available) < 0);
+    const after = credit.remainingAfterOrder;
+    $('crAfter').textContent = after == null ? '—' : money(after);
+    $('crAfter').classList.toggle('neg', after != null && Number(after) < 0);
+    $('crBlocked').hidden = !blocked;
+    $('crBlocked').textContent = blocked
+      ? credit.blockReason + (S.id ? '. Có thể lưu nháp này nhưng chưa gửi được.' : '.')
+      : '';
+  }
+
+  async function loadCredit(){
+    const seq = ++creditSeq;
+    S.credit = null;
+    renderCredit();
+    if (!S.customer) return;
+    try {
+      const credit = await api('GET', '/customers/' + S.customer.id + '/credit');
+      if (seq !== creditSeq) return;
+      S.credit = credit;
+      renderCredit();
+    } catch (error) {
+      if (seq !== creditSeq || handleAuth(error)) return;
+      toast('Không tải được công nợ của đại lý: ' + error.message, 'error');
+    }
+  }
+
 
   function renderCustomer(){
 
@@ -1678,7 +2265,7 @@ window.salesOrderFeature = (() => {
           (customer.lockReason ? ': ' + customer.lockReason : '') +
           '. ' +
           (S.id
-            ? 'Đơn nháp này vẫn được xử lý tiếp, vui lòng kiểm tra kỹ trước khi hoàn tất.'
+            ? 'Đơn nháp này vẫn được xử lý tiếp, vui lòng kiểm tra kỹ trước khi gửi.'
             : 'Không thể tạo đơn mới cho đại lý này.');
 
 
@@ -1702,6 +2289,8 @@ window.salesOrderFeature = (() => {
         'productResults'
       );
     }
+
+    renderCredit();
   }
 
 
@@ -1750,6 +2339,10 @@ window.salesOrderFeature = (() => {
       }
     );
 
+
+    loadCredit();
+
+    loadHistory();
 
     scheduleQuote(0);
 
@@ -2221,8 +2814,29 @@ window.salesOrderFeature = (() => {
           showResults(
             'productResults',
             rows,
-            'Không có sản phẩm nào khớp trong bảng giá của đại lý này.',
+            'Không có sản phẩm đang kinh doanh nào khớp từ khoá.',
             product => {
+
+              /* S4-01: SKU chưa có giá trong bảng giá hiệu lực → không cho thêm, nói rõ lý do. */
+              if (product.priced === false) {
+                return el(
+                  'button',
+                  {
+                    type:'button',
+                    class:'unpriced',
+                    'aria-disabled':'true',
+                    onclick:() => toast(
+                      product.sku + ' chưa có giá trong bảng giá đang hiệu lực của đại lý. Hãy bổ sung giá vào bảng giá trước khi bán mặt hàng này.',
+                      'error'
+                    )
+                  },
+                  el('span', { class:'main' },
+                    el('strong', { text:product.name }),
+                    el('small', { text:product.sku })
+                  ),
+                  el('span', { class:'side', text:'Chưa có giá' })
+                );
+              }
 
               const unit =
                 product.units?.[0];
@@ -2345,9 +2959,13 @@ window.salesOrderFeature = (() => {
     }
 
 
+    elements.price.disabled = !S.customer;
+    elements.reset.hidden = line.manualPrice == null;
+    elements.price.classList.toggle('overridden', line.manualPrice != null);
+
     if(!calc){
 
-      elements.unitprice.textContent =
+      elements.meta.textContent =
         S.customer
 
           ? (
@@ -2357,6 +2975,10 @@ window.salesOrderFeature = (() => {
             )
 
           : 'Chọn đại lý để tính giá';
+
+      elements.floor.hidden = true;
+
+      elements.stock.hidden = true;
 
 
       elements.sub.textContent =
@@ -2382,15 +3004,59 @@ window.salesOrderFeature = (() => {
       );
 
 
-    elements.unitprice.textContent =
-      'Đơn giá ' +
-      money(calc.unitPrice) +
-      ' / ' +
-      (
-        unit
-          ? unit.name
-          : calc.unitName
+    const unitName =
+      unit
+        ? unit.name
+        : calc.unitName;
+
+    if (document.activeElement !== elements.price) {
+      elements.price.value = String(Number(calc.unitPrice));
+    }
+
+    elements.unitLabel.textContent =
+      'Đơn giá / ' + unitName;
+
+    elements.meta.textContent =
+      'Giá bảng giá ' + money(calc.listPrice) +
+      ' · Giá sàn ' + money(calc.floorPrice) +
+      (calc.available != null
+        ? ' · Tồn khả dụng ' + nf.format(Number(calc.available)) + ' ' + unitName
+        : '');
+
+    elements.stock.hidden = !calc.stockShort;
+    elements.stock.replaceChildren();
+    if (calc.stockShort) {
+      const max = Number(calc.maxQuantity) || 0;
+      elements.stock.append(
+        el('span', {
+          text: max > 0
+            ? 'Vượt tồn khả dụng. Chỉ đặt được tối đa ' + nf.format(max) + ' ' + unitName + '.'
+            : 'Đã hết hàng khả dụng cho dòng này.'
+        }),
+        max > 0
+          ? el('button', {
+              type:'button',
+              class:'linkbtn',
+              text:'Đặt ' + nf.format(max) + ' ' + unitName,
+              onclick:() => elements.setQty(max)
+            })
+          : el('button', {
+              type:'button',
+              class:'linkbtn',
+              text:'Xoá dòng',
+              onclick:() => removeLine(line)
+            })
       );
+    }
+
+    elements.reset.hidden = !calc.priceOverridden && line.manualPrice == null;
+    elements.price.classList.toggle('overridden', !!calc.priceOverridden);
+
+    elements.floor.hidden = !calc.belowFloor;
+    elements.floor.textContent = calc.belowFloor
+      ? 'Giá đang thấp hơn giá sàn ' + money(calc.floorPrice) + ' / ' + unitName +
+        '. Đơn sẽ cần quản lý kinh doanh duyệt trước khi giữ hàng.'
+      : '';
 
 
     elements.sub.textContent =
@@ -2503,12 +3169,61 @@ window.salesOrderFeature = (() => {
       );
 
 
+    /* S4-01: đơn giá sửa được; để trống hoặc bấm "Về giá bảng giá" để dùng giá bảng giá. */
+    const price =
+      el(
+        'input',
+        {
+          type:'number',
+          inputmode:'decimal',
+          min:'0',
+          step:'any',
+          value:line.manualPrice ?? '',
+          'aria-describedby':'priceMeta' + line.key
+        }
+      );
+
+    const unitLabel =
+      el('span', { text:'Đơn giá' });
+
+    const meta =
+      el('span', { class:'price-meta', id:'priceMeta' + line.key });
+
+    const reset =
+      el(
+        'button',
+        {
+          type:'button',
+          class:'linkbtn price-reset',
+          text:'Về giá bảng giá',
+          hidden:true,
+          onclick:() => {
+            line.manualPrice = null;
+            price.value = '';
+            line.calc = null;
+            renderLineCalc(line);
+            S.dirty = true;
+            scheduleQuote(0);
+            price.focus();
+          }
+        }
+      );
+
+    const floor =
+      el('p', { class:'floor-warn', role:'status', hidden:true });
+
+    const stockWarn =
+      el('div', { class:'stock-warn', role:'alert', hidden:true });
+
     const unitprice =
       el(
         'div',
         {
           class:'unitprice'
-        }
+        },
+        el('label', { class:'price-field' }, unitLabel, price),
+        meta,
+        reset
       );
 
 
@@ -2518,8 +3233,35 @@ window.salesOrderFeature = (() => {
       sub,
       disc,
       pay,
-      unitprice
+      unitprice,
+      price,
+      unitLabel,
+      meta,
+      reset,
+      floor,
+      stock:stockWarn,
+      setQty:value => setQty(value)
     };
+
+
+    price.addEventListener(
+      'input',
+      () => {
+        const value = price.value.trim();
+        line.manualPrice = value === '' ? null : value;
+        line.calc = null;
+        renderLineCalc(line);
+        S.dirty = true;
+        scheduleQuote(500);
+      }
+    );
+
+    price.addEventListener(
+      'blur',
+      () => {
+        if (line.calc) renderLineCalc(line);
+      }
+    );
 
 
     function setQty(
@@ -2568,6 +3310,10 @@ window.salesOrderFeature = (() => {
           Number(
             unitSelect.value
           );
+
+        /* Đơn giá sửa tay tính theo đơn vị cũ → bỏ, dùng lại giá bảng giá. */
+        line.manualPrice = null;
+        price.value = '';
 
         line.calc = null;
 
@@ -2693,6 +3439,10 @@ window.salesOrderFeature = (() => {
         ),
 
         unitprice,
+
+        floor,
+
+        stockWarn,
 
         el(
           'dl',
@@ -2885,6 +3635,9 @@ window.salesOrderFeature = (() => {
         quantity:
           '1',
 
+        manualPrice:
+          null,
+
         calc:
           null
 
@@ -2953,6 +3706,10 @@ window.salesOrderFeature = (() => {
 
       S.totals = null;
       S.quoting = false;
+      S.flags = [];
+      renderApproval();
+      S.stock = null;
+      renderStock();
 
       renderTotals();
 
@@ -2979,6 +3736,14 @@ window.salesOrderFeature = (() => {
         discount:0,
         payable:0
       };
+
+      S.flags = [];
+
+      renderApproval();
+
+      S.stock = null;
+
+      renderStock();
 
 
       S.quoting = false;
@@ -3039,7 +3804,12 @@ window.salesOrderFeature = (() => {
                   quantity:
                     Number(
                       line.quantity
-                    )
+                    ),
+
+                  unitPrice:
+                    line.manualPrice == null
+                      ? undefined
+                      : Number(line.manualPrice)
                 })
               )
           }
@@ -3080,6 +3850,21 @@ window.salesOrderFeature = (() => {
           result.payable
 
       };
+
+      S.flags = result.flags || [];
+
+      renderApproval();
+
+      S.stock = result.stock || null;
+
+      renderStock();
+
+      /* Báo giá mang công nợ mới nhất kèm số còn lại sau đơn này. */
+      if (result.credit) {
+        ++creditSeq;
+        S.credit = result.credit;
+        renderCredit();
+      }
 
 
       showQuoteError('');
@@ -3149,7 +3934,12 @@ window.salesOrderFeature = (() => {
             quantity:
               Number(
                 line.quantity
-              )
+              ),
+
+            unitPrice:
+              line.manualPrice == null
+                ? undefined
+                : Number(line.manualPrice)
 
           })
         )
@@ -3314,7 +4104,7 @@ window.salesOrderFeature = (() => {
     if(!S.id){
 
       toast(
-        'Hãy lưu nháp trước khi hoàn tất đơn',
+        'Hãy lưu nháp trước khi gửi đơn',
         'error'
       );
 
@@ -3324,7 +4114,7 @@ window.salesOrderFeature = (() => {
     if(!S.customer){
 
       toast(
-        'Chọn đại lý trước khi hoàn tất đơn',
+        'Chọn đại lý trước khi gửi đơn',
         'error'
       );
 
@@ -3361,7 +4151,7 @@ window.salesOrderFeature = (() => {
       return;
     }
 
-    if(!confirm('Xác nhận hoàn tất đơn ' + (S.code || '') + '?')){
+    if(!confirm('Gửi đơn ' + (S.code || '') + '? Sau khi gửi, đơn không sửa được nữa.' + (S.flags?.length ? '\n\nĐơn sẽ chờ quản lý kinh doanh duyệt vì:\n• ' + S.flags.map(flag => flag.message).join('\n• ') : ''))){
       return;
     }
 
@@ -3373,7 +4163,7 @@ window.salesOrderFeature = (() => {
     button.disabled = true;
 
     button.textContent =
-      'Đang hoàn tất…';
+      'Đang gửi…';
 
     try{
 
@@ -3387,8 +4177,10 @@ window.salesOrderFeature = (() => {
       S.dirty = false;
 
       toast(
-        'Đã hoàn tất đơn ' +
-        (result.code || S.code || '')
+        'Đã gửi đơn ' +
+        (result.code || S.code || '') +
+        ' · ' +
+        (result.statusLabel || 'Chờ duyệt')
       );
 
       refreshDraftCount();
@@ -3416,7 +4208,27 @@ window.salesOrderFeature = (() => {
         setSaving(false);
       }
       button.textContent =
-        'Hoàn tất đơn';
+        'Gửi đơn';
+    }
+  }
+
+
+  /* S4-08: in hoặc xuất PDF đơn đang soạn để đại lý xem lại trước khi gửi. In bản đã lưu trên máy chủ. */
+  async function printCurrent(){
+    if (S.saving) return;
+    if (!S.id) {
+      toast('Hãy lưu nháp trước khi in đơn', 'error');
+      return;
+    }
+    if (S.dirty) {
+      toast('Đơn có thay đổi chưa lưu. Hãy lưu nháp để bản in khớp với đơn', 'error');
+      return;
+    }
+    try {
+      const order = await api('GET', '/' + S.id, null, BASE + '/api/orders');
+      window.orderPrint.printOrder(order);
+    } catch (error) {
+      if (!handleAuth(error)) toast(error.message, 'error');
     }
   }
 
@@ -3448,6 +4260,18 @@ window.salesOrderFeature = (() => {
       payable:0
     };
 
+    S.flags = [];
+
+    S.credit = null;
+
+    ++creditSeq;
+
+    S.stock = null;
+
+    ++historySeq;
+
+    renderHistory(null);
+
     S.dirty = false;
 
     ++S.quoteSeq;
@@ -3470,6 +4294,12 @@ window.salesOrderFeature = (() => {
 
 
     showQuoteError('');
+
+    renderApproval();
+
+    renderStock();
+
+    renderReturnNote(null);
 
     renderCustomer();
 
@@ -3587,6 +4417,11 @@ window.salesOrderFeature = (() => {
                   line.quantity
                 ),
 
+              manualPrice:
+                line.unitPrice == null
+                  ? null
+                  : String(Number(line.unitPrice)),
+
               calc:null
 
             })
@@ -3613,9 +4448,15 @@ window.salesOrderFeature = (() => {
 
       renderTotals();
 
+      renderReturnNote(order.lastReturn);
+
 
       updateOrderUrl(S.id);
 
+
+      loadCredit();
+
+      loadHistory();
 
       scheduleQuote(0);
 
@@ -3963,6 +4804,12 @@ window.salesOrderFeature = (() => {
         save
       );
 
+    $('btnPrint')
+      .addEventListener(
+        'click',
+        printCurrent
+      );
+
 
     $('btnComplete')
       .addEventListener(
@@ -4018,6 +4865,14 @@ window.salesOrderFeature = (() => {
           S.points = [];
 
           S.totals = null;
+
+          S.credit = null;
+
+          ++creditSeq;
+
+          ++historySeq;
+
+          renderHistory(null);
 
           ++pointsSeq;
 

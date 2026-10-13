@@ -10,9 +10,11 @@ public class KhachHangDB {
         "SELECT k.id,k.code,k.name,k.tax_code,k.customer_group_id,g.code group_code,g.name group_name," +
         "k.region,k.phone,k.sales_rep_id,u.full_name sales_rep_name,u.email sales_rep_email," +
         "k.status,k.credit_limit,k.credit_days,k.trading_locked,k.lock_reason,k.locked_at," +
-        "lu.full_name locked_by_name,k.created_at,k.updated_at " +
+        "lu.full_name locked_by_name,k.created_at,k.updated_at,k.warehouse_id,wh.name warehouse_name," +
+        "k.portal_user_id,pu.full_name portal_user_name,pu.email portal_user_email " +
         "FROM customers k JOIN customer_groups g ON g.id=k.customer_group_id " +
-        "LEFT JOIN users u ON u.id=k.sales_rep_id LEFT JOIN users lu ON lu.id=k.locked_by ";
+        "LEFT JOIN users u ON u.id=k.sales_rep_id LEFT JOIN users lu ON lu.id=k.locked_by " +
+        "LEFT JOIN warehouses wh ON wh.id=k.warehouse_id LEFT JOIN users pu ON pu.id=k.portal_user_id ";
 
     /** Bộ lọc danh sách; {@code onlyRep} giới hạn đại lý của một nhân viên phụ trách. */
     public record Filter(String search, String region, Long groupId, Long salesRepId, String status, Long onlyRep) {}
@@ -99,10 +101,10 @@ public class KhachHangDB {
     public long insert(Connection c, Map<String, Object> v) throws SQLException {
         var row = TruyVanDB.one(
             c,
-            "INSERT INTO customers(code,name,tax_code,customer_group_id,region,phone,sales_rep_id,status) " +
-                "VALUES(?,?,?,?,?,?,?,?) RETURNING id",
+            "INSERT INTO customers(code,name,tax_code,customer_group_id,region,phone,sales_rep_id,status,warehouse_id,portal_user_id) " +
+                "VALUES(?,?,?,?,?,?,?,?,?,?) RETURNING id",
             v.get("code"), v.get("name"), v.get("tax_code"), v.get("customer_group_id"),
-            v.get("region"), v.get("phone"), v.get("sales_rep_id"), v.get("status")
+            v.get("region"), v.get("phone"), v.get("sales_rep_id"), v.get("status"), v.get("warehouse_id"), v.get("portal_user_id")
         );
         return TruyVanDB.id(row);
     }
@@ -111,14 +113,39 @@ public class KhachHangDB {
         TruyVanDB.update(
             c,
             "UPDATE customers SET code=?,name=?,tax_code=?,customer_group_id=?,region=?,phone=?," +
-                "sales_rep_id=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                "sales_rep_id=?,status=?,warehouse_id=CASE WHEN ? THEN ? ELSE warehouse_id END," +
+                "portal_user_id=CASE WHEN ? THEN ? ELSE portal_user_id END,updated_at=CURRENT_TIMESTAMP WHERE id=?",
             v.get("code"), v.get("name"), v.get("tax_code"), v.get("customer_group_id"),
-            v.get("region"), v.get("phone"), v.get("sales_rep_id"), v.get("status"), id
+            v.get("region"), v.get("phone"), v.get("sales_rep_id"), v.get("status"),
+            v.containsKey("warehouse_id"), v.get("warehouse_id"),
+            v.containsKey("portal_user_id"), v.get("portal_user_id"), id
         );
     }
 
     public void delete(Connection c, long id) throws SQLException {
         TruyVanDB.update(c, "DELETE FROM customers WHERE id=?", id);
+    }
+
+    /** Kho đang hoạt động để chọn làm kho phục vụ của đại lý (S4-03). */
+    public List<Map<String, Object>> warehouses(Connection c) throws SQLException {
+        return TruyVanDB.rows(c, "SELECT id,code,name FROM warehouses WHERE active ORDER BY name");
+    }
+
+    /** Tài khoản vai trò Đại lý đang hoạt động, kèm đại lý đang liên kết (nếu có) để form chọn (S4-10). */
+    public List<Map<String, Object>> dealerAccounts(Connection c) throws SQLException {
+        return TruyVanDB.rows(c,
+            "SELECT DISTINCT u.id,u.full_name,u.email,k.code linked_code FROM users u " +
+            "JOIN user_roles ur ON ur.user_id=u.id JOIN roles r ON r.id=ur.role_id " +
+            "LEFT JOIN customers k ON k.portal_user_id=u.id WHERE r.code='CUSTOMER' AND u.active ORDER BY u.full_name");
+    }
+
+    public boolean isActiveDealerAccount(Connection c, long id) throws SQLException {
+        return TruyVanDB.one(c, "SELECT 1 FROM users u JOIN user_roles ur ON ur.user_id=u.id JOIN roles r ON r.id=ur.role_id " +
+            "WHERE u.id=? AND u.active AND r.code='CUSTOMER'", id) != null;
+    }
+
+    public boolean isActiveWarehouse(Connection c, long id) throws SQLException {
+        return TruyVanDB.one(c, "SELECT 1 FROM warehouses WHERE id=? AND active", id) != null;
     }
 
     public List<Map<String, Object>> groups(Connection c) throws SQLException {
@@ -336,11 +363,11 @@ public class KhachHangDB {
         );
     }
 
-    /** Đơn chưa hoàn tất hoặc chưa huỷ của đại lý. */
+    /** Đơn còn đang xử lý của đại lý (chưa đóng, chưa từ chối, chưa huỷ). */
     public long openOrderCount(Connection c, long id) throws SQLException {
         var row = TruyVanDB.one(
             c,
-            "SELECT count(*) total FROM orders WHERE agent_id=? AND status NOT IN ('COMPLETED','CANCELLED')",
+            "SELECT count(*) total FROM orders WHERE agent_id=? AND status NOT IN ('CLOSED','REJECTED','CANCELLED')",
             id
         );
         return ((Number) row.get("total")).longValue();

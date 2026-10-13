@@ -1,0 +1,411 @@
+<!-- Loaded by the application shell: ../index.html -->
+<style>
+  #orderListFeature { display: flex; flex-direction: column; gap: 18px; }
+  #orderListFeature .ol-card { overflow: hidden; border: 1px solid var(--app-border, #e4e9ef); border-radius: 16px; background: #fff; box-shadow: 0 8px 24px rgba(15, 23, 42, .04); }
+  #orderListFeature .ol-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 18px 22px; border-bottom: 1px solid #edf1f5; }
+  #orderListFeature .ol-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1 1 150px; }
+  #orderListFeature .ol-field.wide { flex: 2 1 220px; }
+  #orderListFeature .ol-field.range { flex: 0 1 330px; }
+  #orderListFeature .ol-range { display: flex; align-items: center; gap: 8px; }
+  #orderListFeature .ol-range .ol-input { flex: 1 1 0; min-width: 0; }
+  #orderListFeature .ol-range span { color: #94a3b8; }
+  #orderListFeature .ol-toolbar .ol-btn { flex: 0 0 auto; }
+  #orderListFeature .ol-field label { color: #334155; font-size: 12px; font-weight: 700; }
+  #orderListFeature .ol-select,
+  #orderListFeature .ol-input { min-height: 40px; padding: 0 10px; border: 1px solid #dce3ea; border-radius: 9px; background: #fff; color: #172033; font: inherit; font-size: 13px; }
+  #orderListFeature .ol-select:focus,
+  #orderListFeature .ol-input:focus { border-color: var(--orange); outline: 3px solid rgba(244, 122, 0, .13); }
+  #orderListFeature .ol-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 0 16px; border: 1px solid #dce3ea; border-radius: 9px; background: #fff; color: #334155; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  #orderListFeature .ol-btn:hover { border-color: #c4ceda; background: #f8fafc; }
+  #orderListFeature .ol-btn:focus-visible { outline: 3px solid rgba(244, 122, 0, .25); }
+  #orderListFeature .ol-btn.primary { border-color: var(--orange); background: var(--orange); color: #fff; }
+  #orderListFeature .ol-btn.primary:hover { background: var(--orange-dark); }
+  #orderListFeature .ol-btn.danger { border-color: #f3c4c0; color: #b42318; }
+  #orderListFeature .ol-btn.danger:hover { background: #fef3f2; }
+  #orderListFeature .ol-btn:disabled { opacity: .55; cursor: not-allowed; }
+  #orderListFeature .ol-summary { display: flex; flex-wrap: wrap; gap: 8px 24px; padding: 12px 22px; border-bottom: 1px solid #edf1f5; background: #fbfcfd; color: #475569; font-size: 13px; }
+  #orderListFeature .ol-summary strong { color: #172033; }
+  #orderListFeature .ol-table-wrap { overflow-x: auto; }
+  #orderListFeature .ol-table { width: 100%; min-width: 820px; border-collapse: collapse; }
+  #orderListFeature .ol-table th { padding: 11px 14px; background: #f4f7fa; color: #455468; text-align: left; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  #orderListFeature .ol-table th.num,
+  #orderListFeature .ol-table td.num { text-align: right; white-space: nowrap; }
+  #orderListFeature .ol-table td { padding: 12px 14px; border-top: 1px solid #edf1f5; color: #334155; font-size: 13px; vertical-align: middle; }
+  #orderListFeature .ol-table tbody tr.ol-row { cursor: pointer; }
+  #orderListFeature .ol-table tbody tr.ol-row:hover td { background: #fffaf6; }
+  #orderListFeature .ol-table tbody tr.ol-row:focus-visible { outline: 2px solid var(--orange); outline-offset: -2px; }
+  #orderListFeature .ol-table small { display: block; margin-top: 2px; color: #8490a2; font-size: 11px; }
+  #orderListFeature .ol-status { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px; background: #f2f4f7; color: #475467; font-size: 11px; font-weight: 700; white-space: nowrap; }
+  #orderListFeature .ol-status.s-DRAFT { background: #f2f4f7; color: #475467; }
+  #orderListFeature .ol-status.s-PENDING_CONFIRM,
+  #orderListFeature .ol-status.s-PENDING_APPROVAL { background: #fffaeb; color: #b54708; }
+  #orderListFeature .ol-status.s-APPROVED,
+  #orderListFeature .ol-status.s-PICKING { background: #eff8ff; color: #175cd3; }
+  #orderListFeature .ol-status.s-SHIPPED,
+  #orderListFeature .ol-status.s-DELIVERED,
+  #orderListFeature .ol-status.s-CLOSED { background: #ecfdf3; color: #067647; }
+  #orderListFeature .ol-status.s-REJECTED,
+  #orderListFeature .ol-status.s-CANCELLED { background: #fef3f2; color: #b42318; }
+  #orderListFeature .ol-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 22px; border-top: 1px solid #edf1f5; color: #64748b; font-size: 12px; }
+  #orderListFeature .ol-pager { display: flex; gap: 8px; }
+  #orderListFeature .ol-empty { padding: 48px 20px; text-align: center; color: #7a8699; }
+  #orderListFeature .ol-empty strong { display: block; margin-bottom: 5px; color: #334155; }
+  #orderListFeature .ol-error { margin: 0; padding: 16px; color: #b42318; text-align: center; }
+  #orderListFeature .ol-back { align-self: flex-start; }
+  #orderListFeature .ol-detail-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 22px; border-bottom: 1px solid #edf1f5; }
+  #orderListFeature .ol-detail-head h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 6px; color: #172033; font-size: 20px; }
+  #orderListFeature .ol-detail-head p { margin: 0; color: #64748b; font-size: 13px; }
+  #orderListFeature .ol-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  #orderListFeature .ol-banner { margin: 0; padding: 12px 22px; border-bottom: 1px solid #fecdca; background: #fef3f2; color: #912018; font-size: 13px; }
+  #orderListFeature .ol-banner.info { border-color: #fedf89; background: #fffaeb; color: #93370d; }
+  #orderListFeature .ol-banner strong { display: block; margin-bottom: 2px; }
+  #orderListFeature .ol-banner ul { margin: 4px 0 0; padding-left: 18px; }
+  #orderListFeature .ol-flag { display: inline-block; margin-top: 3px; padding: 1px 7px; border-radius: 999px; background: #fffaeb; color: #b54708; font-size: 11px; font-weight: 700; }
+  #orderListFeature .ol-flag.danger { background: #fef3f2; color: #b42318; }
+  #orderListFeature .ol-section { padding: 20px 22px; border-bottom: 1px solid #edf1f5; }
+  #orderListFeature .ol-section:last-child { border-bottom: 0; }
+  #orderListFeature .ol-section h4 { margin: 0 0 14px; color: #172033; font-size: 15px; }
+  #orderListFeature .ol-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px 24px; margin: 0; }
+  #orderListFeature .ol-grid dt { color: #7a8699; font-size: 12px; }
+  #orderListFeature .ol-grid dd { margin: 3px 0 0; color: #172033; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+  #orderListFeature .ol-totals { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px 28px; margin: 14px 0 0; }
+  #orderListFeature .ol-totals div { text-align: right; }
+  #orderListFeature .ol-totals dt { color: #7a8699; font-size: 12px; }
+  #orderListFeature .ol-totals dd { margin: 2px 0 0; color: #172033; font-size: 15px; font-weight: 700; }
+  #orderListFeature .ol-totals .pay dd { color: var(--orange-dark, #d96500); font-size: 18px; }
+  #orderListFeature .ol-timeline { display: flex; flex-direction: column; gap: 0; margin: 0; padding: 0; list-style: none; }
+  #orderListFeature .ol-timeline li { position: relative; padding: 0 0 18px 26px; }
+  #orderListFeature .ol-timeline li::before { content: ''; position: absolute; top: 5px; left: 4px; width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1; }
+  #orderListFeature .ol-timeline li::after { content: ''; position: absolute; top: 18px; bottom: 0; left: 8px; width: 2px; background: #e5eaf0; }
+  #orderListFeature .ol-timeline li:last-child { padding-bottom: 0; }
+  #orderListFeature .ol-timeline li:last-child::after { display: none; }
+  #orderListFeature .ol-timeline li:last-child::before { background: var(--orange); box-shadow: 0 0 0 4px rgba(244, 122, 0, .15); }
+  #orderListFeature .ol-timeline strong { color: #172033; font-size: 14px; }
+  #orderListFeature .ol-timeline span { display: block; margin-top: 2px; color: #64748b; font-size: 12px; }
+  #orderListFeature .ol-timeline q { display: block; margin-top: 6px; padding: 8px 10px; border-radius: 8px; background: #f8fafc; color: #334155; font-size: 13px; white-space: pre-line; quotes: none; }
+  #orderListFeature .ol-steps { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 16px; padding: 0; list-style: none; }
+  #orderListFeature .ol-steps li { padding: 4px 10px; border: 1px solid #e5eaf0; border-radius: 999px; color: #94a3b8; font-size: 12px; font-weight: 600; }
+  #orderListFeature .ol-steps li.done { border-color: #c7e3d4; background: #ecfdf3; color: #067647; }
+  #orderListFeature .ol-steps li.current { border-color: var(--orange); background: var(--orange-soft, #fff1df); color: var(--orange-dark, #d96500); }
+  @media (max-width: 720px) {
+    #orderListFeature .ol-toolbar,
+    #orderListFeature .ol-detail-head,
+    #orderListFeature .ol-section { padding: 16px; }
+    #orderListFeature .ol-summary,
+    #orderListFeature .ol-footer { padding: 12px 16px; }
+    #orderListFeature .ol-field { flex: 1 1 calc(50% - 12px); }
+    #orderListFeature .ol-table.ol-list { min-width: 0; }
+    #orderListFeature .ol-table.ol-list thead { display: none; }
+    #orderListFeature .ol-table.ol-list tbody tr { display: block; padding: 12px 16px; border-top: 1px solid #edf1f5; }
+    #orderListFeature .ol-table.ol-list td { display: block; padding: 2px 0; border: 0; text-align: left; }
+  }
+</style>
+<script>
+window.orderListFeature = (() => {
+  let generation = 0;
+  const state = { page: 1, pageSize: 20, filters: {} };
+  const MAIN_FLOW = ['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'PICKING', 'SHIPPED', 'DELIVERED', 'CLOSED'];
+  const LABELS = {
+    DRAFT: 'Nháp', PENDING_CONFIRM: 'Chờ nhân viên xác nhận', PENDING_APPROVAL: 'Chờ duyệt', APPROVED: 'Đã duyệt',
+    PICKING: 'Đang soạn hàng', SHIPPED: 'Đã xuất', DELIVERED: 'Đã giao', CLOSED: 'Đóng', REJECTED: 'Từ chối', CANCELLED: 'Huỷ'
+  };
+
+  const esc = (value) => escapeHtml(value == null ? '' : String(value));
+  const money = (value) => value == null ? '—' : `${Number(value).toLocaleString('vi-VN', { maximumFractionDigits: 2 })} đ`;
+  const qty = (value) => Number(value).toLocaleString('vi-VN', { maximumFractionDigits: 6 });
+  const when = (value) => value ? new Date(value).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+  const day = (value) => {
+    if (!value) return '—';
+    const [y, m, d] = String(value).slice(0, 10).split('-');
+    return d ? `${d}/${m}/${y}` : String(value);
+  };
+  const statusChip = (status, label) => `<span class="ol-status s-${esc(status)}">${esc(label || LABELS[status] || status)}</span>`;
+  const alive = (revision) => revision === generation && !!document.getElementById('orderListFeature');
+
+  function shell(inner) {
+    moduleContent.innerHTML = `<section id="orderListFeature">${inner}</section>`;
+  }
+
+  async function render() {
+    const revision = ++generation;
+    const requested = window.orderListSelectedId;
+    window.orderListSelectedId = null;
+    if (requested) renderDetail(requested, revision);
+    else renderList(revision);
+  }
+
+  // ----- Danh sách -----
+  // S4-07: bộ lọc theo trạng thái, đại lý, nhân viên, khu vực, khoảng thời gian (ngày tạo).
+  let filterOptions = null;
+  const option = (value, label, current) => `<option value="${esc(value)}" ${String(current ?? '') === String(value) ? 'selected' : ''}>${esc(label)}</option>`;
+
+  function filterFields() {
+    const f = state.filters;
+    const o = filterOptions || { customers: [], regions: [], salesReps: [] };
+    const statusOptions = Object.entries(LABELS).filter(([code]) => code !== 'DRAFT').map(([code, label]) => option(code, label, f.status)).join('');
+    return `<div class="ol-field"><label for="olStatus">Trạng thái</label>
+        <select id="olStatus" class="ol-select" name="status"><option value="">Tất cả</option>${statusOptions}</select></div>
+      <div class="ol-field wide"><label for="olCustomer">Đại lý</label>
+        <select id="olCustomer" class="ol-select" name="customerId"><option value="">Tất cả đại lý</option>${o.customers.map((c) => option(c.id, `${c.code} · ${c.name}`, f.customerId)).join('')}</select></div>
+      ${o.salesReps.length ? `<div class="ol-field"><label for="olRep">Nhân viên</label>
+        <select id="olRep" class="ol-select" name="salesRepId"><option value="">Tất cả nhân viên</option>${o.salesReps.map((r) => option(r.id, r.name, f.salesRepId)).join('')}</select></div>` : ''}
+      <div class="ol-field"><label for="olRegion">Khu vực</label>
+        <select id="olRegion" class="ol-select" name="region"><option value="">Tất cả khu vực</option>${o.regions.map((r) => option(r, r, f.region)).join('')}</select></div>
+      <div class="ol-field range" role="group" aria-labelledby="olDateLabel"><label id="olDateLabel" for="olFrom">Ngày tạo đơn</label>
+        <div class="ol-range"><input id="olFrom" class="ol-input" type="date" name="from" aria-label="Từ ngày" value="${esc(f.from || '')}">
+          <span aria-hidden="true">–</span><input id="olTo" class="ol-input" type="date" name="to" aria-label="Đến ngày" value="${esc(f.to || '')}"></div></div>
+      <button type="button" class="ol-btn" id="olClear" ${Object.keys(f).length ? '' : 'disabled'}>Xoá lọc</button>`;
+  }
+
+  async function loadFilterOptions(revision) {
+    if (filterOptions) return;
+    try {
+      filterOptions = await apiRequest('orders/filters');
+      if (alive(revision) && document.getElementById('olFilters')) {
+        document.getElementById('olFilters').innerHTML = filterFields();
+        bindClear(revision);
+      }
+    } catch (_) { /* Ô lọc đại lý/khu vực để trống; danh sách đơn vẫn hiện lỗi riêng nếu có */ }
+  }
+
+  // S4-10: nhắc nhân viên phụ trách có đơn đại lý tự đặt đang chờ xác nhận.
+  async function loadPortalNotice(revision) {
+    if (!hasPermission('orders.own')) return;
+    try {
+      const result = await apiRequest('orders/?status=PENDING_CONFIRM&pageSize=1');
+      const notice = document.getElementById('olPortalNotice');
+      if (!alive(revision) || !notice || !Number(result.total)) return;
+      notice.hidden = false;
+      notice.innerHTML = `<strong>${esc(result.total)} đơn đại lý tự đặt đang chờ bạn xác nhận</strong><button type="button" class="ol-btn" id="olShowPending" style="margin-top:6px">Xem các đơn này</button>`;
+      document.getElementById('olShowPending').onclick = () => {
+        state.filters = { status: 'PENDING_CONFIRM' };
+        state.page = 1;
+        renderList(revision);
+      };
+    } catch (_) { /* nhắc nhở phụ, lỗi đã hiện ở danh sách chính */ }
+  }
+
+  function bindClear(revision) {
+    document.getElementById('olClear').onclick = () => {
+      state.filters = {};
+      state.page = 1;
+      renderList(revision);
+    };
+  }
+
+  function renderList(revision) {
+    shell(`<header class="module-head"><div><span class="eyebrow">BÁN HÀNG</span><h2>Đơn hàng</h2>
+        <p>Tình hình bán hàng trong một màn hình: lọc theo trạng thái, đại lý, nhân viên, khu vực và thời gian; xem lịch sử xử lý và huỷ đơn chưa xuất kho.</p></div></header>
+      <div class="ol-card">
+        <form class="ol-toolbar" id="olFilters" aria-label="Lọc đơn hàng">${filterFields()}</form>
+        <p class="ol-banner info" id="olPortalNotice" role="status" hidden></p>
+        <div class="ol-summary" id="olSummary" aria-live="polite">Đang tải…</div>
+        <div id="olList"><div class="ol-empty"><strong>Đang tải danh sách đơn…</strong></div></div>
+        <div class="ol-footer" id="olFooter" hidden></div>
+      </div>`);
+    const form = document.getElementById('olFilters');
+    form.addEventListener('change', () => {
+      const from = form.from.value, to = form.to.value;
+      if (from && to && from > to) {
+        showToast('Từ ngày phải trước hoặc bằng Đến ngày', 'error');
+        return;
+      }
+      state.filters = Object.fromEntries([...new FormData(form)].filter(([, v]) => v !== ''));
+      state.page = 1;
+      document.getElementById('olClear').disabled = !Object.keys(state.filters).length;
+      loadList(revision);
+    });
+    form.addEventListener('submit', (event) => event.preventDefault());
+    bindClear(revision);
+    loadFilterOptions(revision);
+    loadPortalNotice(revision);
+    loadList(revision);
+  }
+
+  async function loadList(revision) {
+    const host = document.getElementById('olList');
+    const summary = document.getElementById('olSummary');
+    const footer = document.getElementById('olFooter');
+    const params = new URLSearchParams({ ...state.filters, page: state.page, pageSize: state.pageSize });
+    try {
+      const result = await apiRequest(`orders/?${params}`);
+      if (!alive(revision) || !host.isConnected) return;
+      const total = Number(result.total) || 0;
+      summary.innerHTML = `<span><strong>${esc(total.toLocaleString('vi-VN'))}</strong> đơn${Object.keys(state.filters).length ? ' khớp bộ lọc' : ''}</span>
+        <span>Tổng phải thu (sau chiết khấu): <strong>${esc(money(result.totalAmount))}</strong></span>`;
+      if (!result.items.length) {
+        host.innerHTML = `<div class="ol-empty"><strong>Chưa có đơn hàng phù hợp</strong><span>${Object.keys(state.filters).length ? 'Thử bỏ bớt điều kiện lọc.' : 'Đơn sẽ hiện ở đây sau khi được gửi từ màn hình Tạo đơn hàng.'}</span></div>`;
+        footer.hidden = true;
+        return;
+      }
+      host.innerHTML = `<div class="ol-table-wrap"><table class="ol-table ol-list"><thead><tr>
+          <th>Mã đơn</th><th>Đại lý</th><th>Nhân viên phụ trách</th><th>Ngày tạo</th><th>Trạng thái</th><th class="num">Phải thu</th>
+        </tr></thead><tbody>${result.items.map((o) => `<tr class="ol-row" tabindex="0" data-id="${esc(o.id)}">
+          <td><strong>${esc(o.code)}</strong><small>${esc(o.lineCount)} dòng hàng${o.source === 'PORTAL' ? ' · Đại lý tự đặt' : ''}</small></td>
+          <td>${esc(o.customerName)}<small>${esc(o.customerCode)}${o.region ? ' · ' + esc(o.region) : ''}</small></td>
+          <td>${esc(o.salesRepName || '—')}</td>
+          <td>${esc(when(o.createdAt))}</td>
+          <td>${statusChip(o.status, o.statusLabel)}</td>
+          <td class="num"><strong>${esc(money(o.payable))}</strong></td>
+        </tr>`).join('')}</tbody></table></div>`;
+      host.querySelectorAll('.ol-row').forEach((row) => {
+        const open = () => renderDetail(row.dataset.id, revision);
+        row.addEventListener('click', open);
+        row.addEventListener('keydown', (event) => { if (event.key === 'Enter') open(); });
+      });
+      const pages = Math.max(1, Math.ceil(total / state.pageSize));
+      footer.hidden = false;
+      footer.innerHTML = `<span>Trang ${esc(state.page)} / ${esc(pages)}</span><div class="ol-pager">
+        <button type="button" class="ol-btn" id="olPrev" ${state.page <= 1 ? 'disabled' : ''}>← Trước</button>
+        <button type="button" class="ol-btn" id="olNext" ${state.page >= pages ? 'disabled' : ''}>Sau →</button></div>`;
+      document.getElementById('olPrev').onclick = () => { state.page--; loadList(revision); };
+      document.getElementById('olNext').onclick = () => { state.page++; loadList(revision); };
+    } catch (error) {
+      if (!alive(revision) || !host.isConnected) return;
+      summary.textContent = '';
+      footer.hidden = true;
+      host.innerHTML = `<p class="ol-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  // ----- Chi tiết -----
+  function stepper(order) {
+    if (['REJECTED', 'CANCELLED', 'PENDING_CONFIRM'].includes(order.status)) return '';
+    const current = MAIN_FLOW.indexOf(order.status);
+    return `<ol class="ol-steps" aria-label="Tiến trình đơn hàng">${MAIN_FLOW.map((code, index) =>
+      `<li class="${index < current ? 'done' : index === current ? 'current' : ''}" ${index === current ? 'aria-current="step"' : ''}>${esc(LABELS[code])}</li>`).join('')}</ol>`;
+  }
+
+  async function renderDetail(id, revision) {
+    shell(`<button type="button" class="ol-btn ol-back" id="olBack">← Danh sách đơn</button>
+      <div class="ol-card" id="olDetail"><div class="ol-empty"><strong>Đang tải đơn hàng…</strong></div></div>`);
+    document.getElementById('olBack').onclick = () => renderList(revision);
+    const host = document.getElementById('olDetail');
+    try {
+      const order = await apiRequest(`orders/${encodeURIComponent(id)}`);
+      if (!alive(revision) || !host.isConnected) return;
+      const a = order.actions || {};
+      const banner = order.status === 'CANCELLED'
+        ? `<p class="ol-banner" role="status"><strong>Đơn đã huỷ</strong>Lý do: ${esc(order.cancelReason)} · ${esc(when(order.cancelledAt))}</p>`
+        : order.status === 'REJECTED' ? '<p class="ol-banner" role="status"><strong>Đơn bị từ chối</strong>Xem ý kiến người duyệt ở lịch sử xử lý bên dưới.</p>'
+        : order.status === 'PENDING_CONFIRM' ? '<p class="ol-banner info" role="status"><strong>Đại lý tự đặt trên cổng</strong>Đơn chờ nhân viên phụ trách xác nhận.</p>' : '';
+      const flags = order.approvalFlags || [];
+      const flagBanner = flags.length && ['PENDING_APPROVAL', 'DRAFT'].includes(order.status)
+        ? `<div class="ol-banner info" role="status"><strong>${order.status === 'DRAFT' ? 'Lần gửi trước cần duyệt vì' : 'Đơn cần quản lý kinh doanh duyệt vì'}</strong><ul>${flags.map((f) => `<li>${esc(f.message)}</li>`).join('')}</ul></div>` : '';
+      host.innerHTML = `<div class="ol-detail-head">
+          <div><h3>${esc(order.code)} ${statusChip(order.status, order.statusLabel)}</h3>
+            <p>${esc(order.customerName)}${order.customerCode ? ` · ${esc(order.customerCode)}` : ''} · Tạo lúc ${esc(when(order.createdAt))}${order.createdByName ? ` bởi ${esc(order.createdByName)}` : ''}</p></div>
+          <div class="ol-actions" id="olActions">
+            ${a.canCopy ? '<button type="button" class="ol-btn" id="olCopy" title="Tạo đơn nháp mới với cùng đại lý và dòng hàng, giá tính lại theo bảng giá hiện hành">Sao chép thành đơn mới</button>' : ''}
+            <button type="button" class="ol-btn" id="olPrint" title="Chọn &quot;Lưu dưới dạng PDF&quot; trong hộp thoại in để xuất PDF">In / Xuất PDF</button>
+            ${a.canCancel ? '<button type="button" class="ol-btn danger" id="olCancel">Huỷ đơn</button>' : ''}
+            ${a.canConfirm ? '<button type="button" class="ol-btn primary" id="olConfirm">Xác nhận đơn</button>' : ''}
+            ${a.canApprove ? `<button type="button" class="ol-btn danger" data-decide="reject">Từ chối</button>
+              <button type="button" class="ol-btn" data-decide="return">Trả lại sửa</button>
+              <button type="button" class="ol-btn primary" data-decide="approve">Duyệt</button>` : ''}
+          </div>
+        </div>
+        ${banner}${flagBanner}
+        <div class="ol-section">${stepper(order)}
+          <dl class="ol-grid">
+            <div><dt>Đại lý</dt><dd>${esc(order.customerName || '—')}</dd></div>
+            <div><dt>Nhân viên phụ trách</dt><dd>${esc(order.salesRepName || '—')}</dd></div>
+            <div><dt>Điểm giao</dt><dd>${esc(order.deliveryAddress || '—')}</dd></div>
+            <div><dt>Ngày giao mong muốn</dt><dd>${esc(day(order.desiredDate))}</dd></div>
+            ${order.note ? `<div><dt>Ghi chú</dt><dd>${esc(order.note)}</dd></div>` : ''}
+          </dl>
+        </div>
+        <div class="ol-section"><h4>Hàng hoá (${esc(order.lines.length)})</h4>
+          <div class="ol-table-wrap"><table class="ol-table" style="min-width:640px"><thead><tr>
+            <th>Sản phẩm</th><th class="num">Số lượng</th><th class="num">Đơn giá</th><th class="num">Thành tiền</th><th class="num">Chiết khấu</th><th class="num">Phải thu</th>
+          </tr></thead><tbody>${order.lines.map((l) => `<tr>
+            <td><strong>${esc(l.name)}</strong><small>${esc(l.sku)}</small></td>
+            <td class="num">${esc(qty(l.quantity))} ${esc(l.unitName)}</td>
+            <td class="num">${esc(money(l.unitPrice))}${l.priceOverridden ? `<small>Giá sửa tay · bảng giá ${esc(money(l.listPrice))}</small>${Number(l.unitPrice) < Number(l.floorPrice) ? `<span class="ol-flag danger">Dưới giá sàn ${esc(money(l.floorPrice))}</span>` : ''}` : ''}</td>
+            <td class="num">${esc(money(l.subtotal))}</td>
+            <td class="num">${Number(l.discount) > 0 ? '−' + esc(money(l.discount)) : '—'}</td>
+            <td class="num"><strong>${esc(money(l.payable))}</strong></td></tr>`).join('')}</tbody></table></div>
+          <dl class="ol-totals"><div><dt>Tiền hàng</dt><dd>${esc(money(order.subtotal))}</dd></div>
+            <div><dt>Chiết khấu</dt><dd>${Number(order.discount) > 0 ? '−' : ''}${esc(money(order.discount))}</dd></div>
+            <div class="pay"><dt>Phải thu</dt><dd>${esc(money(order.payable))}</dd></div></dl>
+        </div>
+        ${(order.approvals || []).length ? `<div class="ol-section"><h4>Lịch sử duyệt</h4>
+          <ol class="ol-timeline">${order.approvals.map((x) => `<li>
+            <strong>${esc({ APPROVE: 'Duyệt', REJECT: 'Từ chối', RETURN: 'Trả lại sửa' }[x.action] || x.action)}</strong>
+            <span>${esc(when(x.decidedAt))} · ${esc(x.decidedByName)} · Công nợ lúc duyệt ${esc(money(x.outstanding))} / hạn mức ${esc(money(x.creditLimit))}</span>
+            ${x.comment ? `<q>${esc(x.comment)}</q>` : ''}</li>`).join('')}</ol>
+        </div>` : ''}
+        <div class="ol-section"><h4>Lịch sử xử lý</h4>
+          <ol class="ol-timeline">${order.history.map((h) => `<li>
+            <strong>${h.fromStatus ? `${esc(h.fromLabel)} → ` : ''}${esc(h.toLabel)}</strong>
+            <span>${esc(when(h.changedAt))} · ${esc(h.changedByName)}</span>
+            ${h.reason ? `<q>${esc(h.reason)}</q>` : ''}</li>`).join('')}</ol>
+        </div>`;
+      document.getElementById('olCancel')?.addEventListener('click', () => openCancel(order, revision));
+      document.getElementById('olPrint').addEventListener('click', () => window.orderPrint.printOrder(order));
+      document.getElementById('olCopy')?.addEventListener('click', (event) => copyOrder(order, event.currentTarget));
+      document.getElementById('olConfirm')?.addEventListener('click', (event) => confirmPortal(order, event.currentTarget, revision));
+      host.querySelectorAll('[data-decide]').forEach((button) => button.addEventListener('click', () =>
+        window.orderApprovalFeature.decide(order, button.dataset.decide, () => { if (alive(revision)) renderDetail(order.id, revision); })));
+    } catch (error) {
+      if (alive(revision) && host.isConnected) host.innerHTML = `<p class="ol-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  // S4-10: nhân viên phụ trách xác nhận đơn đại lý tự đặt; hệ thống kiểm tra hạn mức và giữ chỗ tồn.
+  async function confirmPortal(order, button, revision) {
+    if (!confirm(`Xác nhận đơn ${order.code} của ${order.customerName} (${money(order.payable)})?\nĐơn trong hạn mức sẽ được duyệt và giữ hàng ngay; vượt hạn mức sẽ chuyển quản lý duyệt.`)) return;
+    button.disabled = true;
+    try {
+      const result = await apiRequest(`sales-orders/${order.id}/confirm`, jsonRequestOptions('POST', {}));
+      showToast(`Đã xác nhận đơn ${order.code} · ${result.statusLabel}`);
+      if (alive(revision)) renderDetail(order.id, revision);
+    } catch (error) {
+      showToast(error.message, 'error');
+      button.disabled = false;
+    }
+  }
+
+  // S4-09: sao chép đơn cũ thành nháp mới rồi mở ngay ở màn hình Tạo đơn hàng.
+  async function copyOrder(order, button) {
+    button.disabled = true;
+    try {
+      const copy = await apiRequest(`sales-orders/${order.id}/copy`, jsonRequestOptions('POST', {}));
+      const skipped = copy.skipped || [];
+      showToast(`Đã tạo đơn nháp ${copy.code} từ ${order.code}, giá áp theo bảng giá hiện hành` +
+        (skipped.length ? `. Bỏ ${skipped.length} dòng: ${skipped.map((s) => `${s.sku} (${s.reason})`).join('; ')}` : ''),
+        skipped.length ? 'error' : undefined);
+      const url = new URL(location.href);
+      url.searchParams.set('id', copy.id);
+      history.replaceState(null, '', url.pathname + url.search + url.hash);
+      openView('Tạo đơn hàng');
+    } catch (error) {
+      showToast(error.message, 'error');
+      button.disabled = false;
+    }
+  }
+
+  function openCancel(order, revision) {
+    const reserved = ['APPROVED', 'PICKING'].includes(order.status);
+    const { form, close } = openFormDialog(`Huỷ đơn ${order.code}`,
+      `<div class="form-group full"><label>Lý do huỷ *<textarea name="reason" maxlength="500" required placeholder="Ví dụ: đại lý đổi ý, đặt nhầm số lượng"></textarea></label></div>
+       <p class="s2-hint" style="grid-column:1/-1">Huỷ không hoàn tác được.${reserved ? ' Hàng đang giữ chỗ cho đơn sẽ được nhả lại để bán cho đơn khác.' : ''}</p>`, 'Huỷ đơn');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      try {
+        await apiRequest(`orders/${order.id}/cancel`, jsonRequestOptions('POST', { reason: form.reason.value }));
+        close();
+        showToast(`Đã huỷ đơn ${order.code}`);
+        if (alive(revision)) renderDetail(order.id, revision);
+      } catch (error) {
+        document.getElementById('s2FormError').textContent = error.message;
+        submit.disabled = false;
+      }
+    });
+  }
+
+  return { render, openDetail: (id) => renderDetail(id, generation) };
+})();
+</script>

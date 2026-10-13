@@ -31,7 +31,7 @@ public class DonHangDB extends CoSoDB {
         "k.sales_rep_id AS \"salesRepId\", COALESCE(rep.full_name,'') AS \"salesRepName\", " +
         "COALESCE(cb.full_name,'') AS \"createdByName\", o.delivery_address AS \"deliveryAddress\", " +
         "o.desired_delivery_date::text AS \"desiredDate\", o.note, o.subtotal, o.discount_total AS discount, o.payable, " +
-        "COALESCE(o.cancel_reason,'') AS \"cancelReason\", " +
+        "COALESCE(o.cancel_reason,'') AS \"cancelReason\", o.approval_flags::text AS \"approvalFlagsJson\", " +
         iso("o.created_at") + " AS \"createdAt\", " + iso("o.updated_at") + " AS \"updatedAt\", " +
         iso("o.submitted_at") + " AS \"submittedAt\", " + iso("o.approved_at") + " AS \"approvedAt\", " +
         iso("o.shipped_at") + " AS \"shippedAt\", " + iso("o.delivered_at") + " AS \"deliveredAt\", " +
@@ -39,6 +39,7 @@ public class DonHangDB extends CoSoDB {
 
     static void label(Map<String, Object> row) {
         row.put("statusLabel", TrangThaiDonHang.label(row.get("status")));
+        row.put("approvalFlags", util.XuLyJson.parse(Objects.toString(row.remove("approvalFlagsJson"), "[]")));
     }
 
     /** Danh sách đơn đã lập, mới nhất trước. Nháp chỉ hiện với người tạo (nằm ở màn hình tạo đơn). */
@@ -81,8 +82,9 @@ public class DonHangDB extends CoSoDB {
             "SELECT l.id, l.product_id AS \"productId\", p.sku, p.name, u.name AS \"unitName\", " +
             "trim_scale(l.quantity) AS quantity, trim_scale(l.conversion_factor) AS \"conversionFactor\", " +
             "trim_scale(l.base_quantity) AS \"baseQuantity\", p.base_unit AS \"baseUnit\", l.base_price AS \"basePrice\", " +
-            "round(l.base_price*l.conversion_factor,2) AS \"unitPrice\", round(l.base_price*l.base_quantity,2) AS subtotal, " +
-            "l.discount_amount AS discount, l.line_total AS payable " +
+            "round(l.base_price*l.conversion_factor,2) AS \"unitPrice\", (l.line_total + l.discount_amount) AS subtotal, " +
+            "l.discount_amount AS discount, l.line_total AS payable, l.price_overridden AS \"priceOverridden\", " +
+            "round(l.list_price*l.conversion_factor,2) AS \"listPrice\", round(l.floor_price*l.conversion_factor,2) AS \"floorPrice\" " +
             "FROM order_lines l JOIN products p ON p.id=l.product_id JOIN product_units u ON u.id=l.unit_id " +
             "WHERE l.order_id=? ORDER BY l.id", orderId);
     }

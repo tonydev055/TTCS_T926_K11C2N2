@@ -41,22 +41,32 @@ public class DonHangNhapDB extends CoSoDB {
         return rows.isEmpty() ? null : ((Number) rows.get(0).get("id")).longValue();
     }
 
-    /** Sản phẩm có giá trong bảng giá, kèm các đơn vị tính đang dùng. Giá (price) tính theo đơn vị cơ bản. */
+    /**
+     * Sản phẩm đang kinh doanh khớp từ khoá, kèm các đơn vị tính đang dùng. Giá (price) và giá sàn tính theo đơn vị cơ bản.
+     * S4-01: trả cả sản phẩm chưa có giá trong bảng giá (priced=false) để giao diện báo rõ lý do không thêm được.
+     */
     public List<Map<String, Object>> products(String q, long priceListId) throws SQLException {
         String k = like(q);
         var rows = query(
-            "SELECT p.id, p.sku, p.name, p.base_unit AS \"baseUnit\", pll.price " +
-            "FROM products p JOIN price_list_lines pll ON pll.product_id=p.id AND pll.price_list_id=? " +
+            "SELECT p.id, p.sku, p.name, p.base_unit AS \"baseUnit\", pll.price, pll.floor_price AS \"floorPrice\", " +
+            "(pll.id IS NOT NULL) AS priced " +
+            "FROM products p LEFT JOIN price_list_lines pll ON pll.product_id=p.id AND pll.price_list_id=? " +
             "WHERE p.active AND (p.sku ILIKE ? ESCAPE '\\' OR p.name ILIKE ? ESCAPE '\\') " +
-            "ORDER BY p.sku LIMIT 20", priceListId, k, k);
+            "ORDER BY (pll.id IS NULL), p.sku LIMIT 20", priceListId, k, k);
         attachUnits(rows, "id");
         return rows;
+    }
+
+    /** Tên hiển thị "SKU — Tên" của sản phẩm để báo lỗi; null nếu không có. */
+    public String productName(long productId) throws SQLException {
+        var rows = query("SELECT sku || ' — ' || name AS n FROM products WHERE id=?", productId);
+        return rows.isEmpty() ? null : (String) rows.get(0).get("n");
     }
 
     /** Thông tin một dòng: sản phẩm + giá cơ bản trong bảng giá + đơn vị tính chọn. Null nếu không hợp lệ. */
     public Map<String, Object> lineInfo(long priceListId, long productId, long unitId) throws SQLException {
         var rows = query(
-            "SELECT p.id, p.sku, p.name, p.category_id, pll.price, u.id AS unit_id, u.name AS unit_name, u.factor " +
+            "SELECT p.id, p.sku, p.name, p.category_id, pll.price, pll.floor_price, u.id AS unit_id, u.name AS unit_name, u.factor " +
             "FROM products p " +
             "JOIN price_list_lines pll ON pll.product_id=p.id AND pll.price_list_id=? " +
             "JOIN product_units u ON u.product_id=p.id AND u.id=? AND u.active " +
@@ -83,10 +93,14 @@ public class DonHangNhapDB extends CoSoDB {
         }
     }
 
-    /** Tạo mới (orderId == null) hoặc cập nhật đơn nháp của chính người dùng. Trả về id đơn. */
+    /**
+     * Tạo mới (orderId == null) hoặc cập nhật đơn nháp của chính người dùng. Trả về id đơn.
+     * flags != null nghĩa là gửi đơn: không có lý do cần duyệt thì hệ thống tự duyệt, ngược lại chuyển Chờ duyệt.
+     */
     public long saveDraft(Long orderId, long userId, long customerId, long priceListId, Long pointId, String address,
                           LocalDate desiredDate, String note, BigDecimal subtotal, BigDecimal discount,
-                          BigDecimal payable, List<Map<String, Object>> lines, boolean complete) throws SQLException {
+                          BigDecimal payable, List<Map<String, Object>> lines, List<Map<String, Object>> flags) throws SQLException {
+        boolean complete = flags != null;
         try (Connection c = KetNoiDB.getConnection()) {
             c.setAutoCommit(false);
             try {
@@ -160,7 +174,8 @@ public class DonHangNhapDB extends CoSoDB {
                 }
                 try (PreparedStatement p = c.prepareStatement(
                         "INSERT INTO order_lines(order_id,product_id,unit_id,quantity,conversion_factor," +
-                        "base_price,discount_amount,line_total,policy_id) VALUES(?,?,?,?,?,?,?,?,?)")) {
+                        "base_price,discount_amount,line_total,policy_id,list_price,floor_price,price_overridden) " +
+                        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)")) {
                     for (var l : lines) {
                         p.setLong(1, id);
                         p.setLong(2, ((Number) l.get("productId")).longValue());
@@ -171,15 +186,14 @@ public class DonHangNhapDB extends CoSoDB {
                         p.setBigDecimal(7, (BigDecimal) l.get("discount"));
                         p.setBigDecimal(8, (BigDecimal) l.get("payable"));
                         p.setObject(9, l.get("policyId"), Types.BIGINT);
+                        p.setBigDecimal(10, (BigDecimal) l.get("listBasePrice"));
+                        p.setBigDecimal(11, (BigDecimal) l.get("floorBasePrice"));
+                        p.setBoolean(12, Boolean.TRUE.equals(l.get("priceOverridden")));
                         p.addBatch();
                     }
                     p.executeBatch();
                 }
-                if (complete) {
-                    // S4-06: gửi đơn → Chờ duyệt; trigger ghi lịch sử và mốc thời gian gửi.
-                    service.TrangThaiDonHang.setContext(c, userId, "Nhân viên gửi đơn");
-                    TruyVanDB.update(c, "UPDATE orders SET status='PENDING_APPROVAL' WHERE id=?", id);
-                }
+                if (complete) submit(c, id, userId, flags, "Nhân viên gửi đơn");
                 c.commit();
                 return id;
             } catch (SQLException e) {
@@ -192,18 +206,46 @@ public class DonHangNhapDB extends CoSoDB {
         }
     }
 
+    /**
+     * Chuyển đơn đang ở Nháp/Chờ xác nhận sang bước duyệt trong giao dịch c (S4-01, S4-06).
+     * Không có lý do cần duyệt: hệ thống tự duyệt. Có: Chờ duyệt, lưu lý do để quản lý xem. Trả về trạng thái mới.
+     */
+    public static String submit(Connection c, long id, long actor, List<Map<String, Object>> flags, String who) throws SQLException {
+        String status = flags.isEmpty() ? service.TrangThaiDonHang.APPROVED : service.TrangThaiDonHang.PENDING_APPROVAL;
+        StringBuilder reason = new StringBuilder(who);
+        if (flags.isEmpty()) reason.append(". Tự động duyệt: không có vi phạm cần duyệt");
+        else {
+            reason.append(". Cần duyệt:");
+            for (var f : flags) reason.append("\n• ").append(f.get("message"));
+        }
+        service.TrangThaiDonHang.setContext(c, actor, reason.toString());
+        beforeApprove(c, id, status);
+        TruyVanDB.update(c, "UPDATE orders SET status=?, approval_flags=?::jsonb WHERE id=?",
+            status, util.XuLyJson.stringify(flags), id);
+        return status;
+    }
+
+    /** Điểm mở rộng: việc cần làm trong cùng giao dịch trước khi đơn chuyển sang trạng thái mới khi gửi. */
+    static void beforeApprove(Connection c, long id, String status) throws SQLException {
+    }
+
     /** Mở lại một đơn nháp của chính người dùng (kèm dòng hàng và các đơn vị tính để sửa tiếp). */
     public Map<String, Object> load(long id, long userId) throws SQLException {
         var rows = query(
             "SELECT o.id, o.code, o.status, o.agent_id AS \"customerId\", u.name AS \"customerName\", " +
             "COALESCE(u.phone,'') AS \"customerPhone\", o.delivery_address AS \"deliveryAddress\", o.delivery_address_id AS \"deliveryPointId\", " +
             "u.trading_locked AS \"tradingLocked\", COALESCE(u.lock_reason,'') AS \"lockReason\", " +
-            "o.desired_delivery_date AS \"desiredDate\", o.note, o.subtotal, o.discount_total AS discount, o.payable " +
+            "o.desired_delivery_date AS \"desiredDate\", o.note, o.subtotal, o.discount_total AS discount, o.payable, " +
+            "o.approval_flags::text AS \"approvalFlagsJson\" " +
             "FROM orders o LEFT JOIN customers u ON u.id=o.agent_id WHERE o.id=? AND o.created_by=? AND u.sales_rep_id=?", id, userId, userId);
         if (rows.isEmpty()) return null;
         Map<String, Object> order = new LinkedHashMap<>(rows.get(0));
+        order.put("statusLabel", service.TrangThaiDonHang.label(order.get("status")));
+        order.put("approvalFlags", util.XuLyJson.parse(Objects.toString(order.remove("approvalFlagsJson"), "[]")));
+        // Giá sửa thủ công được trả lại để mở nháp vẫn giữ nguyên; giá bảng giá thì để máy chủ tính lại.
         var lines = query(
-            "SELECT l.product_id AS \"productId\", p.sku, p.name, l.unit_id AS \"unitId\", trim_scale(l.quantity) AS quantity " +
+            "SELECT l.product_id AS \"productId\", p.sku, p.name, l.unit_id AS \"unitId\", trim_scale(l.quantity) AS quantity, " +
+            "CASE WHEN l.price_overridden THEN round(l.base_price*l.conversion_factor,2) END AS \"unitPrice\" " +
             "FROM order_lines l JOIN products p ON p.id=l.product_id WHERE l.order_id=? ORDER BY l.id", id);
         attachUnits(lines, "productId");
         order.put("lines", lines);

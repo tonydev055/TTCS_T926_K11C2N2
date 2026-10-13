@@ -5,6 +5,9 @@ BEGIN;
 -- Giá bảng giá và giá sàn tại thời điểm lưu, để đối chiếu khi duyệt dù bảng giá thay đổi về sau.
 ALTER TABLE order_lines ADD COLUMN IF NOT EXISTS list_price NUMERIC(18,2);
 ALTER TABLE order_lines ADD COLUMN IF NOT EXISTS floor_price NUMERIC(18,2);
+-- Giá sửa thủ công thường nhập theo thùng (vd 400.000 đ / 12 chai) nên giá cơ bản cần nhiều số lẻ hơn
+-- để mở lại đơn vẫn ra đúng giá đã nhập. Chỉ mở rộng độ chính xác, không đổi dữ liệu hiện có.
+ALTER TABLE order_lines ALTER COLUMN base_price TYPE NUMERIC(18,6);
 -- TRUE khi nhân viên sửa giá thủ công thay cho giá bảng giá.
 ALTER TABLE order_lines ADD COLUMN IF NOT EXISTS price_overridden BOOLEAN NOT NULL DEFAULT FALSE;
 UPDATE order_lines SET list_price = base_price WHERE list_price IS NULL;

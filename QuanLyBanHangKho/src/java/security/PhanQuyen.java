@@ -283,6 +283,7 @@ public final class PhanQuyen {
         if (under(path, "/api/sales-orders")) return "orders.own";
         if (under(path, "/api/delivery-points")) return "customers.assigned";
         if (under(path, "/api/customers")) return CUSTOMERS_ACCESS;
+        if (under(path, "/api/order-approvals")) return "orders.approve";
         if (under(path, "/api/orders")) return ORDERS_ACCESS;
         if (under(path, "/api/invoices")) return "invoices.write";
         if (under(path, "/api/payments")) return "payments.write";

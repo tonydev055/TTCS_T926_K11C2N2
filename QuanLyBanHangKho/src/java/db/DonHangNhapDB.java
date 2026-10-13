@@ -277,6 +277,10 @@ public class DonHangNhapDB extends CoSoDB {
         Map<String, Object> order = new LinkedHashMap<>(rows.get(0));
         order.put("statusLabel", service.TrangThaiDonHang.label(order.get("status")));
         order.put("approvalFlags", util.XuLyJson.parse(Objects.toString(order.remove("approvalFlagsJson"), "[]")));
+        // S4-05: nháp bị quản lý trả lại → ý kiến gần nhất để nhân viên biết cần sửa gì.
+        var review = query("SELECT comment, decided_by_name AS \"decidedByName\", " + DonHangDB.iso("decided_at") +
+            " AS \"decidedAt\" FROM order_approvals WHERE order_id=? AND action='RETURN' ORDER BY decided_at DESC, id DESC LIMIT 1", id);
+        order.put("lastReturn", "DRAFT".equals(order.get("status")) && !review.isEmpty() ? review.get(0) : null);
         // Giá sửa thủ công được trả lại để mở nháp vẫn giữ nguyên; giá bảng giá thì để máy chủ tính lại.
         var lines = query(
             "SELECT l.product_id AS \"productId\", p.sku, p.name, l.unit_id AS \"unitId\", trim_scale(l.quantity) AS quantity, " +

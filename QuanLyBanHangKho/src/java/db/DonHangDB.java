@@ -74,6 +74,7 @@ public class DonHangDB extends CoSoDB {
         label(order);
         order.put("lines", lines(id));
         order.put("history", history(id));
+        order.put("approvals", new DuyetDonDB().history(id));
         return order;
     }
 

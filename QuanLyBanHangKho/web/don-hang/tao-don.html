@@ -486,7 +486,7 @@
 /* =========================================================
    BOTTOM BAR
    Hàng 1:  Tiền hàng | Chiết khấu | Phải thu  (sát mép trái/phải)
-   Hàng 2:  [ Lưu nháp ] [ Hoàn tất đơn ]      (căn giữa)
+   Hàng 2:  [ Lưu nháp ] [ Gửi đơn ]      (căn giữa)
 
    left + width do JS (syncOrderBottomBar) gán theo .order-content
    nên thanh luôn khớp mép trái/phải của form.
@@ -1139,7 +1139,7 @@
             <button
               type="button"
               id="btnComplete">
-              Hoàn tất đơn
+              Gửi đơn
             </button>
           </div>
 
@@ -1678,7 +1678,7 @@ window.salesOrderFeature = (() => {
           (customer.lockReason ? ': ' + customer.lockReason : '') +
           '. ' +
           (S.id
-            ? 'Đơn nháp này vẫn được xử lý tiếp, vui lòng kiểm tra kỹ trước khi hoàn tất.'
+            ? 'Đơn nháp này vẫn được xử lý tiếp, vui lòng kiểm tra kỹ trước khi gửi.'
             : 'Không thể tạo đơn mới cho đại lý này.');
 
 
@@ -3314,7 +3314,7 @@ window.salesOrderFeature = (() => {
     if(!S.id){
 
       toast(
-        'Hãy lưu nháp trước khi hoàn tất đơn',
+        'Hãy lưu nháp trước khi gửi đơn',
         'error'
       );
 
@@ -3324,7 +3324,7 @@ window.salesOrderFeature = (() => {
     if(!S.customer){
 
       toast(
-        'Chọn đại lý trước khi hoàn tất đơn',
+        'Chọn đại lý trước khi gửi đơn',
         'error'
       );
 
@@ -3361,7 +3361,7 @@ window.salesOrderFeature = (() => {
       return;
     }
 
-    if(!confirm('Xác nhận hoàn tất đơn ' + (S.code || '') + '?')){
+    if(!confirm('Gửi đơn ' + (S.code || '') + '? Sau khi gửi, đơn không sửa được nữa.')){
       return;
     }
 
@@ -3373,7 +3373,7 @@ window.salesOrderFeature = (() => {
     button.disabled = true;
 
     button.textContent =
-      'Đang hoàn tất…';
+      'Đang gửi…';
 
     try{
 
@@ -3387,8 +3387,10 @@ window.salesOrderFeature = (() => {
       S.dirty = false;
 
       toast(
-        'Đã hoàn tất đơn ' +
-        (result.code || S.code || '')
+        'Đã gửi đơn ' +
+        (result.code || S.code || '') +
+        ' · ' +
+        (result.statusLabel || 'Chờ duyệt')
       );
 
       refreshDraftCount();
@@ -3416,7 +3418,7 @@ window.salesOrderFeature = (() => {
         setSaving(false);
       }
       button.textContent =
-        'Hoàn tất đơn';
+        'Gửi đơn';
     }
   }
 

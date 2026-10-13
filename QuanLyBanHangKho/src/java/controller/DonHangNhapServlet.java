@@ -19,6 +19,7 @@ import util.XuLyJson;
  *   POST /api/sales-orders/quote        tính tiền hàng, chiết khấu, phải thu (không lưu)
  *   POST /api/sales-orders              lưu nháp mới
  *   PUT  /api/sales-orders/{id}         lưu nháp đang sửa
+ *   POST /api/sales-orders/{id}/copy   sao chép đơn cũ thành nháp mới, áp lại giá hiện hành (S4-09)
  *   PUT  /api/sales-orders/{id}/complete hoàn tất với body như lưu nháp; máy chủ tính lại giá, kiểm tra điểm giao/ngày/dòng hàng
  */
 @WebServlet("/api/sales-orders/*")
@@ -97,6 +98,8 @@ public class DonHangNhapServlet extends CoSoServlet {
             } else if (p.equals("/")) {
                 long id = service.luuNhap(null, uid, in);
                 created(r, XuLyJson.stringify(dao.load(id, uid)));
+            } else if (p.matches("/\\d+/copy")) {
+                created(r, XuLyJson.stringify(service.saoChep(parseId(p.split("/")[1]), uid)));
             } else {
                 throw new NoSuchElementException("Không tìm thấy chức năng");
             }

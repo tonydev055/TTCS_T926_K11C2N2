@@ -80,6 +80,7 @@ public class DonHangService {
         boolean rep = PhanQuyen.allows(roles, "orders.own") && ownCustomer;
         a.put("canCancel", TrangThaiDonHang.CANCELLABLE.contains(String.valueOf(order.get("status"))) && (manager || rep));
         a.put("canApprove", TrangThaiDonHang.PENDING_APPROVAL.equals(order.get("status")) && manager);
+        a.put("canCopy", rep);
         return a;
     }
 

@@ -253,6 +253,48 @@ public class TaoDonHangService {
         return out;
     }
 
+    /**
+     * S4-09: sao chép một đơn cũ (mọi trạng thái, kể cả đã huỷ) của đại lý mình phụ trách thành đơn Nháp mới.
+     * Giữ đại lý, dòng hàng (sản phẩm, đơn vị, số lượng), điểm giao nếu còn dùng và ghi chú; giá và chiết khấu
+     * được áp lại theo bảng giá hiện hành (không giữ giá cũ hay giá sửa tay). Dòng không còn bán được thì bỏ qua và
+     * báo lại. Đại lý bị khoá hoặc có nợ quá hạn thì không sao chép được (như tạo đơn mới).
+     */
+    public Map<String, Object> saoChep(long sourceId, long userId) throws SQLException {
+        var source = dao.copySource(sourceId, userId);
+        if (source == null) throw new NoSuchElementException("Không tìm thấy đơn hàng để sao chép");
+        long customerId = ((Number) source.get("customerId")).longValue();
+        Long priceListId = dao.currentPriceListId(customerId);
+        if (priceListId == null) throw new IllegalArgumentException(
+            "Đại lý chưa có bảng giá còn hiệu lực. Hãy kiểm tra nhóm khách hàng và bảng giá của đại lý.");
+        List<Map<String, Object>> lines = new ArrayList<>();
+        List<Map<String, Object>> skipped = new ArrayList<>();
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> sourceLines = (List<Map<String, Object>>) source.get("lines");
+        for (var l : sourceLines) {
+            long productId = ((Number) l.get("productId")).longValue(), unitId = ((Number) l.get("unitId")).longValue();
+            if (dao.lineInfo(priceListId, productId, unitId) == null) {
+                Map<String, Object> s = new LinkedHashMap<>();
+                s.put("sku", l.get("sku"));
+                s.put("name", l.get("name"));
+                s.put("reason", Boolean.TRUE.equals(l.get("productActive"))
+                    ? "chưa có giá trong bảng giá hiện hành hoặc đơn vị tính đã ngừng dùng" : "sản phẩm đã ngừng kinh doanh");
+                skipped.add(s);
+            } else lines.add(Map.of("productId", productId, "unitId", unitId, "quantity", l.get("quantity")));
+        }
+        if (lines.isEmpty()) throw new IllegalArgumentException(
+            "Không còn dòng hàng nào của đơn " + source.get("code") + " bán được theo bảng giá hiện hành");
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("customerId", customerId);
+        body.put("deliveryPointId", source.get("deliveryPointId"));
+        body.put("note", source.get("note"));
+        body.put("lines", lines);
+        long id = luuNhap(null, userId, body);
+        Map<String, Object> out = new LinkedHashMap<>(dao.load(id, userId));
+        out.put("copiedFrom", source.get("code"));
+        out.put("skipped", skipped);
+        return out;
+    }
+
     /** Lưu nháp: tạo mới (orderId == null) hoặc cập nhật. Nháp được phép chưa đủ địa chỉ, ngày giao hoặc dòng hàng. */
     public long luuNhap(Long orderId, long userId, Map<String, Object> in) throws SQLException {
         return luu(orderId, userId, in, false);

@@ -264,6 +264,25 @@ public class DonHangNhapDB extends CoSoDB {
         if (service.TrangThaiDonHang.APPROVED.equals(status)) GiuChoTonDB.reserve(c, id);
     }
 
+    /**
+     * Đơn nguồn để sao chép (S4-09): đơn bất kỳ trạng thái của đại lý do nhân viên này phụ trách (nháp thì phải là
+     * của chính người đó). Điểm giao chỉ giữ nếu còn đang dùng. Null nếu không có hoặc ngoài phạm vi.
+     */
+    public Map<String, Object> copySource(long id, long userId) throws SQLException {
+        var rows = query(
+            "SELECT o.id, o.code, o.agent_id AS \"customerId\", o.note, " +
+            "(SELECT a.id FROM customer_addresses a WHERE a.id=o.delivery_address_id AND a.customer_id=o.agent_id AND a.active) " +
+            "AS \"deliveryPointId\" FROM orders o JOIN customers k ON k.id=o.agent_id " +
+            "WHERE o.id=? AND k.sales_rep_id=? AND (o.status<>'DRAFT' OR o.created_by=?)", id, userId, userId);
+        if (rows.isEmpty()) return null;
+        Map<String, Object> order = new LinkedHashMap<>(rows.get(0));
+        order.put("lines", query(
+            "SELECT l.product_id AS \"productId\", l.unit_id AS \"unitId\", trim_scale(l.quantity) AS quantity, " +
+            "p.sku, p.name, p.active AS \"productActive\" FROM order_lines l JOIN products p ON p.id=l.product_id " +
+            "WHERE l.order_id=? ORDER BY l.id", id));
+        return order;
+    }
+
     /** Mở lại một đơn nháp của chính người dùng (kèm dòng hàng và các đơn vị tính để sửa tiếp). */
     public Map<String, Object> load(long id, long userId) throws SQLException {
         var rows = query(

@@ -14,6 +14,7 @@ import util.XuLyJson;
  *   GET  /api/sales-orders              danh sách đơn nháp của tôi
  *   GET  /api/sales-orders/{id}         mở lại một đơn nháp
  *   GET  /api/sales-orders/customers?q= tìm đại lý
+ *   GET  /api/sales-orders/customers/{id}/purchase-history  mặt hàng đã mua 3 tháng, bình quân mỗi đơn, đơn gần nhất (S4-04)
  *   GET  /api/sales-orders/customers/{id}/credit  công nợ hiện tại, hạn mức, phần còn lại, quá hạn (S4-02)
  *   GET  /api/sales-orders/products?customerId=&q=  tìm sản phẩm theo mã hoặc tên
  *   POST /api/sales-orders/quote        tính tiền hàng, chiết khấu, phải thu (không lưu)
@@ -67,6 +68,8 @@ public class DonHangNhapServlet extends CoSoServlet {
                 ok(r, jsonRows(dao.listDrafts(uid)));
             } else if (p.equals("/customers")) {
                 ok(r, jsonRows(dao.customers(q.getParameter("q"), uid)));
+            } else if (p.matches("/customers/\\d+/purchase-history")) {
+                ok(r, XuLyJson.stringify(service.lichSuMua(uid, parseId(p.split("/")[2]))));
             } else if (p.matches("/customers/\\d+/credit")) {
                 ok(r, XuLyJson.stringify(service.congNo(uid, parseId(p.split("/")[2]))));
             } else if (p.equals("/products")) {

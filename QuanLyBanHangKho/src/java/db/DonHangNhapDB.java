@@ -264,6 +264,47 @@ public class DonHangNhapDB extends CoSoDB {
         if (service.TrangThaiDonHang.APPROVED.equals(status)) GiuChoTonDB.reserve(c, id);
     }
 
+    /** Trạng thái được tính là "đã mua": đơn đã duyệt trở đi, không tính nháp, chờ duyệt, từ chối, huỷ. */
+    static final String PURCHASED = "('APPROVED','PICKING','SHIPPED','DELIVERED','CLOSED')";
+
+    /**
+     * Lịch sử mua 3 tháng gần nhất của đại lý (S4-04): mỗi sản phẩm có số đơn, tổng và bình quân số lượng mỗi đơn
+     * (đơn vị cơ bản), lần mua gần nhất; kèm đơn mua gần nhất để thêm nhanh cả nhóm hàng. priced cho biết sản phẩm
+     * còn giá trong bảng giá hiện hành hay không.
+     */
+    public Map<String, Object> purchaseHistory(long customerId, Long priceListId) throws SQLException {
+        var items = query(
+            "SELECT p.id AS \"productId\", p.sku, p.name, p.base_unit AS \"baseUnit\", p.active, " +
+            "count(DISTINCT o.id) AS orders, trim_scale(sum(l.base_quantity)) AS \"totalQuantity\", " +
+            "trim_scale(round(sum(l.base_quantity) / count(DISTINCT o.id), 2)) AS \"averageQuantity\", " +
+            DonHangDB.iso("max(o.created_at)") + " AS \"lastOrderedAt\", " +
+            "EXISTS (SELECT 1 FROM price_list_lines pll WHERE pll.product_id=p.id AND pll.price_list_id=?) AS priced " +
+            "FROM orders o JOIN order_lines l ON l.order_id=o.id JOIN products p ON p.id=l.product_id " +
+            "WHERE o.agent_id=? AND o.status IN " + PURCHASED + " AND o.created_at >= CURRENT_DATE - INTERVAL '3 months' " +
+            "GROUP BY p.id ORDER BY count(DISTINCT o.id) DESC, sum(l.base_quantity) DESC, p.sku LIMIT 50",
+            priceListId, customerId);
+        attachUnits(items, "productId");
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("months", 3);
+        out.put("items", items);
+        var last = query("SELECT o.id, o.code, " + DonHangDB.iso("o.created_at") + " AS \"createdAt\" FROM orders o " +
+            "WHERE o.agent_id=? AND o.status IN " + PURCHASED + " ORDER BY o.created_at DESC, o.id DESC LIMIT 1", customerId);
+        if (last.isEmpty()) out.put("lastOrder", null);
+        else {
+            Map<String, Object> order = new LinkedHashMap<>(last.get(0));
+            var lines = query(
+                "SELECT l.product_id AS \"productId\", p.sku, p.name, p.base_unit AS \"baseUnit\", l.unit_id AS \"unitId\", " +
+                "trim_scale(l.quantity) AS quantity, (p.active AND u.active AND EXISTS (SELECT 1 FROM price_list_lines pll " +
+                "WHERE pll.product_id=p.id AND pll.price_list_id=?)) AS available " +
+                "FROM order_lines l JOIN products p ON p.id=l.product_id JOIN product_units u ON u.id=l.unit_id " +
+                "WHERE l.order_id=? ORDER BY l.id", priceListId, order.get("id"));
+            attachUnits(lines, "productId");
+            order.put("lines", lines);
+            out.put("lastOrder", order);
+        }
+        return out;
+    }
+
     /**
      * Đơn nguồn để sao chép (S4-09): đơn bất kỳ trạng thái của đại lý do nhân viên này phụ trách (nháp thì phải là
      * của chính người đó). Điểm giao chỉ giữ nếu còn đang dùng. Null nếu không có hoặc ngoài phạm vi.

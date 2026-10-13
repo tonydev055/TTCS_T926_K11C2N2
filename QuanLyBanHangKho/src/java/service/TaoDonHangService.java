@@ -58,6 +58,12 @@ public class TaoDonHangService {
         return v;
     }
 
+    /** S4-04: lịch sử mua 3 tháng của đại lý mình phụ trách (ngoài phạm vi thì như không tồn tại). */
+    public Map<String, Object> lichSuMua(long userId, long customerId) throws SQLException {
+        if (!dao.isAgent(customerId, userId)) throw new NoSuchElementException("Không tìm thấy đại lý");
+        return dao.purchaseHistory(customerId, dao.currentPriceListId(customerId));
+    }
+
     /** Công nợ hiện tại, hạn mức, phần còn lại và tình trạng quá hạn của đại lý mình phụ trách (S4-02). */
     public Map<String, Object> congNo(long userId, long customerId) throws SQLException {
         if (!dao.isAgent(customerId, userId)) throw new NoSuchElementException("Không tìm thấy đại lý");

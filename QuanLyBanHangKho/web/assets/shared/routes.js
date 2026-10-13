@@ -12,6 +12,7 @@ function getAvailableMenu() {
   if (hasPermission('customers.assigned')) menu.push('Điểm giao hàng');
   if (hasPermission('orders.own')) menu.push('Tạo đơn hàng');
   if (hasPermission('orders.read') || hasPermission('orders.own')) menu.push('Đơn hàng');
+  if (hasPermission('orders.approve')) menu.push('Duyệt đơn hàng');
   menu.push('Hồ sơ cá nhân', 'Đổi mật khẩu');
   return [...new Set(menu)];
 }
@@ -71,6 +72,10 @@ function renderFeatureView(view) {
     return true; }
   if (view === 'Đơn hàng') {
     orderListFeature.render();
+    return true;
+  }
+  if (view === 'Duyệt đơn hàng') {
+    orderApprovalFeature.render();
     return true;
   }
   return false;

@@ -63,7 +63,7 @@ function openView(view, replaceUrl = false) {
   const feature = {
     'Tổng quan': 'tong-quan', 'Người dùng': 'nguoi-dung',
     'Sản phẩm & bảng giá': 'danh-muc', 'Nhà cung cấp': 'danh-muc',
-    'Chính sách chiết khấu': 'chiet-khau', 'Điểm giao hàng': 'diem-giao', 'Tạo đơn hàng': 'don-hang', 'Đơn hàng': 'don-hang', 'Lịch sử thay đổi giá': 'lich-su-gia', 'Đại lý': 'dai-ly',
+    'Chính sách chiết khấu': 'chiet-khau', 'Điểm giao hàng': 'diem-giao', 'Tạo đơn hàng': 'don-hang', 'Đơn hàng': 'don-hang', 'Duyệt đơn hàng': 'duyet-don', 'Lịch sử thay đổi giá': 'lich-su-gia', 'Đại lý': 'dai-ly',
     'Vai trò & quyền': 'phan-quyen', 'Nhật ký hệ thống': 'nhat-ky',
     'Nhập người dùng Excel': 'nhap-excel', 'Hồ sơ cá nhân': 'ho-so'
   }[view];
@@ -127,6 +127,7 @@ function buildNavigation(menu) {
     'Chỉ tiêu cá nhân': '◎',
     'Đại lý & hạn mức': '◇',
     'Duyệt ngoại lệ': '✓',
+    'Duyệt đơn hàng': '✓',
     'Doanh số & chỉ tiêu': '◎',
     'Báo cáo kinh doanh': '▥',
     'Hóa đơn': '▤',

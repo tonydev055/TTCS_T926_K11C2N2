@@ -593,6 +593,34 @@
   font-size:12px;
 }
 
+/* S4-05: ý kiến của quản lý khi trả lại đơn để sửa */
+#salesOrderFeatureRoot .return-note{
+  margin:0 0 16px;
+  padding:12px 14px;
+  border:1px solid #fde68a;
+  border-left:4px solid #f59e0b;
+  border-radius:10px;
+  background:#fffbeb;
+  color:#78350f;
+  font-size:12px;
+  line-height:1.5;
+}
+
+#salesOrderFeatureRoot .return-note strong{
+  display:block;
+  margin-bottom:3px;
+  font-size:13px;
+}
+
+#salesOrderFeatureRoot .return-note q{
+  display:block;
+  margin-top:4px;
+  color:#451a03;
+  font-size:13px;
+  white-space:pre-line;
+  quotes:none;
+}
+
 #salesOrderFeatureRoot .approval-note{
   margin-top:12px;
   padding:10px 12px;
@@ -1110,6 +1138,15 @@
 
         </div>
 
+      </div>
+
+
+      <!-- Ý KIẾN TRẢ LẠI (S4-05) -->
+      <div
+        id="returnNote"
+        class="return-note"
+        role="status"
+        hidden>
       </div>
 
 
@@ -1824,6 +1861,24 @@ window.salesOrderFeature = (() => {
     $('sum').classList.toggle(
       'busy',
       S.quoting
+    );
+  }
+
+
+  /* S4-05: nháp bị quản lý trả lại → hiện ý kiến để nhân viên biết cần sửa gì. */
+  function renderReturnNote(review){
+    const box = $('returnNote');
+    if (!box) return;
+    box.replaceChildren();
+    box.hidden = !review;
+    if (!review) return;
+    box.append(
+      el('strong', { text:'Quản lý kinh doanh đã trả lại đơn này để sửa' }),
+      el('span', {
+        text:(review.decidedByName || '') +
+          (review.decidedAt ? ' · ' + new Date(review.decidedAt).toLocaleString('vi-VN', { dateStyle:'short', timeStyle:'short' }) : '')
+      }),
+      el('q', { text:review.comment || '' })
     );
   }
 
@@ -3978,6 +4033,8 @@ window.salesOrderFeature = (() => {
 
     renderStock();
 
+    renderReturnNote(null);
+
     renderCustomer();
 
     renderPoints();
@@ -4124,6 +4181,8 @@ window.salesOrderFeature = (() => {
       renderAllLines();
 
       renderTotals();
+
+      renderReturnNote(order.lastReturn);
 
 
       updateOrderUrl(S.id);

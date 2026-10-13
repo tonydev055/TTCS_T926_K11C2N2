@@ -25,5 +25,20 @@ BEGIN
 END $$;
 DROP TRIGGER IF EXISTS transfer_final_guard ON stock_transfers;
 CREATE TRIGGER transfer_final_guard BEFORE UPDATE OR DELETE ON stock_transfers FOR EACH ROW EXECUTE FUNCTION transfer_final_guard();
+-- Dòng phiếu: chỉ sửa tự do khi Nháp; đang chuyển chỉ ghi nhận số nhận (không vượt số gửi); đã nhận thì khoá.
+CREATE OR REPLACE FUNCTION transfer_line_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE s VARCHAR(16);
+BEGIN
+ SELECT status INTO s FROM stock_transfers WHERE id=CASE WHEN TG_OP='INSERT' THEN NEW.transfer_id ELSE OLD.transfer_id END;
+ IF s='DRAFT' AND (TG_OP<>'UPDATE' OR NEW.transfer_id=OLD.transfer_id) THEN RETURN CASE WHEN TG_OP='DELETE' THEN OLD ELSE NEW END; END IF;
+ IF s='IN_TRANSIT' AND TG_OP='UPDATE' AND NEW.transfer_id=OLD.transfer_id AND NEW.source_bin_id=OLD.source_bin_id AND NEW.product_id=OLD.product_id
+    AND NEW.unit_id=OLD.unit_id AND NEW.quantity=OLD.quantity AND NEW.factor=OLD.factor THEN
+  IF NEW.received_quantity>NEW.quantity THEN RAISE EXCEPTION 'Số nhận không được vượt số đã xuất chuyển' USING ERRCODE='P0001'; END IF;
+  RETURN NEW;
+ END IF;
+ RAISE EXCEPTION 'Dòng phiếu chuyển đã xuất hoặc đã nhận không được sửa hoặc xoá' USING ERRCODE='P0001';
+END $$;
+DROP TRIGGER IF EXISTS transfer_line_guard ON stock_transfer_lines;
+CREATE TRIGGER transfer_line_guard BEFORE INSERT OR UPDATE OR DELETE ON stock_transfer_lines FOR EACH ROW EXECUTE FUNCTION transfer_line_guard();
 COMMIT;
 

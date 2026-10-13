@@ -33,7 +33,9 @@ public class ChuyenKhoService {
         String note=KhoService.text(in.get("note"),"Ghi chú",1000,false);if(!(in.get("lines") instanceof List<?> lines)||lines.isEmpty()||lines.size()>200)throw new IllegalArgumentException("Cần từ 1 đến 200 dòng");
         try(Connection c=KetNoiDB.getConnection()){c.setAutoCommit(false);try{KhoService.access(c,src,user,roles);KhoService.actor(c,user);
             if(TruyVanDB.one(c,"SELECT id FROM warehouses WHERE id=? AND active",dst)==null)throw new IllegalArgumentException("Kho đến không hợp lệ");
-            long id=TruyVanDB.id(TruyVanDB.one(c,"INSERT INTO stock_transfers(code,source_warehouse_id,destination_warehouse_id,note,created_by) VALUES('CK-'||nextval('stock_transfers_id_seq'),?,?,?,?) RETURNING id",src,dst,note,user));
+            // Lấy id trước để mã phiếu trùng id và không tiêu hai giá trị sequence.
+            long id=((Number)TruyVanDB.one(c,"SELECT nextval('stock_transfers_id_seq') AS id").get("id")).longValue();
+            TruyVanDB.update(c,"INSERT INTO stock_transfers(id,code,source_warehouse_id,destination_warehouse_id,note,created_by) VALUES(?,?,?,?,?,?)",id,"CK-"+id,src,dst,note,user);
             for(Object raw:lines){if(!(raw instanceof Map<?,?> l))throw new IllegalArgumentException("Dòng chuyển không hợp lệ");long bin=KhoService.id(l.get("binId")),unit=KhoService.id(l.get("unitId"));BigDecimal qty=PhieuNhapKhoService.quantity(l.get("quantity"),false);
                 var b=TruyVanDB.one(c,"SELECT b.product_id,u.factor FROM stock_bins b JOIN products p ON p.id=b.product_id JOIN product_units u ON u.product_id=p.id AND u.id=? AND u.active WHERE b.id=? AND b.warehouse_id=?",unit,bin,src);
                 if(b==null)throw new IllegalArgumentException("Lô/vị trí hoặc đơn vị không thuộc kho đi");if(qty.multiply((BigDecimal)b.get("factor")).stripTrailingZeros().scale()>0)throw new IllegalArgumentException("Quy đổi phải là số nguyên đơn vị cơ sở");
@@ -63,6 +65,7 @@ public class ChuyenKhoService {
             for(var l:ls){var m=inputs.get(TruyVanDB.id(l));if(m==null)throw new IllegalArgumentException("Dòng nhận không thuộc phiếu");
                 BigDecimal qty=PhieuNhapKhoService.quantity(m.get("receivedQuantity"),true),base=qty.multiply((BigDecimal)l.get("factor"));long loc=KhoService.id(m.get("locationId"));
                 if(base.stripTrailingZeros().scale()>0)throw new IllegalArgumentException("Số nhận quy đổi phải là số nguyên");
+                if(qty.compareTo((BigDecimal)l.get("quantity"))>0)throw new IllegalArgumentException("Số nhận không được vượt số đã xuất chuyển");
                 if(qty.compareTo((BigDecimal)l.get("quantity"))!=0&&reason.isEmpty())throw new IllegalArgumentException("Nhận chênh lệch phải nhập lý do");
                 if(TruyVanDB.one(c,"SELECT id FROM warehouse_locations WHERE id=? AND warehouse_id=? AND active",loc,wh)==null)throw new IllegalArgumentException("Vị trí không thuộc kho đến");
                 long product=((Number)l.get("product_id")).longValue();StockLedgerDB.lockStock(c,wh,product);

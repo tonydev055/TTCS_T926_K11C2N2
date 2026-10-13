@@ -66,6 +66,7 @@ public class KhachHangService {
             out.put("salesReps", db.salesReps(c, u.onlyRep()));
             out.put("regions", db.regions(c, u.onlyRep()));
             out.put("warehouses", db.warehouses(c));
+            out.put("portalUsers", u.can("customers.write") ? db.dealerAccounts(c) : List.of());
             out.put("canWrite", u.can("customers.write"));
             out.put("canEditCredit", u.can("customers.credit"));
             out.put("canAssign", u.can("customers.assign"));
@@ -499,6 +500,13 @@ public class KhachHangService {
         if (rep != null && !db.isActiveSalesRep(c, rep))
             throw new IllegalArgumentException("Người phụ trách phải là Nhân viên kinh doanh đang hoạt động");
         v.put("sales_rep_id", rep);
+        // S4-10: tài khoản đăng nhập cổng đặt hàng (vai trò Đại lý). Không gửi trường thì giữ nguyên.
+        if (data.containsKey("portal_user_id")) {
+            Long portal = optionalId(data.get("portal_user_id"));
+            if (portal != null && !db.isActiveDealerAccount(c, portal))
+                throw new IllegalArgumentException("Tài khoản cổng đặt hàng phải là tài khoản vai trò Đại lý đang hoạt động");
+            v.put("portal_user_id", portal);
+        }
         // S4-03: kho phục vụ — tồn khả dụng trên đơn của đại lý lấy từ kho này. Không gửi trường thì giữ nguyên.
         if (data.containsKey("warehouse_id")) {
             Long warehouse = optionalId(data.get("warehouse_id"));

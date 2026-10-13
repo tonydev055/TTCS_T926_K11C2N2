@@ -81,6 +81,7 @@ public class DonHangService {
         a.put("canCancel", TrangThaiDonHang.CANCELLABLE.contains(String.valueOf(order.get("status"))) && (manager || rep));
         a.put("canApprove", TrangThaiDonHang.PENDING_APPROVAL.equals(order.get("status")) && manager);
         a.put("canCopy", rep);
+        a.put("canConfirm", TrangThaiDonHang.PENDING_CONFIRM.equals(order.get("status")) && rep);
         return a;
     }
 

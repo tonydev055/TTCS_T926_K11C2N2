@@ -264,6 +264,48 @@ public class DonHangNhapDB extends CoSoDB {
         if (service.TrangThaiDonHang.APPROVED.equals(status)) GiuChoTonDB.reserve(c, id);
     }
 
+    /**
+     * S4-10: nhân viên phụ trách xác nhận đơn đại lý tự đặt, trong một giao dịch. Vượt hạn mức thì chuyển Chờ duyệt
+     * (OVER_CREDIT); không vi phạm thì tự duyệt và giữ chỗ tồn. Đại lý có nợ quá hạn bị trigger chặn.
+     */
+    public String confirmPortalOrder(long id, long userId) throws SQLException {
+        try (Connection c = KetNoiDB.getConnection()) {
+            c.setAutoCommit(false);
+            try {
+                var row = TruyVanDB.one(c, "SELECT o.code, o.status, o.payable, o.agent_id FROM orders o JOIN customers k " +
+                    "ON k.id=o.agent_id WHERE o.id=? AND k.sales_rep_id=? FOR UPDATE OF o", id, userId);
+                if (row == null) throw new NoSuchElementException("Không tìm thấy đơn hàng");
+                if (!service.TrangThaiDonHang.PENDING_CONFIRM.equals(row.get("status")))
+                    throw new IllegalArgumentException("Đơn " + row.get("code") + " không ở trạng thái Chờ nhân viên xác nhận");
+                var credit = TruyVanDB.one(c, "SELECT outstanding, credit_limit FROM customer_credit_status WHERE customer_id=?",
+                    row.get("agent_id"));
+                BigDecimal payable = (BigDecimal) row.get("payable");
+                BigDecimal outstanding = (BigDecimal) credit.get("outstanding"), limit = (BigDecimal) credit.get("credit_limit");
+                BigDecimal after = outstanding.add(payable);
+                List<Map<String, Object>> flags = new ArrayList<>();
+                if (payable.signum() > 0 && after.compareTo(limit) > 0) {
+                    Map<String, Object> f = new LinkedHashMap<>();
+                    f.put("code", "OVER_CREDIT");
+                    f.put("message", limit.signum() == 0
+                        ? "Đại lý không được nợ (hạn mức 0 đ): đơn " + service.TaoDonHangService.tien(payable) + " cần duyệt"
+                        : "Vượt hạn mức công nợ " + service.TaoDonHangService.tien(after.subtract(limit)) + ": công nợ hiện tại " +
+                          service.TaoDonHangService.tien(outstanding) + " + đơn này " + service.TaoDonHangService.tien(payable) +
+                          " = " + service.TaoDonHangService.tien(after) + ", hạn mức " + service.TaoDonHangService.tien(limit));
+                    flags.add(f);
+                }
+                String status = submit(c, id, userId, flags, "Nhân viên xác nhận đơn đại lý tự đặt");
+                c.commit();
+                return status;
+            } catch (SQLException e) {
+                c.rollback();
+                throw service.TrangThaiDonHang.rethrow(e);
+            } catch (RuntimeException e) {
+                c.rollback();
+                throw e;
+            }
+        }
+    }
+
     /** Trạng thái được tính là "đã mua": đơn đã duyệt trở đi, không tính nháp, chờ duyệt, từ chối, huỷ. */
     static final String PURCHASED = "('APPROVED','PICKING','SHIPPED','DELIVERED','CLOSED')";
 

@@ -301,6 +301,19 @@ public class TaoDonHangService {
         return out;
     }
 
+    /**
+     * S4-10: nhân viên phụ trách xác nhận đơn đại lý tự đặt (Chờ nhân viên xác nhận). Giữ nguyên giá đại lý đã thấy
+     * lúc gửi; kiểm tra lại hạn mức (vượt → Chờ duyệt) và giữ chỗ tồn nếu được duyệt ngay (thiếu tồn → báo lỗi).
+     */
+    public Map<String, Object> xacNhanDonDaiLy(long orderId, long userId) throws SQLException {
+        String status = dao.confirmPortalOrder(orderId, userId);
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("id", orderId);
+        out.put("status", status);
+        out.put("statusLabel", TrangThaiDonHang.label(status));
+        return out;
+    }
+
     /** Lưu nháp: tạo mới (orderId == null) hoặc cập nhật. Nháp được phép chưa đủ địa chỉ, ngày giao hoặc dòng hàng. */
     public long luuNhap(Long orderId, long userId, Map<String, Object> in) throws SQLException {
         return luu(orderId, userId, in, false);

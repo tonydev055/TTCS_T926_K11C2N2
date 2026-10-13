@@ -62,7 +62,9 @@ public class KhachHangServlet extends CoSoServlet {
         else if (e instanceof SecurityException) error(r, 403, e.getMessage());
         else if (e instanceof IllegalArgumentException) error(r, 400, e.getMessage());
         else if (e instanceof SQLException sql && "23505".equals(sql.getSQLState()))
-            error(r, 409, "Mã đại lý đã tồn tại. Vui lòng dùng mã khác");
+            error(r, 409, String.valueOf(sql.getMessage()).contains("customers_portal_user_unique")
+                ? "Tài khoản cổng đặt hàng này đã liên kết với đại lý khác"
+                : "Mã đại lý đã tồn tại. Vui lòng dùng mã khác");
         else if (e instanceof SQLException sql && "23503".equals(sql.getSQLState()))
             error(r, 400, "Dữ liệu tham chiếu không tồn tại hoặc đại lý đã được sử dụng");
         else if (e instanceof SQLException sql && "23514".equals(sql.getSQLState()))

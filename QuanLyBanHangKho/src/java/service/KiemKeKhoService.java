@@ -49,6 +49,8 @@ public class KiemKeKhoService {
             if(current.size()!=ls.size())throw new IllegalArgumentException("Tồn/lô đã thay đổi sau khi tạo phiếu. Hãy tạo kiểm kê mới.");
             Map<Long,BigDecimal> quantities=new HashMap<>();for(var b:current)quantities.put(TruyVanDB.id(b),(BigDecimal)b.get("on_hand"));
             for(var l:ls){if(l.get("actual_quantity")==null)throw new IllegalArgumentException("Chưa nhập đủ số thực đếm");if(!Objects.equals(quantities.get(((Number)l.get("bin_id")).longValue()),l.get("snapshot_quantity")))throw new IllegalArgumentException("Tồn đã thay đổi sau snapshot; không ghi đè biến động mới. Hãy tạo kiểm kê mới.");}
+            // Khóa SKU theo thứ tự ổn định trước khi ưu tiên bút toán cộng theo lô.
+            for(long product:ls.stream().map(l->((Number)l.get("product_id")).longValue()).distinct().sorted().toList())StockLedgerDB.lockStock(c,wh,product);
             ls.sort(Comparator.<Map<String,Object>,BigDecimal>comparing(l->((BigDecimal)l.get("actual_quantity")).subtract((BigDecimal)l.get("snapshot_quantity"))).reversed());
             for(var l:ls){long product=((Number)l.get("product_id")).longValue();BigDecimal delta=((BigDecimal)l.get("actual_quantity")).subtract((BigDecimal)l.get("snapshot_quantity"));StockLedgerDB.change(c,wh,product,((Number)l.get("bin_id")).longValue(),delta,"COUNT",id,TruyVanDB.id(l),user,reason);}
             TruyVanDB.update(c,"UPDATE stock_counts SET status='POSTED',reason=?,posted_by=?,posted_at=CURRENT_TIMESTAMP WHERE id=?",reason,user,id);c.commit();

@@ -38,7 +38,7 @@
 ## Nhánh và commit cho Sprint 5 và các sprint sau
 
 - Khi triển khai một sprint đã được người dùng yêu cầu, tạo nhánh con riêng cho từng task từ nhánh `Dev` đã cập nhật. Không tạo nhánh task mới từ nhánh của task khác.
-- Giữ mã task trong tên nhánh; theo mẫu nhánh con hiện có, ví dụ `SCRUM-71-S5-01-theo-doi-don-hang`. Dùng đúng mã Jira thực tế; không tự đặt mã Jira.
+- Đặt tên nhánh theo mẫu Sprint 1–3: `feature/S<so-sprint>-<so-task-hai-chu-so>-<ten-chuc-nang>`, ví dụ `feature/S5-01-theo-doi-don-dai-ly`. Áp dụng cho Sprint 4, Sprint 5 và các sprint sau; không thêm tiền tố `SCRUM-xx` vào tên nhánh. Đối chiếu đúng task Jira khi xác định phạm vi và số task.
 - Tên commit dùng dạng `S5-01 [Database] ...`, `S5-01 [Backend] ...`, `S5-01 [Frontend] ...` hoặc `[Bố cục]`, với mô tả tiếng Việt và phạm vi rõ ràng. Thay số sprint/task tương ứng cho các sprint sau. Không thêm `SCRUM-xx`, `feat`, `fix`, `docs`, thông tin Claude hoặc đồng tác giả AI vào thông điệp commit.
 - Commit phần việc và sửa lỗi vào đúng nhánh task đó; không đưa sửa lỗi của task này vào nhánh task khác. Những thay đổi phụ thuộc hoặc dùng chung phải được chỉ rõ để người dùng duyệt; không tự gộp toàn bộ task vào một nhánh con.
 - Với công việc sprint theo quy trình này, người dùng đã yêu cầu commit và push từng nhánh task lên `origin` để duyệt. Kiểm tra trạng thái, xác minh thay đổi và push đúng nhánh; không force-push nếu chưa được yêu cầu sửa lịch sử.

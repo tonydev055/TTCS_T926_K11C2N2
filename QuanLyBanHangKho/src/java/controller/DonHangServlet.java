@@ -9,7 +9,10 @@ import util.XuLyJson;
 
 /**
  * Đơn hàng đã lập (S4-06). Cần orders.read (xem mọi đơn) hoặc orders.own (đơn của đại lý mình phụ trách).
- *   GET  /api/orders?status=&page=&pageSize=   danh sách, kèm tổng số đơn và tổng tiền của tập kết quả
+ *   GET  /api/orders?status=&customerId=&salesRepId=&region=&from=&to=&page=&pageSize=
+ *                                              danh sách, kèm tổng số đơn và tổng phải thu của tập kết quả đang lọc (S4-07);
+ *                                              from/to (yyyy-MM-dd) lọc theo ngày tạo đơn
+ *   GET  /api/orders/filters                   giá trị cho các ô lọc trong phạm vi được xem
  *   GET  /api/orders/{id}                      chi tiết, dòng hàng, lịch sử trạng thái và thao tác được phép
  *   POST /api/orders/{id}/cancel {reason}      huỷ đơn chưa xuất kho; bắt buộc lý do, nhả phần giữ chỗ
  */
@@ -63,7 +66,8 @@ public class DonHangServlet extends CoSoServlet {
         try {
             String p = path(q);
             if (p.equals("/")) ok(r, XuLyJson.stringify(service.danhSach(userId(q), roles(q),
-                params(q, "status", "page", "pageSize"))));
+                params(q, "status", "customerId", "salesRepId", "region", "from", "to", "page", "pageSize"))));
+            else if (p.equals("/filters")) ok(r, XuLyJson.stringify(service.boLoc(userId(q), roles(q))));
             else ok(r, XuLyJson.stringify(service.chiTiet(parseId(p.substring(1)), userId(q), roles(q))));
         } catch (Exception e) {
             fail(r, e);

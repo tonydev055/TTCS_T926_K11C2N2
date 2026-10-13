@@ -35,11 +35,34 @@ public class DonHangService {
     public Map<String, Object> danhSach(long userId, Collection<String> roles, Map<String, String> filter) throws SQLException {
         String status = blank(filter.get("status"));
         if (status != null && !TrangThaiDonHang.known(status)) throw new IllegalArgumentException("Trạng thái không hợp lệ");
+        java.time.LocalDate from = date(filter.get("from"), "Từ ngày"), to = date(filter.get("to"), "Đến ngày");
+        if (from != null && to != null && from.isAfter(to)) throw new IllegalArgumentException("Từ ngày phải trước hoặc bằng Đến ngày");
+        String region = blank(filter.get("region"));
+        if (region != null && region.length() > 150) throw new IllegalArgumentException("Khu vực không hợp lệ");
+        var f = new DonHangDB.Filter(status, id(filter.get("customerId")), id(filter.get("salesRepId")), region, from, to);
         int page = intParam(filter.get("page"), 1, 1, 100_000);
         int size = intParam(filter.get("pageSize"), 20, 1, 100);
-        Map<String, Object> out = db.list(scope(userId, roles), userId, status, page, size);
+        Map<String, Object> out = db.list(scope(userId, roles), userId, f, page, size);
         out.put("statuses", TrangThaiDonHang.labels());
         return out;
+    }
+
+    public Map<String, Object> boLoc(long userId, Collection<String> roles) throws SQLException {
+        return db.filterOptions(scope(userId, roles));
+    }
+
+    static java.time.LocalDate date(String raw, String label) {
+        String s = blank(raw);
+        if (s == null) return null;
+        try { return java.time.LocalDate.parse(s); }
+        catch (java.time.format.DateTimeParseException e) { throw new IllegalArgumentException(label + " không hợp lệ"); }
+    }
+
+    static Long id(String raw) {
+        String s = blank(raw);
+        if (s == null) return null;
+        if (!s.matches("[1-9][0-9]{0,17}")) throw new IllegalArgumentException("Mã lọc không hợp lệ");
+        return Long.parseLong(s);
     }
 
     public Map<String, Object> chiTiet(long id, long userId, Collection<String> roles) throws SQLException {

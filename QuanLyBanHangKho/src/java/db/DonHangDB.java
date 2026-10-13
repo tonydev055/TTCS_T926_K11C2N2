@@ -42,12 +42,24 @@ public class DonHangDB extends CoSoDB {
         row.put("approvalFlags", util.XuLyJson.parse(Objects.toString(row.remove("approvalFlagsJson"), "[]")));
     }
 
-    /** Danh sách đơn đã lập, mới nhất trước. Nháp chỉ hiện với người tạo (nằm ở màn hình tạo đơn). */
-    public Map<String, Object> list(Long repId, long userId, String status, int page, int size) throws SQLException {
+    /** Bộ lọc danh sách đơn (S4-07). Trường null là không lọc; from/to lọc theo ngày tạo đơn, tính cả hai đầu. */
+    public record Filter(String status, Long customerId, Long salesRepId, String region,
+                         java.time.LocalDate from, java.time.LocalDate to) {}
+
+    /**
+     * Danh sách đơn đã lập, mới nhất trước, kèm tổng số đơn và tổng phải thu của toàn bộ tập kết quả đang lọc.
+     * Nháp chỉ hiện với người tạo (nằm ở màn hình tạo đơn).
+     */
+    public Map<String, Object> list(Long repId, long userId, Filter f, int page, int size) throws SQLException {
         StringBuilder where = new StringBuilder(" WHERE (o.status<>'DRAFT' OR o.created_by=?)");
         List<Object> args = new ArrayList<>(List.of(userId));
         if (repId != null) { where.append(" AND k.sales_rep_id=?"); args.add(repId); }
-        if (status != null) { where.append(" AND o.status=?"); args.add(status); }
+        if (f.status() != null) { where.append(" AND o.status=?"); args.add(f.status()); }
+        if (f.customerId() != null) { where.append(" AND o.agent_id=?"); args.add(f.customerId()); }
+        if (f.salesRepId() != null) { where.append(" AND k.sales_rep_id=?"); args.add(f.salesRepId()); }
+        if (f.region() != null) { where.append(" AND k.region=?"); args.add(f.region()); }
+        if (f.from() != null) { where.append(" AND o.created_at >= ?"); args.add(f.from().atStartOfDay()); }
+        if (f.to() != null) { where.append(" AND o.created_at < ?"); args.add(f.to().plusDays(1).atStartOfDay()); }
         var total = query("SELECT count(*) AS n, COALESCE(sum(o.payable),0) AS amount" + FROM + where, args.toArray());
         List<Object> pageArgs = new ArrayList<>(args);
         pageArgs.add(size);
@@ -61,6 +73,19 @@ public class DonHangDB extends CoSoDB {
         out.put("totalAmount", total.get(0).get("amount"));
         out.put("page", page);
         out.put("pageSize", size);
+        return out;
+    }
+
+    /** Giá trị cho các ô lọc, trong phạm vi người dùng được xem. */
+    public Map<String, Object> filterOptions(Long repId) throws SQLException {
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("statuses", TrangThaiDonHang.labels());
+        out.put("customers", query("SELECT id, code, name FROM customers WHERE (?::bigint IS NULL OR sales_rep_id=?) " +
+            "ORDER BY name LIMIT 1000", repId, repId));
+        out.put("regions", query("SELECT DISTINCT region FROM customers WHERE (?::bigint IS NULL OR sales_rep_id=?) " +
+            "ORDER BY region", repId, repId).stream().map(r -> r.get("region")).toList());
+        out.put("salesReps", repId != null ? List.of() : query(
+            "SELECT DISTINCT u.id, u.full_name AS name FROM users u JOIN customers k ON k.sales_rep_id=u.id ORDER BY u.full_name"));
         return out;
     }
 

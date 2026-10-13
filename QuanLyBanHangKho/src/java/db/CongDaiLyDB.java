@@ -110,6 +110,15 @@ public class CongDaiLyDB extends CoSoDB {
         order.put("statusLabel", TrangThaiDonHang.label(order.get("status")));
         var lines = new DonHangDB().lines(id);
         for (var l : lines) { l.remove("floorPrice"); l.remove("listPrice"); l.remove("priceOverridden"); l.remove("basePrice"); }
+        var deliveries=query("SELECT id, delivered_base_quantity, conversion_factor FROM order_lines WHERE order_id=?",id);
+        Map<Object,Map<String,Object>> byId=new HashMap<>();
+        for(var delivered:deliveries)byId.put(delivered.get("id"),delivered);
+        for(var line:lines){
+            var delivered=byId.get(line.get("id"));
+            BigDecimal base=delivered==null?null:(BigDecimal)delivered.get("delivered_base_quantity");
+            line.put("deliveredQuantity",base==null?null:base.divide((BigDecimal)delivered.get("conversion_factor"),6,java.math.RoundingMode.HALF_UP).stripTrailingZeros());
+            line.put("deliveryShort",base!=null&&base.compareTo((BigDecimal)line.get("baseQuantity"))<0);
+        }
         order.put("lines", lines);
         order.put("history", new DonHangDB().history(id));
         return order;

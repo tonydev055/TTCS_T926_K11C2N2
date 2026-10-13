@@ -175,10 +175,17 @@ public class DonHangNhapDB extends CoSoDB {
                     }
                     p.executeBatch();
                 }
-                if (complete) TruyVanDB.update(c, "UPDATE orders SET status='COMPLETED',updated_at=CURRENT_TIMESTAMP WHERE id=?", id);
+                if (complete) {
+                    // S4-06: gửi đơn → Chờ duyệt; trigger ghi lịch sử và mốc thời gian gửi.
+                    service.TrangThaiDonHang.setContext(c, userId, "Nhân viên gửi đơn");
+                    TruyVanDB.update(c, "UPDATE orders SET status='PENDING_APPROVAL' WHERE id=?", id);
+                }
                 c.commit();
                 return id;
-            } catch (SQLException | RuntimeException e) {
+            } catch (SQLException e) {
+                c.rollback();
+                throw service.TrangThaiDonHang.rethrow(e);
+            } catch (RuntimeException e) {
                 c.rollback();
                 throw e;
             }

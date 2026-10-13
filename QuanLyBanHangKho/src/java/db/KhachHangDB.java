@@ -336,11 +336,11 @@ public class KhachHangDB {
         );
     }
 
-    /** Đơn chưa hoàn tất hoặc chưa huỷ của đại lý. */
+    /** Đơn còn đang xử lý của đại lý (chưa đóng, chưa từ chối, chưa huỷ). */
     public long openOrderCount(Connection c, long id) throws SQLException {
         var row = TruyVanDB.one(
             c,
-            "SELECT count(*) total FROM orders WHERE agent_id=? AND status NOT IN ('COMPLETED','CANCELLED')",
+            "SELECT count(*) total FROM orders WHERE agent_id=? AND status NOT IN ('CLOSED','REJECTED','CANCELLED')",
             id
         );
         return ((Number) row.get("total")).longValue();

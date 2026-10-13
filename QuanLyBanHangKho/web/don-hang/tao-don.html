@@ -556,6 +556,103 @@
   line-height:1.45;
 }
 
+/* S4-04: lịch sử mua hàng của đại lý */
+#salesOrderFeatureRoot .history{
+  margin:0 0 14px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--surface);
+}
+
+#salesOrderFeatureRoot .history summary{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 12px;
+  color:var(--text);
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+#salesOrderFeatureRoot .history summary small{
+  color:var(--text3);
+  font-weight:500;
+}
+
+#salesOrderFeatureRoot .history-body{
+  display:grid;
+  gap:8px;
+  padding:0 12px 12px;
+}
+
+#salesOrderFeatureRoot .history-last{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:8px 10px;
+  border:1px dashed #cbd5e1;
+  border-radius:8px;
+  background:#fff;
+  font-size:11px;
+  color:var(--text2);
+}
+
+#salesOrderFeatureRoot .history-list{
+  display:grid;
+  gap:6px;
+  margin:0;
+  padding:0;
+  list-style:none;
+}
+
+#salesOrderFeatureRoot .history-list li{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:8px 10px;
+  border-radius:8px;
+  background:#fff;
+}
+
+#salesOrderFeatureRoot .history-list .info{
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
+
+#salesOrderFeatureRoot .history-list strong{
+  font-size:12px;
+}
+
+#salesOrderFeatureRoot .history-list small{
+  color:var(--text3);
+  font-size:10px;
+}
+
+#salesOrderFeatureRoot .history .add{
+  flex:none;
+  padding:6px 10px;
+  border:1px solid var(--orange);
+  border-radius:7px;
+  background:#fff;
+  color:var(--orange-dark);
+  font-size:11px;
+  font-weight:700;
+}
+
+#salesOrderFeatureRoot .history .add:hover:not(:disabled){
+  background:var(--orange-light);
+}
+
+#salesOrderFeatureRoot .history .add:disabled{
+  border-color:var(--border);
+  color:var(--text3);
+}
+
 /* S4-03: tồn khả dụng */
 #salesOrderFeatureRoot .stock-warn{
   display:flex;
@@ -1305,6 +1402,24 @@
         </h2>
 
 
+        <details
+          id="historyBox"
+          class="history"
+          hidden>
+
+          <summary>
+            Đại lý hay mua
+            <small id="historyMeta"></small>
+          </summary>
+
+          <div
+            id="historyBody"
+            class="history-body">
+          </div>
+
+        </details>
+
+
         <label for="productQ">
           Thêm sản phẩm
         </label>
@@ -1952,6 +2067,112 @@ window.salesOrderFeature = (() => {
   }
 
 
+  /* S4-04: lịch sử mua 3 tháng của đại lý; thêm nhanh từng mặt hàng (số lượng bình quân) hoặc cả đơn gần nhất. */
+  let historySeq = 0;
+
+  function addQuantity(product, unitId, quantity){
+    const unit = (product.units || []).find(item => item.id === unitId) || product.units?.[0];
+    if (!unit) return false;
+    const existing = S.lines.find(line => line.productId === product.productId && line.unitId === unit.id);
+    if (existing) {
+      existing.quantity = String((Number(existing.quantity) || 0) + quantity);
+      existing.els.qty.value = existing.quantity;
+      existing.calc = null;
+      renderLineCalc(existing);
+    } else {
+      const line = {
+        key:++S.keySeq,
+        productId:product.productId,
+        sku:product.sku,
+        name:product.name,
+        unitId:unit.id,
+        units:product.units,
+        quantity:String(quantity),
+        manualPrice:null,
+        calc:null
+      };
+      S.lines.push(line);
+      $('lines').append(buildLine(line));
+    }
+    return true;
+  }
+
+  function baseUnitId(item){
+    return ((item.units || []).find(unit => Number(unit.factor) === 1) || item.units?.[0])?.id;
+  }
+
+  function renderHistory(history){
+    const box = $('historyBox');
+    if (!box) return;
+    const items = history?.items || [];
+    const last = history?.lastOrder;
+    box.hidden = !S.customer || (!items.length && !last);
+    if (box.hidden) return;
+    $('historyMeta').textContent = items.length ? '· ' + items.length + ' mặt hàng trong 3 tháng' : '· chưa mua trong 3 tháng';
+    const body = $('historyBody');
+    body.replaceChildren();
+    if (last) {
+      const usable = last.lines.filter(line => line.available);
+      body.append(el('div', { class:'history-last' },
+        el('span', { text:'Đơn gần nhất ' + last.code + ' · ' + new Date(last.createdAt).toLocaleDateString('vi-VN') +
+          ' · ' + last.lines.length + ' dòng' + (usable.length < last.lines.length ? ' (' + (last.lines.length - usable.length) + ' dòng không còn bán)' : '') }),
+        el('button', {
+          type:'button',
+          class:'add',
+          text:'Thêm lại cả đơn',
+          disabled:!usable.length,
+          onclick:() => {
+            usable.forEach(line => addQuantity(line, line.unitId, Number(line.quantity)));
+            syncLineChrome();
+            S.dirty = true;
+            scheduleQuote(0);
+            toast('Đã thêm ' + usable.length + ' dòng từ đơn ' + last.code);
+          }
+        })));
+    }
+    if (items.length) {
+      body.append(el('ul', { class:'history-list' }, items.map(item => {
+        const unit = (item.units || []).find(u => u.id === baseUnitId(item));
+        const avg = Math.max(1, Math.round(Number(item.averageQuantity)));
+        return el('li', {},
+          el('span', { class:'info' },
+            el('strong', { text:item.name }),
+            el('small', { text:item.sku + ' · ' + item.orders + ' đơn · bình quân ' + nf.format(Number(item.averageQuantity)) + ' ' +
+              item.baseUnit + '/đơn · lần cuối ' + new Date(item.lastOrderedAt).toLocaleDateString('vi-VN') })),
+          el('button', {
+            type:'button',
+            class:'add',
+            text:item.active && item.priced ? '+ ' + nf.format(avg) + ' ' + (unit?.name || item.baseUnit) : (item.active ? 'Chưa có giá' : 'Ngừng bán'),
+            disabled:!(item.active && item.priced),
+            'aria-label':'Thêm ' + avg + ' ' + (unit?.name || item.baseUnit) + ' ' + item.name,
+            onclick:() => {
+              addQuantity(item, baseUnitId(item), avg);
+              syncLineChrome();
+              S.dirty = true;
+              scheduleQuote(0);
+              toast('Đã thêm ' + item.name);
+            }
+          }));
+      })));
+    }
+  }
+
+  async function loadHistory(){
+    const seq = ++historySeq;
+    renderHistory(null);
+    if (!S.customer) return;
+    try {
+      const history = await api('GET', '/customers/' + S.customer.id + '/purchase-history');
+      if (seq !== historySeq) return;
+      renderHistory(history);
+      $('historyBox').open = !S.lines.length;
+    } catch (error) {
+      if (seq !== historySeq || handleAuth(error)) return;
+      renderHistory(null);
+    }
+  }
+
+
   /* S4-02: công nợ hiện tại, hạn mức, còn lại; nợ quá hạn thì chặn tạo/gửi đơn. */
   let creditSeq = 0;
 
@@ -2120,6 +2341,8 @@ window.salesOrderFeature = (() => {
 
 
     loadCredit();
+
+    loadHistory();
 
     scheduleQuote(0);
 
@@ -4045,6 +4268,10 @@ window.salesOrderFeature = (() => {
 
     S.stock = null;
 
+    ++historySeq;
+
+    renderHistory(null);
+
     S.dirty = false;
 
     ++S.quoteSeq;
@@ -4228,6 +4455,8 @@ window.salesOrderFeature = (() => {
 
 
       loadCredit();
+
+      loadHistory();
 
       scheduleQuote(0);
 
@@ -4640,6 +4869,10 @@ window.salesOrderFeature = (() => {
           S.credit = null;
 
           ++creditSeq;
+
+          ++historySeq;
+
+          renderHistory(null);
 
           ++pointsSeq;
 

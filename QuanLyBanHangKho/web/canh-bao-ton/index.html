@@ -1,6 +1,5 @@
 <script>
 window.sprint5Features=window.sprint5Features||{};
-window.lowStockFeature={async marks(){const d=await apiRequest('stock-alerts');return new Map(d.items.filter(r=>r.low).map(r=>[`${r.warehouse_id}-${r.product_id}`,r.minimum_quantity]));}};
 window.sprint5Features['Cảnh báo tồn thấp']={path:'canh-bao-ton',permission:'inventory.read',render:()=>warehouseUi.screen('Cảnh báo tồn thấp','Cảnh báo khi tồn khả dụng thấp hơn ngưỡng theo đơn vị cơ sở. Ngưỡng 0 tắt cảnh báo.',async()=>({data:await apiRequest('stock-alerts'),masters:await apiRequest('stock-alerts/masters')}),(host,{data,masters})=>{
  const ui=warehouseUi,esc=ui.esc,reload=()=>sprint5Features['Cảnh báo tồn thấp'].render();
  const low=data.items.filter(r=>r.low),groups=new Map();for(const r of low){groups.set(r.warehouse_name,(groups.get(r.warehouse_name)||0)+1);}

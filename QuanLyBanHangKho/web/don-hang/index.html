@@ -277,6 +277,7 @@ window.orderListFeature = (() => {
           <div><h3>${esc(order.code)} ${statusChip(order.status, order.statusLabel)}</h3>
             <p>${esc(order.customerName)}${order.customerCode ? ` · ${esc(order.customerCode)}` : ''} · Tạo lúc ${esc(when(order.createdAt))}${order.createdByName ? ` bởi ${esc(order.createdByName)}` : ''}</p></div>
           <div class="ol-actions" id="olActions">
+            ${a.canCopy ? '<button type="button" class="ol-btn" id="olCopy" title="Tạo đơn nháp mới với cùng đại lý và dòng hàng, giá tính lại theo bảng giá hiện hành">Sao chép thành đơn mới</button>' : ''}
             <button type="button" class="ol-btn" id="olPrint" title="Chọn &quot;Lưu dưới dạng PDF&quot; trong hộp thoại in để xuất PDF">In / Xuất PDF</button>
             ${a.canCancel ? '<button type="button" class="ol-btn danger" id="olCancel">Huỷ đơn</button>' : ''}
             ${a.canApprove ? `<button type="button" class="ol-btn danger" data-decide="reject">Từ chối</button>
@@ -322,10 +323,30 @@ window.orderListFeature = (() => {
         </div>`;
       document.getElementById('olCancel')?.addEventListener('click', () => openCancel(order, revision));
       document.getElementById('olPrint').addEventListener('click', () => window.orderPrint.printOrder(order));
+      document.getElementById('olCopy')?.addEventListener('click', (event) => copyOrder(order, event.currentTarget));
       host.querySelectorAll('[data-decide]').forEach((button) => button.addEventListener('click', () =>
         window.orderApprovalFeature.decide(order, button.dataset.decide, () => { if (alive(revision)) renderDetail(order.id, revision); })));
     } catch (error) {
       if (alive(revision) && host.isConnected) host.innerHTML = `<p class="ol-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  // S4-09: sao chép đơn cũ thành nháp mới rồi mở ngay ở màn hình Tạo đơn hàng.
+  async function copyOrder(order, button) {
+    button.disabled = true;
+    try {
+      const copy = await apiRequest(`sales-orders/${order.id}/copy`, jsonRequestOptions('POST', {}));
+      const skipped = copy.skipped || [];
+      showToast(`Đã tạo đơn nháp ${copy.code} từ ${order.code}, giá áp theo bảng giá hiện hành` +
+        (skipped.length ? `. Bỏ ${skipped.length} dòng: ${skipped.map((s) => `${s.sku} (${s.reason})`).join('; ')}` : ''),
+        skipped.length ? 'error' : undefined);
+      const url = new URL(location.href);
+      url.searchParams.set('id', copy.id);
+      history.replaceState(null, '', url.pathname + url.search + url.hash);
+      openView('Tạo đơn hàng');
+    } catch (error) {
+      showToast(error.message, 'error');
+      button.disabled = false;
     }
   }
 

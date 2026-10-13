@@ -97,6 +97,14 @@ public final class GiuChoTonDB {
     /** Số lượng tối đa theo đơn vị đã chọn từ một lượng tồn (đơn vị cơ bản), làm tròn xuống. */
     public static BigDecimal inUnit(BigDecimal baseQty, BigDecimal factor) {
         if (baseQty.signum() <= 0) return BigDecimal.ZERO;
-        return baseQty.divide(factor, 0, RoundingMode.FLOOR);
+        // Số lượng bán có tối đa 6 số lẻ và phải quy đổi thành số nguyên
+        // đơn vị cơ bản. Tìm bước số lượng nhỏ nhất đáp ứng cả hai điều kiện.
+        BigDecimal normalized = factor.stripTrailingZeros();
+        int scale = Math.max(0, normalized.scale());
+        java.math.BigInteger numerator = normalized.setScale(scale).unscaledValue();
+        java.math.BigInteger denominator = java.math.BigInteger.TEN.pow(scale + 6);
+        BigDecimal step = new BigDecimal(denominator.divide(denominator.gcd(numerator)), 6);
+        BigDecimal baseStep = step.multiply(factor);
+        return baseQty.divide(baseStep, 0, RoundingMode.FLOOR).multiply(step).stripTrailingZeros();
     }
 }

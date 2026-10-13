@@ -3,7 +3,13 @@
   #orderListFeature { display: flex; flex-direction: column; gap: 18px; }
   #orderListFeature .ol-card { overflow: hidden; border: 1px solid var(--app-border, #e4e9ef); border-radius: 16px; background: #fff; box-shadow: 0 8px 24px rgba(15, 23, 42, .04); }
   #orderListFeature .ol-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 18px 22px; border-bottom: 1px solid #edf1f5; }
-  #orderListFeature .ol-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  #orderListFeature .ol-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1 1 150px; }
+  #orderListFeature .ol-field.wide { flex: 2 1 220px; }
+  #orderListFeature .ol-field.range { flex: 0 1 330px; }
+  #orderListFeature .ol-range { display: flex; align-items: center; gap: 8px; }
+  #orderListFeature .ol-range .ol-input { flex: 1 1 0; min-width: 0; }
+  #orderListFeature .ol-range span { color: #94a3b8; }
+  #orderListFeature .ol-toolbar .ol-btn { flex: 0 0 auto; }
   #orderListFeature .ol-field label { color: #334155; font-size: 12px; font-weight: 700; }
   #orderListFeature .ol-select,
   #orderListFeature .ol-input { min-height: 40px; padding: 0 10px; border: 1px solid #dce3ea; border-radius: 9px; background: #fff; color: #172033; font: inherit; font-size: 13px; }
@@ -129,27 +135,71 @@ window.orderListFeature = (() => {
   }
 
   // ----- Danh sách -----
+  // S4-07: bộ lọc theo trạng thái, đại lý, nhân viên, khu vực, khoảng thời gian (ngày tạo).
+  let filterOptions = null;
+  const option = (value, label, current) => `<option value="${esc(value)}" ${String(current ?? '') === String(value) ? 'selected' : ''}>${esc(label)}</option>`;
+
+  function filterFields() {
+    const f = state.filters;
+    const o = filterOptions || { customers: [], regions: [], salesReps: [] };
+    const statusOptions = Object.entries(LABELS).filter(([code]) => code !== 'DRAFT').map(([code, label]) => option(code, label, f.status)).join('');
+    return `<div class="ol-field"><label for="olStatus">Trạng thái</label>
+        <select id="olStatus" class="ol-select" name="status"><option value="">Tất cả</option>${statusOptions}</select></div>
+      <div class="ol-field wide"><label for="olCustomer">Đại lý</label>
+        <select id="olCustomer" class="ol-select" name="customerId"><option value="">Tất cả đại lý</option>${o.customers.map((c) => option(c.id, `${c.code} · ${c.name}`, f.customerId)).join('')}</select></div>
+      ${o.salesReps.length ? `<div class="ol-field"><label for="olRep">Nhân viên</label>
+        <select id="olRep" class="ol-select" name="salesRepId"><option value="">Tất cả nhân viên</option>${o.salesReps.map((r) => option(r.id, r.name, f.salesRepId)).join('')}</select></div>` : ''}
+      <div class="ol-field"><label for="olRegion">Khu vực</label>
+        <select id="olRegion" class="ol-select" name="region"><option value="">Tất cả khu vực</option>${o.regions.map((r) => option(r, r, f.region)).join('')}</select></div>
+      <div class="ol-field range" role="group" aria-labelledby="olDateLabel"><label id="olDateLabel" for="olFrom">Ngày tạo đơn</label>
+        <div class="ol-range"><input id="olFrom" class="ol-input" type="date" name="from" aria-label="Từ ngày" value="${esc(f.from || '')}">
+          <span aria-hidden="true">–</span><input id="olTo" class="ol-input" type="date" name="to" aria-label="Đến ngày" value="${esc(f.to || '')}"></div></div>
+      <button type="button" class="ol-btn" id="olClear" ${Object.keys(f).length ? '' : 'disabled'}>Xoá lọc</button>`;
+  }
+
+  async function loadFilterOptions(revision) {
+    if (filterOptions) return;
+    try {
+      filterOptions = await apiRequest('orders/filters');
+      if (alive(revision) && document.getElementById('olFilters')) {
+        document.getElementById('olFilters').innerHTML = filterFields();
+        bindClear(revision);
+      }
+    } catch (_) { /* Ô lọc đại lý/khu vực để trống; danh sách đơn vẫn hiện lỗi riêng nếu có */ }
+  }
+
+  function bindClear(revision) {
+    document.getElementById('olClear').onclick = () => {
+      state.filters = {};
+      state.page = 1;
+      renderList(revision);
+    };
+  }
+
   function renderList(revision) {
-    const statusOptions = Object.entries(LABELS).filter(([code]) => code !== 'DRAFT')
-      .map(([code, label]) => `<option value="${code}" ${state.filters.status === code ? 'selected' : ''}>${esc(label)}</option>`).join('');
     shell(`<header class="module-head"><div><span class="eyebrow">BÁN HÀNG</span><h2>Đơn hàng</h2>
-        <p>Theo dõi đơn đang nằm ở khâu nào, xem lịch sử xử lý và huỷ đơn chưa xuất kho.</p></div></header>
+        <p>Tình hình bán hàng trong một màn hình: lọc theo trạng thái, đại lý, nhân viên, khu vực và thời gian; xem lịch sử xử lý và huỷ đơn chưa xuất kho.</p></div></header>
       <div class="ol-card">
-        <form class="ol-toolbar" id="olFilters">
-          <div class="ol-field"><label for="olStatus">Trạng thái</label>
-            <select id="olStatus" class="ol-select" name="status"><option value="">Tất cả trạng thái</option>${statusOptions}</select></div>
-        </form>
+        <form class="ol-toolbar" id="olFilters" aria-label="Lọc đơn hàng">${filterFields()}</form>
         <div class="ol-summary" id="olSummary" aria-live="polite">Đang tải…</div>
         <div id="olList"><div class="ol-empty"><strong>Đang tải danh sách đơn…</strong></div></div>
         <div class="ol-footer" id="olFooter" hidden></div>
       </div>`);
     const form = document.getElementById('olFilters');
     form.addEventListener('change', () => {
+      const from = form.from.value, to = form.to.value;
+      if (from && to && from > to) {
+        showToast('Từ ngày phải trước hoặc bằng Đến ngày', 'error');
+        return;
+      }
       state.filters = Object.fromEntries([...new FormData(form)].filter(([, v]) => v !== ''));
       state.page = 1;
+      document.getElementById('olClear').disabled = !Object.keys(state.filters).length;
       loadList(revision);
     });
     form.addEventListener('submit', (event) => event.preventDefault());
+    bindClear(revision);
+    loadFilterOptions(revision);
     loadList(revision);
   }
 
@@ -162,8 +212,8 @@ window.orderListFeature = (() => {
       const result = await apiRequest(`orders/?${params}`);
       if (!alive(revision) || !host.isConnected) return;
       const total = Number(result.total) || 0;
-      summary.innerHTML = `<span><strong>${esc(total.toLocaleString('vi-VN'))}</strong> đơn</span>
-        <span>Tổng tiền: <strong>${esc(money(result.totalAmount))}</strong></span>`;
+      summary.innerHTML = `<span><strong>${esc(total.toLocaleString('vi-VN'))}</strong> đơn${Object.keys(state.filters).length ? ' khớp bộ lọc' : ''}</span>
+        <span>Tổng phải thu (sau chiết khấu): <strong>${esc(money(result.totalAmount))}</strong></span>`;
       if (!result.items.length) {
         host.innerHTML = `<div class="ol-empty"><strong>Chưa có đơn hàng phù hợp</strong><span>${Object.keys(state.filters).length ? 'Thử bỏ bớt điều kiện lọc.' : 'Đơn sẽ hiện ở đây sau khi được gửi từ màn hình Tạo đơn hàng.'}</span></div>`;
         footer.hidden = true;

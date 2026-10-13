@@ -96,7 +96,11 @@
     #dealerPortal .dp-section { padding: 14px 16px; }
     #dealerPortal .dp-credit div { padding: 10px 12px; }
     #dealerPortal .dp-credit dd { font-size: 13px; }
-    #dealerPortal .dp-products { grid-template-columns: 1fr; }
+    #dealerPortal .dp-products { grid-template-columns: minmax(0, 1fr); }
+    #dealerPortal .dp-product { min-width: 0; }
+    #dealerPortal .dp-row { flex-wrap: wrap; }
+    #dealerPortal .dp-row select { flex: 1 1 120px; }
+    #dealerPortal .dp-row .dp-step { flex: 0 0 auto; }
     #dealerPortal .dp-bar .dp-btn { flex: 1 1 100%; }
   }
   @media (min-width: 1025px) { #dealerPortal { --dp-bar-left: 272px; } }
@@ -110,6 +114,7 @@ window.dealerPortalFeature = (() => {
   let quote = null;
   let quoteSeq = 0;
   let quoteTimer = null;
+  let submitting = false;
   let tab = 'order';
 
   const esc = (value) => escapeHtml(value == null ? '' : String(value));
@@ -121,6 +126,9 @@ window.dealerPortalFeature = (() => {
 
   async function render() {
     const revision = ++generation;
+    ++quoteSeq;
+    clearTimeout(quoteTimer);
+    submitting = false;
     cart = [];
     quote = null;
     tab = 'order';
@@ -239,6 +247,11 @@ window.dealerPortalFeature = (() => {
 
   /** Vẽ lại giỏ hàng; requote=false khi vừa nhận kết quả tính tiền (tránh tính lại vòng lặp). */
   function renderCart(revision, requote = true) {
+    if (requote) {
+      ++quoteSeq;
+      clearTimeout(quoteTimer);
+      quote = null;
+    }
     const host = document.getElementById('dpCart');
     if (!host) return;
     document.getElementById('dpCartCount').textContent = cart.length ? `${cart.length} dòng` : '';
@@ -272,6 +285,9 @@ window.dealerPortalFeature = (() => {
   }
 
   function scheduleQuote(revision) {
+    ++quoteSeq;
+    quote = null;
+    renderTotals();
     clearTimeout(quoteTimer);
     // Giỏ vừa đổi: chưa cho gửi tới khi máy chủ tính lại tiền và tồn.
     const submitButton = document.getElementById('dpSubmit');
@@ -280,7 +296,7 @@ window.dealerPortalFeature = (() => {
   }
 
   async function runQuote(revision) {
-    if (!cart.length) return;
+    if (!cart.length || !alive(revision)) return;
     const seq = ++quoteSeq;
     try {
       const result = await apiRequest('portal/quote', jsonRequestOptions('POST', { lines: cart.map(({ productId, unitId, quantity }) => ({ productId, unitId, quantity })) }));
@@ -304,10 +320,11 @@ window.dealerPortalFeature = (() => {
     afterEl.classList.toggle('neg', after != null && Number(after) < 0);
     if (quote?.credit) document.getElementById('dpCredit').innerHTML = creditCells(quote.credit, quote.credit.remainingAfterOrder);
     const stockOk = !quote || quote.stock?.ok !== false;
-    document.getElementById('dpSubmit').disabled = !cart.length || !quote || !stockOk || !me.canOrder || !!me.cannotOrderReason;
+    document.getElementById('dpSubmit').disabled = submitting || !cart.length || !quote || !stockOk || !me.canOrder || !!me.cannotOrderReason;
   }
 
   async function submit(revision) {
+    if (submitting || !quote || !cart.length || !alive(revision)) return;
     const point = document.getElementById('dpPoint').value;
     const date = document.getElementById('dpDate').value;
     if (!point) { showToast('Chưa có điểm giao hàng. Hãy liên hệ nhân viên phụ trách', 'error'); return; }
@@ -315,6 +332,7 @@ window.dealerPortalFeature = (() => {
     if (date < today()) { showToast('Ngày giao mong muốn không được ở quá khứ', 'error'); return; }
     const over = Number(quote?.credit?.remainingAfterOrder) < 0;
     if (!confirm(`Gửi đơn ${money(quote?.payable)} cho nhân viên phụ trách xác nhận?${over ? '\n\nĐơn vượt hạn mức công nợ nên có thể phải chờ quản lý duyệt.' : ''}`)) return;
+    submitting = true;
     const button = document.getElementById('dpSubmit');
     button.disabled = true;
     button.textContent = 'Đang gửi…';
@@ -328,11 +346,14 @@ window.dealerPortalFeature = (() => {
       cart = [];
       quote = null;
       me = await apiRequest('portal/me');
+      if (!alive(revision)) return;
       tab = 'mine';
+      submitting = false;
       shell(revision);
     } catch (error) {
       showToast(error.message, 'error');
       if (alive(revision)) {
+        submitting = false;
         button.textContent = 'Gửi đơn';
         renderTotals();
       }

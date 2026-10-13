@@ -14,6 +14,9 @@ function getAvailableMenu() {
   if (hasPermission('orders.read') || hasPermission('orders.own')) menu.push('Đơn hàng');
   if (hasPermission('orders.approve')) menu.push('Duyệt đơn hàng');
   if (hasPermission('orders.self')) menu.push('Đặt hàng');
+  for (const [name, feature] of Object.entries(window.sprint5Features || {})) {
+    if (hasPermission(feature.permission)) menu.push(name);
+  }
   menu.push('Hồ sơ cá nhân', 'Đổi mật khẩu');
   return [...new Set(menu)];
 }
@@ -25,6 +28,10 @@ function renderAccessError(view, message = 'Bạn chưa được cấp quyền s
   document.getElementById('accessBackHome').onclick = () => openView('Tổng quan');
 }
 function renderFeatureView(view) {
+  if (window.sprint5Features?.[view]) {
+    window.sprint5Features[view].render();
+    return true;
+  }
   if (view === 'Chính sách chiết khấu') {
     discountFeature.render();
     return true;

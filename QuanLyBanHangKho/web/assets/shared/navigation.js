@@ -66,7 +66,7 @@ function openView(view, replaceUrl = false) {
     'Chính sách chiết khấu': 'chiet-khau', 'Điểm giao hàng': 'diem-giao', 'Tạo đơn hàng': 'don-hang', 'Đơn hàng': 'don-hang', 'Duyệt đơn hàng': 'duyet-don', 'Đặt hàng': 'dat-hang', 'Lịch sử thay đổi giá': 'lich-su-gia', 'Đại lý': 'dai-ly',
     'Vai trò & quyền': 'phan-quyen', 'Nhật ký hệ thống': 'nhat-ky',
     'Nhập người dùng Excel': 'nhap-excel', 'Hồ sơ cá nhân': 'ho-so'
-  }[view];
+  }[view] || window.sprint5Features?.[view]?.path;
   if (typeof failedFeatures !== 'undefined' && failedFeatures.has(feature)) {
     renderAccessError(view, 'Không tải được giao diện chức năng. Kiểm tra kết nối rồi thử lại.');
     const button = document.getElementById('accessBackHome');

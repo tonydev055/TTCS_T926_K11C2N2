@@ -236,6 +236,8 @@ public class TaoDonHangService {
                 // Giá sửa tay: tiền hàng theo đúng đơn giá nhập, không lệch do quy đổi ra đơn vị cơ bản.
                 lineSubtotal = ((BigDecimal) line.get("unitPrice")).multiply((BigDecimal) line.get("quantity"))
                     .setScale(2, RoundingMode.HALF_UP);
+                // Quy đổi giá cơ bản làm tròn có thể khiến chiết khấu vượt tiền hàng sửa tay.
+                lineDiscount = lineDiscount.min(lineSubtotal).max(BigDecimal.ZERO);
                 linePayable = lineSubtotal.subtract(lineDiscount);
             }
             line.put("subtotal", lineSubtotal);

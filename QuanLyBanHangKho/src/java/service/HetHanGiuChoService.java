@@ -2,21 +2,29 @@ package service;
 import db.*;
 import java.sql.*;
 import java.util.*;
+import java.util.logging.*;
 import util.KetNoiDB;
 public class HetHanGiuChoService {
-    /** S5-06: mỗi đơn được khóa riêng; nhả tồn và chuyển Chờ duyệt cùng giao dịch. */
+    /** S5-06: mỗi đơn được khóa riêng; nhả tồn và chuyển Chờ duyệt cùng giao dịch. Người thực hiện ghi là Hệ thống. */
     public int expire()throws SQLException{
-        int count=0;
+        int count=0;List<Long> failed=new ArrayList<>();
         for(int i=0;i<100;i++){
+            Long id=null;
             try(Connection c=KetNoiDB.getConnection()){c.setAutoCommit(false);try{
-                var order=TruyVanDB.one(c,"SELECT o.id,o.created_by FROM orders o WHERE o.status='APPROVED' AND EXISTS(SELECT 1 FROM stock_reservations r WHERE r.order_id=o.id AND r.status='ACTIVE' AND r.expires_at<=CURRENT_TIMESTAMP) ORDER BY o.id FOR UPDATE OF o SKIP LOCKED LIMIT 1");
+                // Bỏ qua đơn vừa lỗi trong lượt này để một đơn hỏng không chặn các đơn hết hạn phía sau.
+                var order=TruyVanDB.one(c,"SELECT o.id FROM orders o WHERE o.status='APPROVED' AND NOT (o.id = ANY(?::bigint[])) AND EXISTS(SELECT 1 FROM stock_reservations r WHERE r.order_id=o.id AND r.status='ACTIVE' AND r.expires_at<=CURRENT_TIMESTAMP) ORDER BY o.id FOR UPDATE OF o SKIP LOCKED LIMIT 1",c.createArrayOf("bigint",failed.toArray()));
                 if(order==null){c.rollback();break;}
-                long id=TruyVanDB.id(order);
-                TruyVanDB.one(c,"SELECT set_config('app.actor_id',?,true),set_config('app.status_reason','Hết hạn giữ chỗ: trả đơn về Chờ duyệt và nhả tồn',true)",Objects.toString(order.get("created_by"),""));
+                id=TruyVanDB.id(order);
+                TruyVanDB.one(c,"SELECT set_config('app.actor_id','',true),set_config('app.status_reason','Hết hạn giữ chỗ: trả đơn về Chờ duyệt và nhả tồn',true)");
                 GiuChoTonDB.release(c,id);
                 TruyVanDB.update(c,"UPDATE orders SET status='PENDING_APPROVAL',approval_flags=approval_flags||'[{\"code\":\"RESERVATION_EXPIRED\",\"message\":\"Đã hết hạn giữ chỗ; cần duyệt lại để giữ tồn\"}]'::jsonb WHERE id=?",id);
                 c.commit();count++;
-            }catch(SQLException|RuntimeException e){c.rollback();throw e;}}
+            }catch(SQLException|RuntimeException e){
+                c.rollback();
+                if(id==null)throw e;
+                failed.add(id);
+                Logger.getLogger(getClass().getName()).log(Level.WARNING,"Không xử lý được hết hạn giữ chỗ của đơn "+id,e);
+            }}
         }
         return count;
     }

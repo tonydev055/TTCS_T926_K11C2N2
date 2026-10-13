@@ -812,6 +812,18 @@
   background:#f1f5f9;
 }
 
+/* S4-08: in / xuất PDF — thao tác phụ, nhẹ hơn Lưu nháp */
+#salesOrderFeatureRoot .order-bottom-wrap #btnPrint{
+  width:120px;
+  border:1px solid #dbe2e8;
+  background:#fff;
+  color:#475569;
+}
+
+#salesOrderFeatureRoot .order-bottom-wrap #btnPrint:hover:not(:disabled){
+  background:#f8fafc;
+}
+
 #salesOrderFeatureRoot .order-bottom-wrap #btnComplete{
   border:1px solid #bfdcc9;
   background:#f3f9f5;
@@ -1378,6 +1390,13 @@
           </dl>
 
           <div class="order-actions">
+            <button
+              type="button"
+              id="btnPrint"
+              title="Lưu nháp trước, rồi in hoặc chọn Lưu dưới dạng PDF để đưa đại lý xem lại">
+              In / PDF
+            </button>
+
             <button
               type="button"
               id="btnSave">
@@ -3971,6 +3990,26 @@ window.salesOrderFeature = (() => {
   }
 
 
+  /* S4-08: in hoặc xuất PDF đơn đang soạn để đại lý xem lại trước khi gửi. In bản đã lưu trên máy chủ. */
+  async function printCurrent(){
+    if (S.saving) return;
+    if (!S.id) {
+      toast('Hãy lưu nháp trước khi in đơn', 'error');
+      return;
+    }
+    if (S.dirty) {
+      toast('Đơn có thay đổi chưa lưu. Hãy lưu nháp để bản in khớp với đơn', 'error');
+      return;
+    }
+    try {
+      const order = await api('GET', '/' + S.id, null, BASE + '/api/orders');
+      window.orderPrint.printOrder(order);
+    } catch (error) {
+      if (!handleAuth(error)) toast(error.message, 'error');
+    }
+  }
+
+
   function confirmLeave(){
 
     return (
@@ -4534,6 +4573,12 @@ window.salesOrderFeature = (() => {
       .addEventListener(
         'click',
         save
+      );
+
+    $('btnPrint')
+      .addEventListener(
+        'click',
+        printCurrent
       );
 
 

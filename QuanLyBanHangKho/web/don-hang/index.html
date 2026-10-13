@@ -277,6 +277,7 @@ window.orderListFeature = (() => {
           <div><h3>${esc(order.code)} ${statusChip(order.status, order.statusLabel)}</h3>
             <p>${esc(order.customerName)}${order.customerCode ? ` · ${esc(order.customerCode)}` : ''} · Tạo lúc ${esc(when(order.createdAt))}${order.createdByName ? ` bởi ${esc(order.createdByName)}` : ''}</p></div>
           <div class="ol-actions" id="olActions">
+            <button type="button" class="ol-btn" id="olPrint" title="Chọn &quot;Lưu dưới dạng PDF&quot; trong hộp thoại in để xuất PDF">In / Xuất PDF</button>
             ${a.canCancel ? '<button type="button" class="ol-btn danger" id="olCancel">Huỷ đơn</button>' : ''}
             ${a.canApprove ? `<button type="button" class="ol-btn danger" data-decide="reject">Từ chối</button>
               <button type="button" class="ol-btn" data-decide="return">Trả lại sửa</button>
@@ -320,6 +321,7 @@ window.orderListFeature = (() => {
             ${h.reason ? `<q>${esc(h.reason)}</q>` : ''}</li>`).join('')}</ol>
         </div>`;
       document.getElementById('olCancel')?.addEventListener('click', () => openCancel(order, revision));
+      document.getElementById('olPrint').addEventListener('click', () => window.orderPrint.printOrder(order));
       host.querySelectorAll('[data-decide]').forEach((button) => button.addEventListener('click', () =>
         window.orderApprovalFeature.decide(order, button.dataset.decide, () => { if (alive(revision)) renderDetail(order.id, revision); })));
     } catch (error) {

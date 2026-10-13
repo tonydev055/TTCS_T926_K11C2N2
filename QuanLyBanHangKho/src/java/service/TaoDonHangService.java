@@ -34,7 +34,7 @@ public class TaoDonHangService {
     }
 
     /** Định dạng tiền cho thông báo: 34.000 đ, 1.250,5 đ. */
-    static String tien(BigDecimal v) {
+    public static String tien(BigDecimal v) {
         DecimalFormatSymbols sym = new DecimalFormatSymbols(Locale.ROOT);
         sym.setGroupingSeparator('.');
         sym.setDecimalSeparator(',');
@@ -56,6 +56,33 @@ public class TaoDonHangService {
         if (v.compareTo(MAX_PRICE) > 0) throw new IllegalArgumentException("đơn giá quá lớn");
         if (clean(v).scale() > 2) throw new IllegalArgumentException("đơn giá tối đa 2 chữ số thập phân");
         return v;
+    }
+
+    /** Công nợ hiện tại, hạn mức, phần còn lại và tình trạng quá hạn của đại lý mình phụ trách (S4-02). */
+    public Map<String, Object> congNo(long userId, long customerId) throws SQLException {
+        if (!dao.isAgent(customerId, userId)) throw new NoSuchElementException("Không tìm thấy đại lý");
+        return dao.creditStatus(customerId);
+    }
+
+    /**
+     * S4-02: so tổng đơn cộng công nợ hiện tại với hạn mức. Vượt hạn mức thì đơn cần duyệt (OVER_CREDIT).
+     * Trả về thông tin công nợ kèm số còn lại sau đơn này.
+     */
+    Map<String, Object> kiemTraHanMuc(long customerId, BigDecimal payable, List<Map<String, Object>> flags) throws SQLException {
+        Map<String, Object> credit = dao.creditStatus(customerId);
+        BigDecimal limit = (BigDecimal) credit.get("creditLimit");
+        BigDecimal outstanding = (BigDecimal) credit.get("outstanding");
+        BigDecimal after = outstanding.add(payable);
+        credit.put("orderAmount", payable);
+        credit.put("afterOrder", after);
+        credit.put("remainingAfterOrder", limit.subtract(after));
+        boolean over = payable.signum() > 0 && after.compareTo(limit) > 0;
+        credit.put("overLimit", over);
+        if (over) flags.add(flag("OVER_CREDIT", limit.signum() == 0
+            ? "Đại lý không được nợ (hạn mức 0 đ): đơn " + tien(payable) + " cần duyệt"
+            : "Vượt hạn mức công nợ " + tien(after.subtract(limit)) + ": công nợ hiện tại " + tien(outstanding) +
+              " + đơn này " + tien(payable) + " = " + tien(after) + ", hạn mức " + tien(limit)));
+        return credit;
     }
 
     /**
@@ -177,6 +204,7 @@ public class TaoDonHangService {
         out.put("subtotal", subtotal);
         out.put("discount", discount);
         out.put("payable", payable);
+        out.put("credit", kiemTraHanMuc(customerId, payable, flags));
         out.put("flags", flags);
         out.put("needsApproval", !flags.isEmpty());
         return out;
@@ -206,6 +234,10 @@ public class TaoDonHangService {
         if (complete && in.get("deliveryPointId") == null)
             throw new IllegalArgumentException("Vui lòng chọn điểm giao hàng trước khi gửi đơn");
         Map<String, Object> priced = tinhTien(userId, customerId, in.get("lines"));
+        // S4-02: có nợ quá hạn thì chặn hoàn toàn việc tạo đơn mới và gửi đơn (database cũng chặn lần cuối).
+        Map<?, ?> credit = (Map<?, ?>) priced.get("credit");
+        if ((orderId == null || complete) && Boolean.TRUE.equals(credit.get("blocked")))
+            throw new IllegalArgumentException(String.valueOf(credit.get("blockReason")));
 
         // Điểm giao phải nằm trong danh sách của ĐÚNG đại lý này (kiểm tra ở máy chủ, không chỉ ẩn trên giao diện).
         Long pointId = null;

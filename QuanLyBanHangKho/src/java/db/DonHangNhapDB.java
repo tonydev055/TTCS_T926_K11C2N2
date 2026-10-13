@@ -57,6 +57,36 @@ public class DonHangNhapDB extends CoSoDB {
         return rows;
     }
 
+    /**
+     * Công nợ của đại lý (S4-02) từ view customer_credit_status. blocked=true khi có khoản quá hạn:
+     * khi đó không được tạo đơn mới hay gửi đơn.
+     */
+    public Map<String, Object> creditStatus(long customerId) throws SQLException {
+        var rows = query(
+            "SELECT c.code, s.credit_limit, s.credit_days, s.outstanding, s.available, s.overdue_amount, " +
+            "s.overdue_orders, s.max_overdue_days FROM customer_credit_status s JOIN customers c ON c.id=s.customer_id " +
+            "WHERE s.customer_id=?", customerId);
+        if (rows.isEmpty()) throw new NoSuchElementException("Không tìm thấy đại lý");
+        var r = rows.get(0);
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("creditLimit", r.get("credit_limit"));
+        out.put("creditDays", r.get("credit_days"));
+        out.put("outstanding", r.get("outstanding"));
+        out.put("available", r.get("available"));
+        out.put("overdueAmount", r.get("overdue_amount"));
+        out.put("overdueOrders", r.get("overdue_orders"));
+        out.put("maxOverdueDays", r.get("max_overdue_days"));
+        boolean blocked = ((Number) r.get("overdue_orders")).intValue() > 0;
+        out.put("blocked", blocked);
+        out.put("blockReason", blocked
+            ? "Đại lý " + r.get("code") + " có " + r.get("overdue_orders") + " đơn nợ quá hạn (quá " + r.get("max_overdue_days") +
+              " ngày so với " + r.get("credit_days") + " ngày được nợ, tổng " +
+              service.TaoDonHangService.tien((java.math.BigDecimal) r.get("overdue_amount")) +
+              "). Không thể tạo hoặc gửi đơn mới cho tới khi thu hồi công nợ"
+            : "");
+        return out;
+    }
+
     /** Tên hiển thị "SKU — Tên" của sản phẩm để báo lỗi; null nếu không có. */
     public String productName(long productId) throws SQLException {
         var rows = query("SELECT sku || ' — ' || name AS n FROM products WHERE id=?", productId);

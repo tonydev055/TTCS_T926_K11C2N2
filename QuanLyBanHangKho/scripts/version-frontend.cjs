@@ -6,7 +6,9 @@ const webRoot = path.join(__dirname, '../web');
 const indexPath = path.join(webRoot, 'index.html');
 const original = fs.readFileSync(indexPath, 'utf8');
 const updated = original.replace(/(assets\/shared\/[^"?]+\.(?:js|css))(?:\?v=[^"\s]+)?/g, (_, asset) => {
-  const version = createHash('sha256').update(fs.readFileSync(path.join(webRoot, asset))).digest('hex').slice(0, 12);
+  // Git có thể checkout CRLF trên Windows; cùng nội dung phải có cùng version.
+  const content = fs.readFileSync(path.join(webRoot, asset), 'utf8').replace(/\r\n/g, '\n');
+  const version = createHash('sha256').update(content).digest('hex').slice(0, 12);
   return `${asset}?v=${version}`;
 });
 

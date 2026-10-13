@@ -6,6 +6,17 @@ import java.util.*;
 import util.KetNoiDB;
 /** S5-07: xuất giảm tồn kho đi, hàng trên đường chưa cộng kho đến. Phụ thuộc S5-03/04. */
 public class ChuyenKhoService {
+    /** POST /stock-transfers/{id}/cancel {reason}: giữ phiếu/dòng để đối soát, không đổi tồn. */
+    public void cancel(long id,long user,Collection<String> roles,String reason)throws SQLException{
+        reason=KhoService.text(reason,"Lý do hủy",1000,true);
+        try(Connection c=KetNoiDB.getConnection()){c.setAutoCommit(false);try{
+            var r=TruyVanDB.one(c,"SELECT * FROM stock_transfers WHERE id=? FOR UPDATE",id);
+            if(r==null)throw new NoSuchElementException("Không tìm thấy phiếu chuyển");
+            KhoService.access(c,((Number)r.get("source_warehouse_id")).longValue(),user,roles);KhoService.actor(c,user);
+            if(!"DRAFT".equals(r.get("status")))throw new IllegalArgumentException("Chỉ hủy phiếu chuyển còn nháp");
+            TruyVanDB.update(c,"UPDATE stock_transfers SET status='CANCELLED',cancel_reason=?,cancelled_by=?,cancelled_at=CURRENT_TIMESTAMP WHERE id=?",reason,user,id);c.commit();
+        }catch(SQLException|RuntimeException e){c.rollback();throw e;}}
+    }
     public Map<String,Object> masters(long user,Collection<String> roles)throws SQLException{
         var out=new LinkedHashMap<>(new PhieuNhapKhoService().masters(user,roles));try(Connection c=KetNoiDB.getConnection()){
             out.put("destinations",TruyVanDB.rows(c,"SELECT id,code,name FROM warehouses WHERE active ORDER BY code"));

@@ -369,7 +369,7 @@ window.dealerPortalFeature = (() => {
       if (!alive(revision) || !panel.isConnected) return;
       panel.innerHTML = `<div class="dp-card dp-section"><h3>Đơn của tôi <small>${esc(rows.length)} đơn gần nhất</small></h3>
         ${rows.length ? `<ul class="dp-orders">${rows.map((o) => `<li><button type="button" class="dp-order" data-id="${esc(o.id)}">
-          <span><strong>${esc(o.code)}</strong><small>${esc(when(o.createdAt))} · ${esc(o.lineCount)} dòng${o.source === 'STAFF' ? ' · NV lập' : ''}</small></span>
+          <span><strong>${esc(o.code)}</strong><small>${esc(when(o.createdAt))} · ${esc(o.lineCount)} dòng${o.source === 'STAFF' ? ' · NV lập' : ''}</small><small>Giao dự kiến: ${esc(o.desiredDate ? o.desiredDate.split('-').reverse().join('/') : 'Chưa xác định')}</small></span>
           <span class="right"><strong>${esc(money(o.payable))}</strong><span class="dp-status s-${esc(o.status)}">${esc(o.statusLabel)}</span></span>
         </button></li>`).join('')}</ul>` : '<p class="dp-empty">Chưa có đơn nào. Chọn tab Đặt hàng để đặt đơn đầu tiên.</p>'}</div>`;
       panel.querySelectorAll('.dp-order').forEach((b) => b.onclick = () => renderOrderDetail(revision, b.dataset.id));
@@ -387,7 +387,7 @@ window.dealerPortalFeature = (() => {
         <div class="dp-section"><button type="button" class="dp-btn" id="dpBack">← Đơn của tôi</button></div>
         <div class="dp-section"><h3>${esc(o.code)} <span class="dp-status s-${esc(o.status)}">${esc(o.statusLabel)}</span></h3>
           <p style="margin:0 0 12px;color:#64748b;font-size:13px">${esc(o.deliveryAddress)} · Giao ${esc(o.desiredDate ? o.desiredDate.split('-').reverse().join('/') : '—')}</p>
-          <table class="dp-detail-lines"><tbody>${o.lines.map((l) => `<tr><td>${esc(l.name)}<small>${esc(num(l.quantity))} ${esc(l.unitName)} × ${esc(money(l.unitPrice))}${Number(l.discount) > 0 ? ` · CK −${esc(money(l.discount))}` : ''}</small></td><td>${esc(money(l.payable))}</td></tr>`).join('')}
+          <table class="dp-detail-lines"><tbody>${o.lines.map((l) => `<tr><td>${esc(l.name)}<small>${esc(num(l.quantity))} ${esc(l.unitName)} × ${esc(money(l.unitPrice))}${Number(l.discount) > 0 ? ` · CK −${esc(money(l.discount))}` : ''}</small><small>${l.deliveredQuantity == null ? 'Thực giao: chưa ghi nhận' : `Thực giao: ${esc(num(l.deliveredQuantity))} ${esc(l.unitName)}${l.deliveryShort ? ' · Giao thiếu' : ''}`}</small></td><td>${esc(money(l.payable))}</td></tr>`).join('')}
             <tr><td><strong>Phải thu</strong></td><td><strong>${esc(money(o.payable))}</strong></td></tr></tbody></table></div>
         <div class="dp-section"><h3>Tiến trình</h3><ol class="dp-timeline">${o.history.map((h) => `<li>${esc(h.toLabel)}<small>${esc(when(h.changedAt))}${h.reason ? ' · ' + esc(h.reason) : ''}</small></li>`).join('')}</ol>
           ${o.canCancel ? '<button type="button" class="dp-btn danger" id="dpCancel">Huỷ đơn</button>' : ''}</div>

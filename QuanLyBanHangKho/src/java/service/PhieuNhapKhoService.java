@@ -63,6 +63,8 @@ public class PhieuNhapKhoService {
                 String expiryText=Objects.toString(l.get("expiryDate"),"");if(!expiryText.isEmpty()){try{expiry=LocalDate.parse(expiryText);}catch(Exception e){throw new IllegalArgumentException("Hạn sử dụng không hợp lệ");}}
                 if(Boolean.TRUE.equals(p.get("lot_managed"))&&expiry==null)throw new IllegalArgumentException("Hàng quản lý lô phải có hạn sử dụng");
                 if(direction>0&&expiry!=null&&expiry.isBefore(date))throw new IllegalArgumentException("Hàng đã hết hạn tại ngày nhập");
+                if(source!=null&&TruyVanDB.one(c,"SELECT id FROM stock_receipt_lines WHERE receipt_id=? AND product_id=? AND location_id IS NOT DISTINCT FROM ? AND lot_number=? AND expiry_date IS NOT DISTINCT FROM ?",source,product,location,lot,expiry)==null)
+                    throw new IllegalArgumentException("Dòng điều chỉnh phải thuộc sản phẩm, vị trí, số lô và hạn dùng của phiếu gốc");
                 TruyVanDB.update(c,"INSERT INTO stock_receipt_lines(receipt_id,product_id,unit_id,quantity,conversion_factor,location_id,lot_number,expiry_date) VALUES(?,?,?,?,?,?,?,?)",result,product,unit,qty,p.get("factor"),location,lot,expiry);
             }
             c.commit();return result;

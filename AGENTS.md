@@ -35,6 +35,16 @@
 - Khi đổi API, cập nhật mô tả hợp đồng API tại nơi dự án đang duy trì, nếu có. Nếu chưa có tài liệu API, báo rõ thay đổi request/response trong kết quả hoặc mô tả commit/PR; không tự tạo bộ tài liệu sử dụng ngoài phạm vi yêu cầu.
 - Báo rõ phần đã thực hiện, đã kiểm tra và giới hạn thực tế; không nói đã push hoặc đã chạy khi chưa xác minh.
 
+## Nhánh và commit cho Sprint 5 và các sprint sau
+
+- Khi triển khai một sprint đã được người dùng yêu cầu, tạo nhánh con riêng cho từng task từ nhánh `Dev` đã cập nhật. Không tạo nhánh task mới từ nhánh của task khác.
+- Giữ mã task trong tên nhánh; theo mẫu nhánh con hiện có, ví dụ `SCRUM-71-S5-01-theo-doi-don-hang`. Dùng đúng mã Jira thực tế; không tự đặt mã Jira.
+- Tên commit dùng dạng `S5-01 [Database] ...`, `S5-01 [Backend] ...`, `S5-01 [Frontend] ...` hoặc `[Bố cục]`, với mô tả tiếng Việt và phạm vi rõ ràng. Thay số sprint/task tương ứng cho các sprint sau. Không thêm `SCRUM-xx`, `feat`, `fix`, `docs`, thông tin Claude hoặc đồng tác giả AI vào thông điệp commit.
+- Commit phần việc và sửa lỗi vào đúng nhánh task đó; không đưa sửa lỗi của task này vào nhánh task khác. Những thay đổi phụ thuộc hoặc dùng chung phải được chỉ rõ để người dùng duyệt; không tự gộp toàn bộ task vào một nhánh con.
+- Với công việc sprint theo quy trình này, người dùng đã yêu cầu commit và push từng nhánh task lên `origin` để duyệt. Kiểm tra trạng thái, xác minh thay đổi và push đúng nhánh; không force-push nếu chưa được yêu cầu sửa lịch sử.
+- Chỉ merge nhánh task vào `Dev` sau khi người dùng duyệt hoặc yêu cầu merge cụ thể. Không tự merge vào `Dev` hoặc `main`, kể cả sau khi test đã qua.
+- Giữ tên và email Git hiện có cho tác giả/committer; chỉ đổi theo yêu cầu cụ thể. Phân công tác giả đã yêu cầu cho Sprint 4 không tự áp dụng sang sprint khác.
+
 ## Xác minh thay đổi
 
 Từ thư mục gốc, build bằng `./QuanLyBanHangKho/scripts/build-sprint2.ps1`. Tham số `-JavaHome` và `-TomcatHome` cho phép đổi đường dẫn theo máy; không cài lại runtime nếu máy đã có.

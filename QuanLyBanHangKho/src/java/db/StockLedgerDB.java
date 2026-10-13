@@ -6,6 +6,8 @@ import java.util.*;
 public final class StockLedgerDB {
     private StockLedgerDB(){}
     public static void lockStock(Connection c,long warehouse,long product)throws SQLException{
+        // Cùng kho dùng chung khóa với snapshot kiểm kê, kể cả khi tạo SKU/lô mới.
+        TruyVanDB.one(c,"SELECT pg_advisory_xact_lock(?)",warehouse);
         TruyVanDB.update(c,"INSERT INTO inventory(warehouse_id,product_id) VALUES(?,?) ON CONFLICT(warehouse_id,product_id) DO NOTHING",warehouse,product);
         TruyVanDB.one(c,"SELECT id FROM inventory WHERE warehouse_id=? AND product_id=? FOR UPDATE",warehouse,product);
     }

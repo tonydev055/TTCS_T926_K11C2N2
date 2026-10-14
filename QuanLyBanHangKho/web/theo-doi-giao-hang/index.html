@@ -606,6 +606,89 @@
     font-size: 18px;
   }
 
+  /* ── Nút thao tác trong Detail Panel ── */
+  #deliveryTracking .dt-detail-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  #deliveryTracking .dt-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 0 14px;
+    border: 1px solid #dce3ea;
+    border-radius: 8px;
+    background: #fff;
+    color: #334155;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  #deliveryTracking .dt-action-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+  }
+  #deliveryTracking .dt-action-btn.primary {
+    background: var(--orange, #f47a00);
+    border-color: var(--orange, #f47a00);
+    color: #fff;
+  }
+  #deliveryTracking .dt-action-btn.primary:hover {
+    background: var(--orange-dark, #d96500);
+  }
+
+  /* ── Responsive Mobile & Tablet ── */
+  @media (max-width: 980px) {
+    #deliveryTracking .dt-layout {
+      grid-template-columns: 1fr;
+    }
+    #deliveryTracking .dt-orders-list {
+      max-height: 380px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    #deliveryTracking .dt-section,
+    #deliveryTracking .dt-detail-head {
+      padding: 16px;
+    }
+    #deliveryTracking .dt-toolbar {
+      padding: 14px 16px;
+    }
+    #deliveryTracking .dt-info-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    #deliveryTracking .dt-stepper {
+      min-width: 480px;
+    }
+    #deliveryTracking .dt-totals-box {
+      justify-content: space-between;
+      gap: 12px;
+    }
+  }
+
+  @media print {
+    #sidebar, .topbar, #deliveryTracking .dt-toolbar,
+    #deliveryTracking .dt-card:first-child,
+    #deliveryTracking .dt-detail-actions,
+    #deliveryTracking .dt-header {
+      display: none !important;
+    }
+    #deliveryTracking .dt-layout {
+      grid-template-columns: 1fr !important;
+    }
+    #deliveryTracking .dt-card {
+      box-shadow: none !important;
+      border: 1px solid #ccc !important;
+    }
+  }
+
   /* ── Trạng thái rỗng / Tải ── */
   #deliveryTracking .dt-empty {
     padding: 48px 20px;
@@ -1068,6 +1151,16 @@ window.deliveryTrackingFeature = (() => {
           </h3>
           <p>Tạo ngày ${fmtTime(order.createdAt)} · NV phụ trách: <strong>${esc(order.salesRepName)}</strong></p>
         </div>
+        <div class="dt-detail-actions">
+          <button type="button" class="dt-action-btn" id="dtPrintBtn" title="In phiếu thông tin giao nhận">
+            <span>🖨</span> In phiếu
+          </button>
+          ${order.recipientPhone ? `
+            <a href="tel:${esc(order.recipientPhone)}" class="dt-action-btn primary" style="text-decoration:none">
+              <span>📞</span> Gọi nhận hàng
+            </a>
+          ` : ''}
+        </div>
       </div>
 
       <!-- Khối tiến trình Stepper 5 bước -->
@@ -1094,6 +1187,10 @@ window.deliveryTrackingFeature = (() => {
         ${buildHistoryTimeline(order)}
       </div>
     `;
+
+    detailHost.querySelector('#dtPrintBtn')?.addEventListener('click', () => {
+      window.print();
+    });
   }
 
   function render() {
@@ -1290,4 +1387,21 @@ window.deliveryTrackingFeature = (() => {
 
   return { render };
 })();
+
+// Tự động khởi tạo khi xem file độc lập trong trình duyệt
+if (typeof window !== 'undefined') {
+  const initTracking = () => {
+    if (!document.getElementById('orderListFeature') && !document.getElementById('dealerPortal')) {
+      const mc = document.getElementById('moduleContent');
+      if (!mc || mc.children.length === 0) {
+        window.deliveryTrackingFeature?.render();
+      }
+    }
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTracking);
+  } else {
+    initTracking();
+  }
+}
 </script>

@@ -297,7 +297,7 @@ window.sprint5Features['Theo doi chuyen giao'] = {
         });
       }
 
-      // ─── FILTER LOGIC
+      // ─── FILTER LOGIC (Buoc 4: sort overdue len dau, dem ket qua, canh bao KPI)
       function applyFilter() {
         const q = host.querySelector('#tdcgSearch').value.trim().toLowerCase();
         const wh = host.querySelector('#tdcgWh').value;
@@ -312,6 +312,23 @@ window.sprint5Features['Theo doi chuyen giao'] = {
           if (q && ![t.code, t.driver, t.vehicle, t.warehouse, t.note].some(v => String(v||'').toLowerCase().includes(q))) return false;
           return true;
         });
+        // Sort: overdue len truoc, sau do sap xep theo expected_at tang dan
+        filtered.sort((a, b) => {
+          const ao = new Date(a.expected_at).getTime() < now && a.remaining_stops > 0;
+          const bo = new Date(b.expected_at).getTime() < now && b.remaining_stops > 0;
+          if (ao !== bo) return ao ? -1 : 1;
+          return new Date(a.expected_at) - new Date(b.expected_at);
+        });
+        // Cap nhat dem ket qua tren toolbar
+        let countEl = host.querySelector('#tdcgCount');
+        if (!countEl) {
+          countEl = document.createElement('span');
+          countEl.id = 'tdcgCount';
+          countEl.style.cssText = 'font-size:13px;color:#786d64;align-self:center';
+          host.querySelector('.tdcg-toolbar').append(countEl);
+        }
+        const overdueCnt = filtered.filter(t => new Date(t.expected_at).getTime() < now && t.remaining_stops > 0).length;
+        countEl.innerHTML = `<strong>${filtered.length}</strong> chuyen${overdueCnt > 0 ? ` &mdash; <span style="color:#e53935;font-weight:600">${overdueCnt} qua gio</span>` : ''}`;
         renderTable(filtered);
       }
 
@@ -320,7 +337,14 @@ window.sprint5Features['Theo doi chuyen giao'] = {
       host.querySelector('#tdcgStatus').addEventListener('change', applyFilter);
       host.querySelector('#tdcgRefresh').addEventListener('click', () => sprint5Features['Theo doi chuyen giao'].render());
 
-      renderTable(data.trips);
+      // Auto-refresh moi 60 giay (chi ap dung khi module con hien thi)
+      const tdcgTimer = setInterval(() => {
+        if (!host.isConnected) { clearInterval(tdcgTimer); return; }
+        applyFilter(); // Re-render voi thoi gian hien tai de cap nhat trang thai overdue
+      }, 60000);
+
+      applyFilter(); // Render lan dau voi sort overdue
+
     }
   )
 };

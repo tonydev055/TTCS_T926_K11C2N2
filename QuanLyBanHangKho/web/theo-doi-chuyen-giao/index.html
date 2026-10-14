@@ -1,0 +1,357 @@
+<script>
+window.sprint5Features=window.sprint5Features||{};
+
+/* ============================================================
+   S6-07: Theo doi chuyen giao — hang da xuat nhung chua giao xong
+   Permission: inventory.read
+   Epic: EP-06 | Sprint 6 | MoSCoW: Should
+   ============================================================ */
+
+// ─── Helper: lay danh sach mo phong (se thay bang apiRequest khi BE san sang)
+function tdcg_mockData() {
+  const now = Date.now();
+  const h = (hours) => new Date(now + hours * 36e5).toISOString();
+  const hPast = (hours) => new Date(now - hours * 36e5).toISOString();
+  return {
+    summary: {
+      total_trips:     8,
+      overdue_trips:   2,
+      total_value:     1_248_500_000,
+      total_items:     34,
+      items_delivered: 21,
+      items_remaining: 13
+    },
+    trips: [
+      { id: 1,  code: 'CG-2610-001', driver: 'Nguyen Van A', vehicle: '51F-12345',
+        warehouse: 'Kho chinh',
+        status: 'IN_TRANSIT',
+        departed_at: hPast(5),
+        expected_at: hPast(1),
+        total_stops:   4, delivered_stops: 3, remaining_stops: 1,
+        total_items:   12, delivered_items: 10, remaining_items: 2,
+        total_value:   320_000_000,
+        remaining_value: 45_000_000,
+        note: 'Khach hang 4 doi giao lai' },
+      { id: 2,  code: 'CG-2610-002', driver: 'Tran Thi B',   vehicle: '51G-67890',
+        warehouse: 'Kho mien Tay',
+        status: 'IN_TRANSIT',
+        departed_at: hPast(3),
+        expected_at: h(2),
+        total_stops:   5, delivered_stops: 2, remaining_stops: 3,
+        total_items:   8,  delivered_items: 3, remaining_items: 5,
+        total_value:   215_000_000,
+        remaining_value: 135_000_000,
+        note: '' },
+      { id: 3,  code: 'CG-2610-003', driver: 'Le Van C',     vehicle: '51H-11111',
+        warehouse: 'Kho chinh',
+        status: 'IN_TRANSIT',
+        departed_at: hPast(8),
+        expected_at: hPast(2),
+        total_stops:   6, delivered_stops: 4, remaining_stops: 2,
+        total_items:   14, delivered_items: 8, remaining_items: 6,
+        total_value:   455_000_000,
+        remaining_value: 210_000_000,
+        note: 'Xe bi hong phai doi' },
+      { id: 4,  code: 'CG-2610-004', driver: 'Pham Thi D',   vehicle: '51K-22222',
+        warehouse: 'Kho mien Tay',
+        status: 'IN_TRANSIT',
+        departed_at: hPast(1),
+        expected_at: h(5),
+        total_stops:   3, delivered_stops: 1, remaining_stops: 2,
+        total_items:   6,  delivered_items: 2, remaining_items: 4,
+        total_value:   98_000_000,
+        remaining_value: 65_000_000,
+        note: '' },
+      { id: 5,  code: 'CG-2610-005', driver: 'Hoang Van E',  vehicle: '51L-33333',
+        warehouse: 'Kho chinh',
+        status: 'IN_TRANSIT',
+        departed_at: hPast(6),
+        expected_at: h(1),
+        total_stops:   7, delivered_stops: 5, remaining_stops: 2,
+        total_items:   10, delivered_items: 8, remaining_items: 2,
+        total_value:   160_500_000,
+        remaining_value: 32_000_000,
+        note: '' },
+      { id: 6,  code: 'CG-2610-006', driver: 'Do Thi F',     vehicle: '51M-44444',
+        warehouse: 'Kho mien Tay',
+        status: 'PARTIAL',
+        departed_at: hPast(10),
+        expected_at: hPast(4),
+        total_stops:   5, delivered_stops: 2, remaining_stops: 3,
+        total_items:   9,  delivered_items: 4, remaining_items: 5,
+        total_value:   295_000_000,
+        remaining_value: 178_000_000,
+        note: 'Phat sinh khieu nai tu dai ly' },
+      { id: 7,  code: 'CG-2610-007', driver: 'Nguyen Thi G', vehicle: '51N-55555',
+        warehouse: 'Kho chinh',
+        status: 'IN_TRANSIT',
+        departed_at: hPast(2),
+        expected_at: h(3),
+        total_stops:   2, delivered_stops: 1, remaining_stops: 1,
+        total_items:   4,  delivered_items: 2, remaining_items: 2,
+        total_value:   75_000_000,
+        remaining_value: 37_500_000,
+        note: '' },
+      { id: 8,  code: 'CG-2610-008', driver: 'Tran Van H',   vehicle: '51P-66666',
+        warehouse: 'Kho mien Dong',
+        status: 'IN_TRANSIT',
+        departed_at: hPast(4),
+        expected_at: h(4),
+        total_stops:   3, delivered_stops: 0, remaining_stops: 3,
+        total_items:   5,  delivered_items: 0, remaining_items: 5,
+        total_value:   185_000_000,
+        remaining_value: 185_000_000,
+        note: '' }
+    ]
+  };
+}
+
+window.sprint5Features['Theo doi chuyen giao'] = {
+  path: 'theo-doi-chuyen-giao',
+  permission: 'inventory.read',
+  render: () => warehouseUi.screen(
+    'Theo doi chuyen giao',
+    'Hang da xuat kho nhung chua giao xong van thuoc trach nhiem chuyen. Canh bao do khi chuyen qua gio du kien.',
+    () => Promise.resolve(tdcg_mockData()),
+    (host, data, revision) => {
+      const ui = warehouseUi, esc = ui.esc;
+      const vnd = (v) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(v);
+      const s = data.summary;
+
+      // ─── KPI CARDS
+      const kpiHtml = `
+        <div class="tdcg-kpi-row">
+          <div class="tdcg-kpi tdcg-kpi-main">
+            <span class="tdcg-kpi-icon">↗</span>
+            <div>
+              <span class="tdcg-kpi-label">Tong tien hang tren duong</span>
+              <strong class="tdcg-kpi-value">${vnd(s.total_value)}</strong>
+            </div>
+          </div>
+          <div class="tdcg-kpi">
+            <span class="tdcg-kpi-icon">🚛</span>
+            <div>
+              <span class="tdcg-kpi-label">Chuyen dang chay</span>
+              <strong class="tdcg-kpi-value">${s.total_trips}</strong>
+            </div>
+          </div>
+          <div class="tdcg-kpi tdcg-kpi-warn">
+            <span class="tdcg-kpi-icon">⚠</span>
+            <div>
+              <span class="tdcg-kpi-label">Qua gio du kien</span>
+              <strong class="tdcg-kpi-value">${s.overdue_trips}</strong>
+            </div>
+          </div>
+          <div class="tdcg-kpi">
+            <span class="tdcg-kpi-icon">📦</span>
+            <div>
+              <span class="tdcg-kpi-label">Diem con lai / Tong</span>
+              <strong class="tdcg-kpi-value">${s.items_remaining} / ${s.total_items}</strong>
+            </div>
+          </div>
+        </div>`;
+
+      // ─── TOOLBAR / FILTER
+      const toolbarHtml = `
+        <div class="tdcg-toolbar">
+          <label class="tdcg-search"><span>⌕</span><input id="tdcgSearch" type="search" placeholder="Tim ma chuyen, tai xe, bien so..."></label>
+          <select id="tdcgWh">
+            <option value="">Tat ca kho</option>
+            ${[...new Set(data.trips.map(t => t.warehouse))].map(w => `<option value="${esc(w)}">${esc(w)}</option>`).join('')}
+          </select>
+          <select id="tdcgStatus">
+            <option value="">Tat ca trang thai</option>
+            <option value="OVERDUE">Qua gio du kien</option>
+            <option value="IN_TRANSIT">Dang chuyen</option>
+            <option value="PARTIAL">Giao mot phan</option>
+          </select>
+          <button class="orange-button" id="tdcgRefresh">↻ Tai lai</button>
+        </div>`;
+
+      // ─── TABLE
+      const tableHtml = `<div id="tdcgTable"></div>`;
+
+      host.innerHTML = kpiHtml + toolbarHtml + tableHtml;
+
+      // inject css
+      if (!document.getElementById('tdcgStyle')) {
+        const st = document.createElement('style');
+        st.id = 'tdcgStyle';
+        st.textContent = `
+          .tdcg-kpi-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:14px;margin-bottom:20px}
+          .tdcg-kpi{display:flex;align-items:center;gap:14px;padding:18px 20px;background:#fff;border:1px solid #e4e9ef;border-radius:14px;box-shadow:0 2px 8px rgba(83,48,17,.05);transition:box-shadow .2s,transform .15s}
+          .tdcg-kpi:hover{box-shadow:0 6px 20px rgba(83,48,17,.10);transform:translateY(-1px)}
+          .tdcg-kpi-main{background:linear-gradient(135deg,#fff8ee,#ffe0b2);border-color:#f47a00}
+          .tdcg-kpi-warn{background:linear-gradient(135deg,#fff0f0,#ffe0e0);border-color:#e53935}
+          .tdcg-kpi-icon{font-size:28px;line-height:1;flex-shrink:0}
+          .tdcg-kpi-label{display:block;font-size:11px;color:#786d64;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+          .tdcg-kpi-value{font-size:20px;font-weight:700;color:#17120e}
+          .tdcg-kpi-main .tdcg-kpi-value{color:#f47a00}
+          .tdcg-kpi-warn .tdcg-kpi-value{color:#e53935}
+          .tdcg-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;padding:12px 14px;background:#fff;border:1px solid #e4e9ef;border-radius:10px}
+          .tdcg-search{display:flex;align-items:center;gap:6px;border:1px solid #dce3ea;border-radius:8px;padding:0 10px;background:#fafafa;flex:1;min-width:180px;transition:border-color .2s}
+          .tdcg-search:focus-within{border-color:#f47a00;background:#fff}
+          .tdcg-search span{color:#786d64;font-size:16px}
+          .tdcg-search input{border:none;outline:none;height:38px;width:100%;background:transparent;font:inherit}
+          .tdcg-toolbar select{min-height:40px;border:1px solid #dce3ea;border-radius:8px;padding:8px 12px;background:#fff;font:inherit;transition:border-color .2s}
+          .tdcg-toolbar select:focus{border-color:#f47a00;outline:none}
+          .tdcg-progress-wrap{display:flex;align-items:center;gap:8px;min-width:130px}
+          .tdcg-progress-bar{flex:1;height:7px;background:#e4e9ef;border-radius:4px;overflow:hidden}
+          .tdcg-progress-fill{height:100%;border-radius:4px;background:#f47a00;transition:width .4s ease}
+          .tdcg-progress-fill.full{background:#43a047}
+          .tdcg-progress-text{font-size:11px;color:#786d64;white-space:nowrap}
+          .tdcg-badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+          .tdcg-badge-transit{background:#e3f2fd;color:#0d47a1}
+          .tdcg-badge-overdue{background:#ffebee;color:#b71c1c;animation:tdcg-pulse 2s ease-in-out infinite}
+          .tdcg-badge-partial{background:#fff3e0;color:#e65100}
+          @keyframes tdcg-pulse{0%,100%{opacity:1}50%{opacity:.65}}
+          .tdcg-responsible{display:inline-block;padding:2px 8px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:10px;font-size:11px;white-space:nowrap}
+          .tdcg-detail-btn{min-height:30px;padding:4px 12px;border:1px solid #dce3ea;border-radius:6px;background:#fff;color:#172033;font:inherit;cursor:pointer;font-size:12px;transition:all .15s}
+          .tdcg-detail-btn:hover{background:#fff5e6;border-color:#f47a00;color:#f47a00}
+          .tdcg-overdue-row{background:#fff8f8!important}
+          .tdcg-overdue-row td:first-child{border-left:3px solid #e53935}
+          .warehouse-feature .feature-table tbody tr:hover{background:#fffaf5}
+          @media(max-width:1100px){.tdcg-kpi-row{grid-template-columns:1fr 1fr}}
+          @media(max-width:600px){.tdcg-kpi-row{grid-template-columns:1fr}.tdcg-toolbar{flex-direction:column;align-items:stretch}}
+        `;
+        document.head.append(st);
+      }
+
+      // ─── RENDER TABLE
+      function renderTable(trips) {
+        const table = host.querySelector('#tdcgTable');
+        const now = Date.now();
+        table.innerHTML = ui.table(
+          ['Ma chuyen', 'Tai xe / Bien so', 'Kho', 'Gio du kien', 'Trang thai', 'Tien do diem giao', 'Hang con lai / Tong', 'Gia tri con lai', 'Chi tiet'],
+          trips.map(t => {
+            const isOverdue = new Date(t.expected_at).getTime() < now && t.remaining_stops > 0;
+            const pctStop = Math.round(t.delivered_stops / t.total_stops * 100);
+            const pctVal  = Math.round((t.total_value - t.remaining_value) / t.total_value * 100);
+            const statusMap = { IN_TRANSIT: ['Dang tren duong', 'tdcg-badge-transit'], PARTIAL: ['Giao mot phan', 'tdcg-badge-partial'] };
+            const [slabel, scls] = isOverdue ? ['Qua gio du kien', 'tdcg-badge-overdue'] : (statusMap[t.status] || ['Dang tren duong', 'tdcg-badge-transit']);
+            const expectedStr = new Date(t.expected_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+            const overdueMin = isOverdue ? Math.round((Date.now() - new Date(t.expected_at).getTime()) / 60000) : 0;
+            return `<tr class="${isOverdue ? 'tdcg-overdue-row' : ''}" data-id="${t.id}">
+              <td><strong>${esc(t.code)}</strong>${isOverdue ? `<br><small style="color:#e53935">Tre ${overdueMin} phut</small>` : ''}</td>
+              <td>${esc(t.driver)}<br><small style="color:#786d64">${esc(t.vehicle)}</small></td>
+              <td>${esc(t.warehouse)}</td>
+              <td style="${isOverdue ? 'color:#e53935;font-weight:600' : ''}">${esc(expectedStr)}</td>
+              <td><span class="tdcg-badge ${scls}">${esc(slabel)}</span></td>
+              <td>
+                <div class="tdcg-progress-wrap">
+                  <div class="tdcg-progress-bar"><div class="tdcg-progress-fill ${pctStop===100?'full':''}" style="width:${pctStop}%"></div></div>
+                  <span class="tdcg-progress-text">${t.delivered_stops}/${t.total_stops} diem</span>
+                </div>
+                <div class="tdcg-progress-wrap" style="margin-top:4px">
+                  <div class="tdcg-progress-bar"><div class="tdcg-progress-fill ${pctVal===100?'full':''}" style="width:${pctVal}%;background:#43a047"></div></div>
+                  <span class="tdcg-progress-text">${pctVal}% gia tri</span>
+                </div>
+              </td>
+              <td>
+                <span class="tdcg-responsible">${t.remaining_items} kien / chua giao</span>
+                <small style="color:#786d64;display:block;margin-top:2px">${t.delivered_items} / ${t.total_items} kien da giao</small>
+              </td>
+              <td style="font-weight:700;color:#f47a00">${vnd(t.remaining_value)}<br><small style="color:#786d64;font-weight:400">${vnd(t.total_value)} tong</small></td>
+              <td><button class="tdcg-detail-btn" data-trip="${t.id}">Xem chi tiet</button></td>
+            </tr>`;
+          })
+        );
+        // Gan su kien chi tiet cho tung chuyen
+        table.querySelectorAll('[data-trip]').forEach(btn => {
+          btn.onclick = () => {
+            const t = data.trips.find(x => x.id === Number(btn.dataset.trip));
+            if (!t) return;
+            const isOverdue = new Date(t.expected_at).getTime() < Date.now() && t.remaining_stops > 0;
+            openFormDialog(
+              'Chi tiet chuyen: ' + t.code,
+              `<div class="form-group full">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+                  <div style="padding:14px;background:#f8fafc;border-radius:10px">
+                    <small style="color:#786d64">Tai xe</small><br><strong>${esc(t.driver)}</strong>
+                    <br><small style="color:#786d64">${esc(t.vehicle)}</small>
+                  </div>
+                  <div style="padding:14px;background:#f8fafc;border-radius:10px">
+                    <small style="color:#786d64">Kho xuat</small><br><strong>${esc(t.warehouse)}</strong>
+                  </div>
+                  <div style="padding:14px;background:${isOverdue?'#fff8f8':'#f8fafc'};border-radius:10px;border:1px solid ${isOverdue?'#fca5a5':'#e4e9ef'}">
+                    <small style="color:#786d64">Gio du kien hoan thanh</small><br>
+                    <strong style="color:${isOverdue?'#e53935':'#17120e'}">${new Date(t.expected_at).toLocaleString('vi-VN')}</strong>
+                    ${isOverdue ? '<br><span style="color:#e53935;font-size:12px">Da qua gio du kien</span>' : ''}
+                  </div>
+                  <div style="padding:14px;background:#fff5e6;border-radius:10px;border:1px solid #fed7aa">
+                    <small style="color:#786d64">Tien hang con tren duong</small><br>
+                    <strong style="color:#f47a00;font-size:18px">${vnd(t.remaining_value)}</strong>
+                    <br><small style="color:#786d64">Tong chuyen: ${vnd(t.total_value)}</small>
+                  </div>
+                </div>
+                <table class="feature-table" style="width:100%">
+                  <thead><tr><th>Hang muc</th><th>So lieu</th></tr></thead>
+                  <tbody>
+                    <tr><td>Tong so diem giao</td><td>${t.total_stops}</td></tr>
+                    <tr><td>Da giao thanh cong</td><td style="color:#43a047;font-weight:600">${t.delivered_stops} diem</td></tr>
+                    <tr><td>Chua giao / con lai</td><td style="color:#f47a00;font-weight:600">${t.remaining_stops} diem</td></tr>
+                    <tr><td>Tong kien hang</td><td>${t.total_items}</td></tr>
+                    <tr><td>Da giao</td><td style="color:#43a047;font-weight:600">${t.delivered_items} kien</td></tr>
+                    <tr><td>Con lai tren duong</td><td><span class="tdcg-responsible">${t.remaining_items} kien — thuoc trach nhiem chuyen</span></td></tr>
+                    ${t.note ? `<tr><td>Ghi chu / ly do cham</td><td style="color:#b45309">${esc(t.note)}</td></tr>` : ''}
+                  </tbody>
+                </table>
+              </div>`,
+              null
+            );
+          };
+        });
+      }
+
+      // ─── FILTER LOGIC (Buoc 4: sort overdue len dau, dem ket qua, canh bao KPI)
+      function applyFilter() {
+        const q = host.querySelector('#tdcgSearch').value.trim().toLowerCase();
+        const wh = host.querySelector('#tdcgWh').value;
+        const st = host.querySelector('#tdcgStatus').value;
+        const now = Date.now();
+        const filtered = data.trips.filter(t => {
+          const isOverdue = new Date(t.expected_at).getTime() < now && t.remaining_stops > 0;
+          if (st === 'OVERDUE' && !isOverdue) return false;
+          if (st === 'IN_TRANSIT' && (isOverdue || t.status !== 'IN_TRANSIT')) return false;
+          if (st === 'PARTIAL' && t.status !== 'PARTIAL') return false;
+          if (wh && t.warehouse !== wh) return false;
+          if (q && ![t.code, t.driver, t.vehicle, t.warehouse, t.note].some(v => String(v||'').toLowerCase().includes(q))) return false;
+          return true;
+        });
+        // Sort: overdue len truoc, sau do sap xep theo expected_at tang dan
+        filtered.sort((a, b) => {
+          const ao = new Date(a.expected_at).getTime() < now && a.remaining_stops > 0;
+          const bo = new Date(b.expected_at).getTime() < now && b.remaining_stops > 0;
+          if (ao !== bo) return ao ? -1 : 1;
+          return new Date(a.expected_at) - new Date(b.expected_at);
+        });
+        // Cap nhat dem ket qua tren toolbar
+        let countEl = host.querySelector('#tdcgCount');
+        if (!countEl) {
+          countEl = document.createElement('span');
+          countEl.id = 'tdcgCount';
+          countEl.style.cssText = 'font-size:13px;color:#786d64;align-self:center';
+          host.querySelector('.tdcg-toolbar').append(countEl);
+        }
+        const overdueCnt = filtered.filter(t => new Date(t.expected_at).getTime() < now && t.remaining_stops > 0).length;
+        countEl.innerHTML = `<strong>${filtered.length}</strong> chuyen${overdueCnt > 0 ? ` &mdash; <span style="color:#e53935;font-weight:600">${overdueCnt} qua gio</span>` : ''}`;
+        renderTable(filtered);
+      }
+
+      host.querySelector('#tdcgSearch').addEventListener('input', applyFilter);
+      host.querySelector('#tdcgWh').addEventListener('change', applyFilter);
+      host.querySelector('#tdcgStatus').addEventListener('change', applyFilter);
+      host.querySelector('#tdcgRefresh').addEventListener('click', () => sprint5Features['Theo doi chuyen giao'].render());
+
+      // Auto-refresh moi 60 giay (chi ap dung khi module con hien thi)
+      const tdcgTimer = setInterval(() => {
+        if (!host.isConnected) { clearInterval(tdcgTimer); return; }
+        applyFilter(); // Re-render voi thoi gian hien tai de cap nhat trang thai overdue
+      }, 60000);
+
+      applyFilter(); // Render lan dau voi sort overdue
+
+    }
+  )
+};
+</script>

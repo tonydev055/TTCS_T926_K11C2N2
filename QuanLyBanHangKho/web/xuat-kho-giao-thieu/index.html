@@ -40,7 +40,7 @@
   #xkgtFeature .xk-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-top:1px solid #edf1f5;color:#64748b;font-size:12px}
   #xkgtFeature .xk-summary{display:flex;flex-wrap:wrap;gap:8px 24px;padding:12px 20px;border-bottom:1px solid #edf1f5;background:#fbfcfd;color:#475569;font-size:13px}
   #xkgtFeature .xk-summary strong{color:#172033}
-  /* Dialog so luong xuat */
+  /* Dialog so luong xuat & chi tiet */
   .xk-lines-table{width:100%;border-collapse:collapse;font-size:13px}
   .xk-lines-table th{padding:8px 10px;background:#f4f7fa;color:#455468;font-size:12px;font-weight:700;text-align:left}
   .xk-lines-table td{padding:8px 10px;border-top:1px solid #edf1f5;vertical-align:middle}
@@ -101,15 +101,15 @@ function xkgt_mockData() {
         warehouse: 'Kho chinh', confirmedAt: '2026-10-12 09:15', payable: 42000000,
         status: 'SHIPPED', hasShortfall: false,
         lines: [
-          { id: 51, sku: 'IP15-256', name: 'iPhone 15 256GB', unit: 'Cai', orderedQty: 4, deliveredQty: 4, shortQty: 0 },
-          { id: 52, sku: 'SC-IPHONE15', name: 'Cap sac iPhone 20W', unit: 'Cai', orderedQty: 8, deliveredQty: 8, shortQty: 0 },
+          { id: 51, sku: 'IP15-256', name: 'iPhone 15 256GB', unit: 'Cai', orderedQty: 4, reservedQty: 4, deliveredQty: 4, shortQty: 0, unitPrice: 8500000 },
+          { id: 52, sku: 'SC-IPHONE15', name: 'Cap sac iPhone 20W', unit: 'Cai', orderedQty: 8, reservedQty: 8, deliveredQty: 8, shortQty: 0, unitPrice: 350000 },
         ]},
       { id: 6, orderCode: 'DH-260929', customer: 'Dai ly Bao An', address: '55 Hai Ba Trung, HN',
         warehouse: 'Kho mien Dong', confirmedAt: '2026-10-13 14:30', payable: 18200000,
         status: 'SHIPPED', hasShortfall: true,
         lines: [
-          { id: 61, sku: 'SS-A35-128', name: 'Samsung A35 128GB', unit: 'Cai', orderedQty: 5, deliveredQty: 3, shortQty: 2 },
-          { id: 62, sku: 'ANKER-65W', name: 'Cu sac Anker 65W', unit: 'Cai', orderedQty: 4, deliveredQty: 4, shortQty: 0 },
+          { id: 61, sku: 'SS-A35-128', name: 'Samsung A35 128GB', unit: 'Cai', orderedQty: 5, reservedQty: 5, deliveredQty: 3, shortQty: 2, unitPrice: 3640000 },
+          { id: 62, sku: 'ANKER-65W', name: 'Cu sac Anker 65W', unit: 'Cai', orderedQty: 4, reservedQty: 4, deliveredQty: 4, shortQty: 0, unitPrice: 420000 },
         ]},
     ],
     shortfall: [
@@ -141,7 +141,7 @@ window.sprint5Features['Xuat kho & Giao thieu'] = {
       const vnd = (v) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(v || 0);
       let activeTab = 'pending';
 
-      // State cac don da xac nhan xuat
+      // State cac don da xac nhan xuat trong phien
       const confirmed = new Map(); // id -> { lines: [{...}], confirmedAt }
 
       // Khoi tao shell
@@ -243,12 +243,16 @@ window.sprint5Features['Xuat kho & Giao thieu'] = {
           return o ? {
             ...o, status: 'SHIPPED', confirmedAt: c.confirmedAt,
             hasShortfall: c.lines.some(l => l.actualQty < l.orderedQty),
-            lines: c.lines.map(l => ({ ...l, deliveredQty: l.actualQty, shortQty: Math.max(0, l.orderedQty - l.actualQty) }))
+            lines: c.lines.map(l => ({
+              ...l,
+              deliveredQty: l.actualQty,
+              shortQty: Math.max(0, l.orderedQty - l.actualQty)
+            }))
           } : null;
         }).filter(Boolean);
 
         const all = [...data.shipped, ...sessionShipped];
-        const rows = all.filter(o => !q || [o.orderCode, o.customer].some(v => v.toLowerCase().includes(q.toLowerCase())));
+        const rows = all.filter(o => !q || [o.orderCode, o.customer, o.warehouse].some(v => v.toLowerCase().includes(q.toLowerCase())));
         panel.innerHTML = `
           <div class="xk-toolbar">
             <label class="xk-search"><span>⌕</span><input id="xkSearchShipped" type="search" placeholder="Tim ma don, dai ly..." value="${esc(q)}"></label>
@@ -272,7 +276,7 @@ window.sprint5Features['Xuat kho & Giao thieu'] = {
                     <td><small>${esc(o.confirmedAt)}</small></td>
                     <td><span class="xk-status ${o.hasShortfall ? 'short' : 'shipped'}">${o.hasShortfall ? 'Co giao thieu' : 'Giao du'}</span></td>
                     <td style="text-align:right;font-weight:700">${vnd(o.payable)}</td>
-                    <td><button class="xk-btn" data-view="${o.id}">Xem phieu</button></td>
+                    <td><button class="xk-btn" data-view="${o.id}">Xem phieu (Khoa)</button></td>
                   </tr>`).join('') : `
                   <tr><td colspan="7"><div class="xk-empty"><strong>Chua co don da xuat.</strong></div></td></tr>`}
               </tbody>
@@ -285,6 +289,68 @@ window.sprint5Features['Xuat kho & Giao thieu'] = {
             const id = Number(btn.dataset.view);
             const o = all.find(x => x.id === id);
             if (o) showOrderDetail(o, true);
+          };
+        });
+      }
+
+      // ─── TAB 3: NO HANG (DANH SACH DON CON NO)
+      function renderDebt(q = '') {
+        const panel = document.getElementById('xkPanel');
+        const sessionDebts = [...confirmed.entries()].filter(([,c]) => c.lines.some(l => l.actualQty < l.orderedQty))
+          .map(([id, c]) => {
+            const o = data.pending.find(p => p.id === id);
+            if (!o) return null;
+            const shortLines = c.lines.filter(l => l.actualQty < l.orderedQty)
+              .map(l => ({ ...l, deliveredQty: l.actualQty, shortQty: l.orderedQty - l.actualQty }));
+            return {
+              id, orderCode: o.orderCode, customer: o.customer, address: o.address,
+              warehouse: o.warehouse, confirmedAt: c.confirmedAt,
+              debtItems: shortLines.reduce((s,l) => s + l.shortQty, 0),
+              debtValue: shortLines.reduce((s,l) => s + l.shortQty * (l.unitPrice||0), 0),
+              lines: shortLines
+            };
+          }).filter(Boolean);
+
+        const all = [...data.shortfall, ...sessionDebts];
+        const rows = all.filter(o => !q || [o.orderCode, o.customer, o.warehouse].some(v => v.toLowerCase().includes(q.toLowerCase())));
+        const totalDebt = rows.reduce((s, o) => s + o.debtValue, 0);
+
+        panel.innerHTML = `
+          <div class="xk-toolbar">
+            <label class="xk-search"><span>⌕</span><input id="xkSearchDebt" type="search" placeholder="Tim ma don, dai ly no hang..." value="${esc(q)}"></label>
+          </div>
+          <div class="xk-summary">
+            <span><strong>${rows.length}</strong> don con no hang</span>
+            <span>Tong gia tri no: <strong style="color:#e53935">${vnd(totalDebt)}</strong></span>
+          </div>
+          <div class="xk-table-wrap">
+            <table class="xk-table">
+              <thead><tr>
+                <th>Ma don</th><th>Dai ly</th><th>Kho</th><th>Thoi gian xuat</th>
+                <th>So kien con no</th><th style="text-align:right">Gia tri no</th><th>Trang thai</th><th>Thao tac</th>
+              </tr></thead>
+              <tbody>
+                ${rows.length ? rows.map(o => `
+                  <tr>
+                    <td><strong>${esc(o.orderCode)}</strong></td>
+                    <td>${esc(o.customer)}<small>${esc(o.address)}</small></td>
+                    <td>${esc(o.warehouse)}</td>
+                    <td><small>${esc(o.confirmedAt)}</small></td>
+                    <td style="color:#e53935;font-weight:700">${o.debtItems} san pham</td>
+                    <td style="text-align:right;font-weight:700;color:#e53935">${vnd(o.debtValue)}</td>
+                    <td><span class="xk-status debt">No hang</span></td>
+                    <td><button class="xk-btn" data-debt="${o.id}">Chi tiet no</button></td>
+                  </tr>`).join('') : `
+                  <tr><td colspan="8"><div class="xk-empty"><strong>Khong co don nao con no hang.</strong>Tat ca don deu da duoc xuat du!</div></td></tr>`}
+              </tbody>
+            </table>
+          </div>`;
+
+        document.getElementById('xkSearchDebt').addEventListener('input', e => renderDebt(e.target.value));
+        panel.querySelectorAll('[data-debt]').forEach(btn => {
+          btn.onclick = () => {
+            const o = all.find(x => x.id === Number(btn.dataset.debt));
+            if (o) showDebtDetail(o);
           };
         });
       }
@@ -308,7 +374,7 @@ window.sprint5Features['Xuat kho & Giao thieu'] = {
         const body = `
           <div class="form-group full">
             <div style="padding:10px 14px;background:#eff8ff;border-radius:10px;border:1px solid #b2ddff;color:#175cd3;font-size:13px;margin-bottom:14px">
-              <strong>Huong dan:</strong> He thong da tu dong dien so luong theo <em>Ton giu cho</em>. Neu thuc te giao thieu, hay giam so luong de tu dong ghi nhan <strong>No hang</strong>.
+              <strong>Huong dan:</strong> He thong mac dinh xuat theo <em>Ton giu cho</em>. Neu thuc te giao thieu, hay nhap dung so luong thuc xuat. Phan chenh lech se duoc tu dong ghi nhan thanh <strong>No hang</strong>.
             </div>
             <div class="xk-table-wrap">
               <table class="xk-lines-table">
@@ -363,47 +429,109 @@ window.sprint5Features['Xuat kho & Giao thieu'] = {
           const now = new Date().toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
           confirmed.set(order.id, { lines, confirmedAt: now });
 
-          // Cap nhat cac badge count
+          // Cap nhat cac counter badge tren tab
           const pendingCount = data.pending.filter(o => !confirmed.has(o.id)).length;
           document.getElementById('xkCntPending').textContent = pendingCount;
           document.getElementById('xkCntShipped').textContent = data.shipped.length + confirmed.size;
 
+          const sessionDebtCount = [...confirmed.values()].filter(c => c.lines.some(l => l.actualQty < l.orderedQty)).length;
+          document.getElementById('xkCntDebt').textContent = data.shortfall.length + sessionDebtCount;
+
           const hasShort = lines.some(l => l.actualQty < l.orderedQty);
-          showToast(`Da xac nhan xuat kho ${order.orderCode}` + (hasShort ? ' — Co giao thieu, he thong da ghi nhan no hang' : ' — Giao du thanh cong!'));
+          showToast(`Da xac nhan xuat kho ${order.orderCode}` + (hasShort ? ' — Co giao thieu, da tu dong ghi nhan no hang' : ' — Giao du thanh cong!'));
           close();
           switchTab('shipped');
         };
       }
 
+      // ─── DIALOG: XEM PHIEU XUAT (KHOA / READ-ONLY)
       function showOrderDetail(order, locked) {
-        // Tam thoi xem phieu o Step 3
+        const linesHtml = (order.lines || []).map(l => {
+          const delivered = l.deliveredQty ?? l.actualQty ?? l.orderedQty;
+          const short = l.shortQty ?? Math.max(0, l.orderedQty - delivered);
+          return `
+            <tr>
+              <td><strong>${esc(l.sku||'')}</strong><small>${esc(l.name||'')}</small></td>
+              <td style="text-align:right">${vnd(l.unitPrice||0)}</td>
+              <td style="text-align:center">${l.orderedQty}</td>
+              <td style="text-align:center;color:#067647;font-weight:700">${delivered}</td>
+              <td style="text-align:center;color:#e53935;font-weight:700">${short > 0 ? short : '—'}</td>
+              <td style="text-align:right;font-weight:700">${vnd(delivered * (l.unitPrice||0))}</td>
+            </tr>`;
+        }).join('');
+
+        const body = `
+          <div class="form-group full">
+            ${locked ? `
+              <div style="padding:10px 14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;color:#475569;font-size:12px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+                <span style="font-size:16px">🔒</span>
+                <span><strong>Phieu xuat da hoan tat & khoa chinh sua:</strong> Toan bo ton giu cho da duoc chuyen thanh xuat thuc te vao kho. Don hang o che do Read-only.</span>
+              </div>` : ''}
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;font-size:13px">
+              <div><strong>Dai ly:</strong> ${esc(order.customer)}</div>
+              <div><strong>Kho xuat:</strong> ${esc(order.warehouse)}</div>
+              <div><strong>Thoi gian xuat:</strong> ${esc(order.confirmedAt || '—')}</div>
+              <div><strong>Tong gia tri xuat:</strong> <span style="color:#067647;font-weight:700">${vnd(order.payable)}</span></div>
+            </div>
+            <div class="xk-table-wrap">
+              <table class="xk-lines-table">
+                <thead><tr>
+                  <th>San pham</th>
+                  <th style="text-align:right">Don gia</th>
+                  <th style="text-align:center">Da dat</th>
+                  <th style="text-align:center">Thuc xuat</th>
+                  <th style="text-align:center">Giao thieu</th>
+                  <th style="text-align:right">Thanh tien</th>
+                </tr></thead>
+                <tbody>${linesHtml}</tbody>
+              </table>
+            </div>
+          </div>`;
+        openFormDialog(`Phieu xuat — ${order.orderCode}`, body, null);
+      }
+
+      // ─── DIALOG: CHI TIET NO HANG
+      function showDebtDetail(order) {
         const linesHtml = (order.lines || []).map(l => `
           <tr>
             <td><strong>${esc(l.sku||'')}</strong><small>${esc(l.name||'')}</small></td>
             <td style="text-align:center">${l.orderedQty}</td>
-            <td style="text-align:center;color:#067647;font-weight:600">${l.deliveredQty ?? l.actualQty ?? l.orderedQty}</td>
-            <td style="text-align:center;color:#e53935;font-weight:600">${(l.shortQty ?? 0) > 0 ? l.shortQty : '—'}</td>
+            <td style="text-align:center;color:#067647;font-weight:600">${l.deliveredQty}</td>
+            <td style="text-align:center;color:#e53935;font-weight:700">${l.shortQty}</td>
+            <td style="text-align:right;color:#e53935;font-weight:700">${vnd(l.shortQty * (l.unitPrice||0))}</td>
           </tr>`).join('');
-        openFormDialog(`Phieu xuat — ${order.orderCode}`,
-          `<div class="form-group full">
-            <div style="padding:10px 14px;background:#f8fafc;border-radius:10px;color:#475569;font-size:12px;margin-bottom:12px">
-              🔒 Phieu xuat da hoan tat — Khong the chinh sua.
+
+        const body = `
+          <div class="form-group full">
+            <div style="padding:12px 14px;background:#fef3f2;border-radius:10px;border:1px solid #fee4e2;color:#b42318;font-size:13px;margin-bottom:12px">
+              <strong>Danh sach mat hang con thieu:</strong> Cac mat hang duoi day can duoc uu tien xuat bo sung trong dot giao hang tiep theo. Tong gia tri con no: <strong>${vnd(order.debtValue)}</strong>.
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;font-size:13px">
+              <div><strong>Dai ly nhan:</strong> ${esc(order.customer)}</div>
+              <div><strong>Kho xuat:</strong> ${esc(order.warehouse)}</div>
+              <div><strong>Dia chi giao:</strong> ${esc(order.address || '—')}</div>
+              <div><strong>Ngay xuat lan 1:</strong> ${esc(order.confirmedAt || '—')}</div>
             </div>
             <div class="xk-table-wrap">
               <table class="xk-lines-table">
-                <thead><tr><th>San pham</th><th style="text-align:center">Da dat</th><th style="text-align:center">Thuc xuat</th><th style="text-align:center">Giao thieu</th></tr></thead>
+                <thead><tr>
+                  <th>San pham</th>
+                  <th style="text-align:center">Da dat</th>
+                  <th style="text-align:center">Da giao</th>
+                  <th style="text-align:center">Con no</th>
+                  <th style="text-align:right">Gia tri no</th>
+                </tr></thead>
                 <tbody>${linesHtml}</tbody>
               </table>
             </div>
-          </div>`, null);
+          </div>`;
+        openFormDialog(`Chi tiet no hang — ${order.orderCode}`, body, null);
       }
 
       function renderPanel() {
         if (activeTab === 'pending') renderPending();
         else if (activeTab === 'shipped') renderShipped();
-        else {
-          document.getElementById('xkPanel').innerHTML = `<div class="xk-empty"><strong>Tab no hang dang hoan thien o buoc tiep theo.</strong></div>`;
-        }
+        else renderDebt();
       }
 
       renderPanel();

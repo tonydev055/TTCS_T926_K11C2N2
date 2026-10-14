@@ -1,0 +1,454 @@
+<!-- Loaded by the application shell: ../index.html -->
+<!-- S6-09 – Theo dõi trạng thái giao hàng của đơn (Đại lý) -->
+<style>
+  /* ── Khung tổng thể chức năng theo dõi giao hàng ── */
+  #deliveryTracking {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    font-family: 'Be Vietnam Pro', Arial, sans-serif;
+    color: var(--ink, #17120e);
+  }
+
+  /* ── Header module ── */
+  #deliveryTracking .dt-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  #deliveryTracking .dt-eyebrow {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--orange-dark, #d96500);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  #deliveryTracking .dt-title {
+    margin: 0 0 6px;
+    color: #172033;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+  #deliveryTracking .dt-desc {
+    margin: 0;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* ── Card tiêu chuẩn KhoFlow ── */
+  #deliveryTracking .dt-card {
+    overflow: hidden;
+    border: 1px solid var(--app-border, #e4e9ef);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .04);
+  }
+
+  /* ── Layout chính hai cột Master-Detail ── */
+  #deliveryTracking .dt-layout {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* ── Danh sách đơn hàng bên trái ── */
+  #deliveryTracking .dt-orders-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-height: 720px;
+    overflow-y: auto;
+  }
+  #deliveryTracking .dt-order-item {
+    border-bottom: 1px solid #edf1f5;
+  }
+  #deliveryTracking .dt-order-item:last-child {
+    border-bottom: 0;
+  }
+  #deliveryTracking .dt-order-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 18px;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background .15s ease;
+  }
+  #deliveryTracking .dt-order-btn:hover {
+    background: #fffaf6;
+  }
+  #deliveryTracking .dt-order-btn.active {
+    background: var(--orange-soft, #fff1df);
+    border-left: 4px solid var(--orange, #f47a00);
+    padding-left: 14px;
+  }
+  #deliveryTracking .dt-order-btn:focus-visible {
+    outline: 2px solid var(--orange, #f47a00);
+    outline-offset: -2px;
+  }
+  #deliveryTracking .dt-order-meta strong {
+    display: block;
+    color: #172033;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  #deliveryTracking .dt-order-meta small {
+    display: block;
+    color: #7a8699;
+    font-size: 12px;
+    margin-top: 3px;
+  }
+  #deliveryTracking .dt-order-right {
+    text-align: right;
+    flex-shrink: 0;
+  }
+  #deliveryTracking .dt-order-right strong {
+    display: block;
+    color: #172033;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  /* ── Badge trạng thái ── */
+  #deliveryTracking .dt-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    background: #f2f4f7;
+    color: #475467;
+  }
+  #deliveryTracking .dt-badge.s-APPROVED  { background: #eff8ff; color: #175cd3; }
+  #deliveryTracking .dt-badge.s-PICKING   { background: #f0f5ff; color: #3538cd; }
+  #deliveryTracking .dt-badge.s-SHIPPED   { background: #fffaeb; color: #b54708; }
+  #deliveryTracking .dt-badge.s-IN_TRANSIT { background: #e0f2fe; color: #0369a1; }
+  #deliveryTracking .dt-badge.s-DELIVERED { background: #ecfdf3; color: #067647; }
+
+  /* ── Chi tiết đơn hàng bên phải ── */
+  #deliveryTracking .dt-detail-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  #deliveryTracking .dt-section {
+    padding: 20px 24px;
+    border-bottom: 1px solid #edf1f5;
+  }
+  #deliveryTracking .dt-section:last-child {
+    border-bottom: 0;
+  }
+  #deliveryTracking .dt-section-title {
+    margin: 0 0 14px;
+    color: #172033;
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── Trạng thái rỗng / Tải ── */
+  #deliveryTracking .dt-empty {
+    padding: 48px 20px;
+    text-align: center;
+    color: #7a8699;
+    font-size: 13px;
+  }
+  #deliveryTracking .dt-empty strong {
+    display: block;
+    margin-bottom: 6px;
+    color: #334155;
+    font-size: 15px;
+  }
+</style>
+
+<script>
+window.sprint5Features = window.sprint5Features || {};
+window.sprint5Features['Theo dõi giao hàng'] = {
+  path: 'theo-doi-giao-hang',
+  permission: 'orders.self',
+  render: () => window.deliveryTrackingFeature.render()
+};
+
+window.deliveryTrackingFeature = (() => {
+  let currentGeneration = 0;
+
+  // Mock data 5 bước tiến trình cho Đại lý
+  const MOCK_ORDERS = [
+    {
+      id: 1,
+      code: 'DH-2026-0041',
+      status: 'DELIVERED',
+      createdAt: '2026-10-06T08:10:00',
+      desiredDate: '2026-10-10',
+      deliveredDate: '2026-10-09T14:20:00',
+      deliveryAddress: 'Kho Đại lý An Khang – 12 Lê Hồng Phong, Q.5, TP.HCM',
+      recipientName: 'Trần Văn Long',
+      recipientPhone: '0903 123 456',
+      carrierName: 'Đội xe KhoFlow Logistics',
+      driverName: 'Lê Văn Tài (Tài xế)',
+      driverPhone: '0918 888 999',
+      vehiclePlate: '51C-789.42',
+      salesRepName: 'Nguyễn Minh Hiếu',
+      payable: 18750000,
+      note: 'Giao trong giờ hành chính, gọi trước 30 phút.',
+      history: [
+        { status: 'APPROVED', at: '2026-10-06T08:15:00', note: 'Đơn đã duyệt tự động trong hạn mức' },
+        { status: 'PICKING', at: '2026-10-07T07:30:00', note: 'Kho Tân Bình đang soạn hàng' },
+        { status: 'SHIPPED', at: '2026-10-08T13:00:00', note: 'Xuất kho thành công, niêm phong PXK-0842' },
+        { status: 'IN_TRANSIT', at: '2026-10-09T06:45:00', note: 'Bàn giao tài xế vận chuyển' },
+        { status: 'DELIVERED', at: '2026-10-09T14:20:00', note: 'Đại lý đã nhận và ký biên bản giao nhận' }
+      ],
+      lines: [
+        { id: 1, name: 'Bánh quy bơ Danish 200g', sku: 'BQ-200', unitName: 'Hộp', quantity: 120, deliveredQuantity: 120, unitPrice: 45000, payable: 5400000 },
+        { id: 2, name: 'Dầu gội thảo mộc Organic 1kg', sku: 'DG-1KG', unitName: 'Chai', quantity: 60, deliveredQuantity: 55, unitPrice: 85000, payable: 5100000, deliveryShort: true, shortReason: 'Kho xuất thiếu 5 chai, đã lập biên bản cấn trừ công nợ' },
+        { id: 3, name: 'Nước khoáng thiên nhiên 330ml', sku: 'NK-330', unitName: 'Thùng', quantity: 200, deliveredQuantity: 200, unitPrice: 42000, payable: 8400000 }
+      ]
+    },
+    {
+      id: 2,
+      code: 'DH-2026-0042',
+      status: 'DELIVERED',
+      createdAt: '2026-10-08T09:20:00',
+      desiredDate: '2026-10-12',
+      deliveredDate: '2026-10-12T10:15:00',
+      deliveryAddress: 'Kho Đại lý An Khang – 12 Lê Hồng Phong, Q.5, TP.HCM',
+      recipientName: 'Trần Văn Long',
+      recipientPhone: '0903 123 456',
+      carrierName: 'Giao Hàng Nhanh Pro',
+      driverName: 'Phạm Quốc Hùng',
+      driverPhone: '0933 555 777',
+      vehiclePlate: '59D-342.11',
+      salesRepName: 'Nguyễn Minh Hiếu',
+      payable: 14200000,
+      note: 'Giao đủ 100% kèm hóa đơn GTGT',
+      history: [
+        { status: 'APPROVED', at: '2026-10-08T09:40:00', note: 'Duyệt đơn hàng' },
+        { status: 'PICKING', at: '2026-10-09T14:00:00', note: 'Hoàn tất soạn hàng tại kho trung tâm' },
+        { status: 'SHIPPED', at: '2026-10-10T10:00:00', note: 'Đã xuất kho bàn giao vận chuyển' },
+        { status: 'IN_TRANSIT', at: '2026-10-11T08:00:00', note: 'Đang vận chuyển giao đại lý' },
+        { status: 'DELIVERED', at: '2026-10-12T10:15:00', note: 'Giao thành công đủ 100%' }
+      ],
+      lines: [
+        { id: 4, name: 'Sữa tươi thanh trùng 1L', sku: 'ST-1000', unitName: 'Hộp', quantity: 150, deliveredQuantity: 150, unitPrice: 38000, payable: 5700000 },
+        { id: 5, name: 'Trà olong thượng hạng 250g', sku: 'TO-250', unitName: 'Gói', quantity: 100, deliveredQuantity: 100, unitPrice: 85000, payable: 8500000 }
+      ]
+    },
+    {
+      id: 3,
+      code: 'DH-2026-0038',
+      status: 'IN_TRANSIT',
+      createdAt: '2026-10-10T14:00:00',
+      desiredDate: '2026-10-15',
+      deliveredDate: null,
+      deliveryAddress: 'Điểm nhận hàng B – 88 Đinh Tiên Hoàng, Q.Bình Thạnh, TP.HCM',
+      recipientName: 'Võ Thị Mai',
+      recipientPhone: '0977 444 333',
+      carrierName: 'Đội xe KhoFlow Logistics',
+      driverName: 'Nguyễn Văn Hùng',
+      driverPhone: '0988 123 789',
+      vehiclePlate: '29B-567.89',
+      salesRepName: 'Trần Thu Hương',
+      payable: 9485000,
+      note: 'Hàng dễ vỡ, bốc dỡ cẩn thận.',
+      history: [
+        { status: 'APPROVED', at: '2026-10-10T14:30:00', note: 'Đã duyệt đơn' },
+        { status: 'PICKING', at: '2026-10-11T09:00:00', note: 'Đang đóng kiện pallet' },
+        { status: 'SHIPPED', at: '2026-10-12T11:20:00', note: 'Đã xuất kho Tân Bình' },
+        { status: 'IN_TRANSIT', at: '2026-10-13T07:00:00', note: 'Xe đang trên tuyến giao hàng dự kiến chiều nay' }
+      ],
+      lines: [
+        { id: 6, name: 'Nước mắm cá cơm 500ml', sku: 'NM-500', unitName: 'Chai', quantity: 100, deliveredQuantity: null, unitPrice: 32000, payable: 3200000 },
+        { id: 7, name: 'Nước tương đậu nành 450ml', sku: 'NT-450', unitName: 'Chai', quantity: 80, deliveredQuantity: null, unitPrice: 26000, payable: 2080000 },
+        { id: 8, name: 'Nước khoáng thiên nhiên 330ml', sku: 'NK-330', unitName: 'Thùng', quantity: 90, deliveredQuantity: null, unitPrice: 42000, payable: 3780000 },
+        { id: 9, name: 'Dầu gội thảo mộc Organic 1kg', sku: 'DG-1KG', unitName: 'Chai', quantity: 5, deliveredQuantity: null, unitPrice: 85000, payable: 425000 }
+      ]
+    },
+    {
+      id: 4,
+      code: 'DH-2026-0035',
+      status: 'SHIPPED',
+      createdAt: '2026-10-12T10:00:00',
+      desiredDate: '2026-10-16',
+      deliveredDate: null,
+      deliveryAddress: 'Kho Đại lý An Khang – 12 Lê Hồng Phong, Q.5, TP.HCM',
+      recipientName: 'Trần Văn Long',
+      recipientPhone: '0903 123 456',
+      carrierName: 'Đội xe KhoFlow Logistics',
+      driverName: 'Đang xếp tài xế',
+      driverPhone: '—',
+      vehiclePlate: '—',
+      salesRepName: 'Nguyễn Minh Hiếu',
+      payable: 6240000,
+      note: 'Giao buổi sáng',
+      history: [
+        { status: 'APPROVED', at: '2026-10-12T10:30:00', note: 'Đơn đã duyệt' },
+        { status: 'PICKING', at: '2026-10-13T08:00:00', note: 'Kho hoàn thành lấy hàng' },
+        { status: 'SHIPPED', at: '2026-10-14T09:30:00', note: 'Đã xuất kho, chờ xe bốc hàng lên thùng' }
+      ],
+      lines: [
+        { id: 10, name: 'Bánh quy bơ Danish 200g', sku: 'BQ-200', unitName: 'Hộp', quantity: 80, deliveredQuantity: null, unitPrice: 45000, payable: 3600000 },
+        { id: 11, name: 'Nước mắm cá cơm 500ml', sku: 'NM-500', unitName: 'Chai', quantity: 50, deliveredQuantity: null, unitPrice: 32000, payable: 1600000 },
+        { id: 12, name: 'Nước tương đậu nành 450ml', sku: 'NT-450', unitName: 'Chai', quantity: 40, deliveredQuantity: null, unitPrice: 26000, payable: 1040000 }
+      ]
+    },
+    {
+      id: 5,
+      code: 'DH-2026-0033',
+      status: 'PICKING',
+      createdAt: '2026-10-13T09:00:00',
+      desiredDate: '2026-10-17',
+      deliveredDate: null,
+      deliveryAddress: 'Điểm nhận hàng C – 200 Cộng Hòa, Q.Tân Bình, TP.HCM',
+      recipientName: 'Nguyễn Hoàng Nam',
+      recipientPhone: '0912 333 444',
+      carrierName: 'Chưa phân bổ',
+      driverName: '—',
+      driverPhone: '—',
+      vehiclePlate: '—',
+      salesRepName: 'Trần Thu Hương',
+      payable: 4260000,
+      note: 'Đơn đặt bổ sung gấp',
+      history: [
+        { status: 'APPROVED', at: '2026-10-13T09:30:00', note: 'Đã duyệt' },
+        { status: 'PICKING', at: '2026-10-14T08:15:00', note: 'Nhân viên kho đang kiểm đếm đóng gói' }
+      ],
+      lines: [
+        { id: 13, name: 'Dầu gội thảo mộc Organic 1kg', sku: 'DG-1KG', unitName: 'Chai', quantity: 30, deliveredQuantity: null, unitPrice: 85000, payable: 2550000 },
+        { id: 14, name: 'Bánh quy bơ Danish 200g', sku: 'BQ-200', unitName: 'Hộp', quantity: 38, deliveredQuantity: null, unitPrice: 45000, payable: 1710000 }
+      ]
+    },
+    {
+      id: 6,
+      code: 'DH-2026-0031',
+      status: 'APPROVED',
+      createdAt: '2026-10-14T11:00:00',
+      desiredDate: '2026-10-18',
+      deliveredDate: null,
+      deliveryAddress: 'Kho Đại lý An Khang – 12 Lê Hồng Phong, Q.5, TP.HCM',
+      recipientName: 'Trần Văn Long',
+      recipientPhone: '0903 123 456',
+      carrierName: 'Chưa phân bổ',
+      driverName: '—',
+      driverPhone: '—',
+      vehiclePlate: '—',
+      salesRepName: 'Nguyễn Minh Hiếu',
+      payable: 3800000,
+      note: 'Đơn mới duyệt, đang xếp lịch lấy hàng tại kho',
+      history: [
+        { status: 'APPROVED', at: '2026-10-14T11:30:00', note: 'Đơn hàng đã được duyệt và giữ chỗ tồn kho' }
+      ],
+      lines: [
+        { id: 15, name: 'Sữa tươi thanh trùng 1L', sku: 'ST-1000', unitName: 'Hộp', quantity: 100, deliveredQuantity: null, unitPrice: 38000, payable: 3800000 }
+      ]
+    }
+  ];
+
+  const STATUS_LABELS = {
+    APPROVED: 'Đã duyệt',
+    PICKING: 'Đang soạn',
+    SHIPPED: 'Đã xuất',
+    IN_TRANSIT: 'Đang giao',
+    DELIVERED: 'Đã giao'
+  };
+
+  const esc = (v) => v == null ? '' : String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const money = (v) => v == null ? '—' : `${Number(v).toLocaleString('vi-VN')} đ`;
+  const fmtDay = (v) => {
+    if (!v) return '—';
+    const [y, m, d] = String(v).slice(0, 10).split('-');
+    return d ? `${d}/${m}/${y}` : String(v);
+  };
+
+  function render() {
+    const rev = ++currentGeneration;
+    const targetHost = document.getElementById('moduleContent') || document.getElementById('app') || document.body;
+
+    targetHost.innerHTML = `
+      <section id="deliveryTracking">
+        <header class="dt-header">
+          <div>
+            <span class="dt-eyebrow">CỔNG ĐẠI LÝ</span>
+            <h2 class="dt-title">Theo dõi trạng thái giao hàng</h2>
+            <p class="dt-desc">Theo dõi tiến trình 5 bước và số lượng thực giao của từng đơn hàng theo thời gian thực.</p>
+          </div>
+        </header>
+
+        <div class="dt-layout">
+          <!-- Cột trái: Danh sách đơn hàng -->
+          <div class="dt-card">
+            <div id="dtListContainer">
+              <ul class="dt-orders-list">
+                ${MOCK_ORDERS.map((o) => `
+                  <li class="dt-order-item">
+                    <button type="button" class="dt-order-btn ${o.id === 1 ? 'active' : ''}" data-id="${o.id}">
+                      <div class="dt-order-meta">
+                        <strong>${esc(o.code)}</strong>
+                        <small>Giao: ${esc(fmtDay(o.desiredDate))} · ${o.lines.length} mặt hàng</small>
+                      </div>
+                      <div class="dt-order-right">
+                        <strong>${money(o.payable)}</strong>
+                        <span class="dt-badge s-${esc(o.status)}">${esc(STATUS_LABELS[o.status] || o.status)}</span>
+                      </div>
+                    </button>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+          </div>
+
+          <!-- Cột phải: Chi tiết đơn hàng -->
+          <div class="dt-card dt-detail-panel" id="dtDetailHost">
+            <div class="dt-empty">
+              <strong>Đang hiển thị đơn hàng...</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+
+    // Click handler đơn giản
+    const buttons = targetHost.querySelectorAll('.dt-order-btn');
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        buttons.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        const orderId = Number(btn.dataset.id);
+        const order = MOCK_ORDERS.find((o) => o.id === orderId);
+        if (order) {
+          const detailHost = document.getElementById('dtDetailHost');
+          if (detailHost) {
+            detailHost.innerHTML = `
+              <div class="dt-section">
+                <h3 style="margin:0 0 6px">${esc(order.code)} <span class="dt-badge s-${esc(order.status)}">${esc(STATUS_LABELS[order.status])}</span></h3>
+                <p style="margin:0;color:#64748b;font-size:13px">${esc(order.deliveryAddress)}</p>
+              </div>
+            `;
+          }
+        }
+      });
+    });
+
+    if (buttons[0]) buttons[0].click();
+  }
+
+  return { render };
+})();
+</script>

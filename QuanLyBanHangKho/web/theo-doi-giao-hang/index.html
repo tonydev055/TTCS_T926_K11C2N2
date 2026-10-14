@@ -147,6 +147,30 @@
     flex-direction: column;
     gap: 0;
   }
+  #deliveryTracking .dt-detail-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 20px 24px;
+    border-bottom: 1px solid #edf1f5;
+  }
+  #deliveryTracking .dt-detail-head h3 {
+    margin: 0 0 6px;
+    color: #172033;
+    font-size: 20px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  #deliveryTracking .dt-detail-head p {
+    margin: 0;
+    color: #64748b;
+    font-size: 13px;
+  }
   #deliveryTracking .dt-section {
     padding: 20px 24px;
     border-bottom: 1px solid #edf1f5;
@@ -155,13 +179,160 @@
     border-bottom: 0;
   }
   #deliveryTracking .dt-section-title {
-    margin: 0 0 14px;
+    margin: 0 0 16px;
     color: #172033;
     font-size: 15px;
     font-weight: 700;
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+
+  /* ── Timeline / Stepper 5 bước ── */
+  #deliveryTracking .dt-stepper-wrap {
+    overflow-x: auto;
+    padding: 10px 4px 6px;
+    margin-bottom: 8px;
+  }
+  #deliveryTracking .dt-stepper {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    min-width: 580px;
+    position: relative;
+  }
+  #deliveryTracking .dt-step {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    text-align: center;
+  }
+  /* Đường nối giữa các bước */
+  #deliveryTracking .dt-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 17px;
+    left: 50%;
+    width: 100%;
+    height: 3px;
+    background: #e5eaf0;
+    z-index: 1;
+    transition: background .2s ease;
+  }
+  #deliveryTracking .dt-step.done:not(:last-child)::after {
+    background: var(--orange, #f47a00);
+  }
+  #deliveryTracking .dt-step.current:not(:last-child)::after {
+    background: linear-gradient(to right, var(--orange, #f47a00) 0%, #e5eaf0 100%);
+  }
+
+  /* Dot hình tròn */
+  #deliveryTracking .dt-step-dot {
+    position: relative;
+    z-index: 2;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid #dce3ea;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #94a3b8;
+    transition: all .2s ease;
+  }
+  #deliveryTracking .dt-step.done .dt-step-dot {
+    border-color: var(--orange, #f47a00);
+    background: var(--orange, #f47a00);
+    color: #fff;
+  }
+  #deliveryTracking .dt-step.current .dt-step-dot {
+    border-color: var(--orange, #f47a00);
+    background: var(--orange-soft, #fff1df);
+    color: var(--orange-dark, #d96500);
+    box-shadow: 0 0 0 5px rgba(244, 122, 0, .18);
+  }
+
+  /* Nhãn và mốc thời gian */
+  #deliveryTracking .dt-step-name {
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #64748b;
+    line-height: 1.3;
+  }
+  #deliveryTracking .dt-step.done .dt-step-name,
+  #deliveryTracking .dt-step.current .dt-step-name {
+    color: #172033;
+  }
+  #deliveryTracking .dt-step-time {
+    margin-top: 3px;
+    font-size: 11px;
+    color: #94a3b8;
+    line-height: 1.3;
+  }
+  #deliveryTracking .dt-step.done .dt-step-time,
+  #deliveryTracking .dt-step.current .dt-step-time {
+    color: var(--orange-dark, #d96500);
+    font-weight: 600;
+  }
+
+  /* ── Lịch sử xử lý chi tiết (Vertical Timeline) ── */
+  #deliveryTracking .dt-history-list {
+    display: flex;
+    flex-direction: column;
+    margin: 8px 0 0;
+    padding: 0 0 0 10px;
+    list-style: none;
+  }
+  #deliveryTracking .dt-history-item {
+    position: relative;
+    padding: 0 0 16px 24px;
+    border-left: 2px solid #edf1f5;
+  }
+  #deliveryTracking .dt-history-item:last-child {
+    border-left-color: transparent;
+    padding-bottom: 0;
+  }
+  #deliveryTracking .dt-history-item::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: -6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #cbd5e1;
+  }
+  #deliveryTracking .dt-history-item.active::before {
+    background: var(--orange, #f47a00);
+    box-shadow: 0 0 0 3px rgba(244, 122, 0, .2);
+  }
+  #deliveryTracking .dt-history-item strong {
+    display: block;
+    color: #172033;
+    font-size: 13px;
+  }
+  #deliveryTracking .dt-history-item small {
+    display: block;
+    color: #7a8699;
+    font-size: 12px;
+    margin-top: 2px;
+  }
+  #deliveryTracking .dt-history-item p {
+    margin: 4px 0 0;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 12px;
   }
 
   /* ── Trạng thái rỗng / Tải ── */
@@ -361,6 +532,8 @@ window.deliveryTrackingFeature = (() => {
     }
   ];
 
+  const STATUS_FLOW = ['APPROVED', 'PICKING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED'];
+
   const STATUS_LABELS = {
     APPROVED: 'Đã duyệt',
     PICKING: 'Đang soạn',
@@ -376,6 +549,94 @@ window.deliveryTrackingFeature = (() => {
     const [y, m, d] = String(v).slice(0, 10).split('-');
     return d ? `${d}/${m}/${y}` : String(v);
   };
+  const fmtTime = (v) => {
+    if (!v) return null;
+    const d = new Date(v);
+    return isNaN(d) ? String(v) : d.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
+  };
+
+  /* ── Xây dựng Stepper 5 bước ── */
+  function buildStepper(order) {
+    const steps = [
+      { key: 'APPROVED', label: 'Đã duyệt', icon: '✓', desc: 'Đơn hàng được duyệt & giữ chỗ tồn' },
+      { key: 'PICKING', label: 'Đang soạn', icon: '📦', desc: 'Kho đóng gói và niêm phong kiện' },
+      { key: 'SHIPPED', label: 'Đã xuất', icon: '↗', desc: 'Hàng xuất kho bàn giao vận chuyển' },
+      { key: 'IN_TRANSIT', label: 'Đang giao', icon: '🚚', desc: 'Tài xế đang vận chuyển đến điểm nhận' },
+      { key: 'DELIVERED', label: 'Đã giao', icon: '✔', desc: 'Đại lý xác nhận nhận đủ hàng' }
+    ];
+
+    const currentIdx = STATUS_FLOW.indexOf(order.status);
+    const historyMap = {};
+    (order.history || []).forEach((h) => {
+      historyMap[h.status] = h;
+    });
+
+    return `
+      <div class="dt-stepper-wrap">
+        <ol class="dt-stepper" aria-label="Tiến trình giao hàng 5 bước">
+          ${steps.map((step, idx) => {
+            const isDone = idx < currentIdx;
+            const isCurrent = idx === currentIdx;
+            const cls = isDone ? 'done' : isCurrent ? 'current' : '';
+            const historyItem = historyMap[step.key];
+            const ts = historyItem ? fmtTime(historyItem.at) : null;
+            return `
+              <li class="dt-step ${cls}" ${isCurrent ? 'aria-current="step"' : ''}>
+                <div class="dt-step-dot" aria-hidden="true">${isDone ? '✓' : isCurrent ? step.icon : (idx + 1)}</div>
+                <div class="dt-step-name">${esc(step.label)}</div>
+                <div class="dt-step-time">${ts ? esc(ts) : '—'}</div>
+              </li>
+            `;
+          }).join('')}
+        </ol>
+      </div>
+    `;
+  }
+
+  /* ── Lịch sử mốc thời gian chi tiết ── */
+  function buildHistoryTimeline(order) {
+    if (!order.history || !order.history.length) return '';
+    return `
+      <ol class="dt-history-list" aria-label="Chi tiết mốc thời gian">
+        ${order.history.slice().reverse().map((h, i) => `
+          <li class="dt-history-item ${i === 0 ? 'active' : ''}">
+            <strong>${esc(STATUS_LABELS[h.status] || h.status)}</strong>
+            <small>${fmtTime(h.at)}</small>
+            ${h.note ? `<p>${esc(h.note)}</p>` : ''}
+          </li>
+        `).join('')}
+      </ol>
+    `;
+  }
+
+  function renderDetail(order) {
+    const detailHost = document.getElementById('dtDetailHost');
+    if (!detailHost) return;
+
+    detailHost.innerHTML = `
+      <div class="dt-detail-head">
+        <div>
+          <h3>
+            <span>${esc(order.code)}</span>
+            <span class="dt-badge s-${esc(order.status)}">${esc(STATUS_LABELS[order.status] || order.status)}</span>
+          </h3>
+          <p>Tạo ngày ${fmtTime(order.createdAt)} · NV phụ trách: <strong>${esc(order.salesRepName)}</strong></p>
+        </div>
+      </div>
+
+      <!-- Khối tiến trình Stepper 5 bước -->
+      <div class="dt-section">
+        <h4 class="dt-section-title">Tiến trình giao hàng</h4>
+        ${buildStepper(order)}
+      </div>
+
+      <!-- Mốc thời gian chi tiết -->
+      <div class="dt-section">
+        <h4 class="dt-section-title">Chi tiết các mốc xử lý</h4>
+        ${buildHistoryTimeline(order)}
+      </div>
+    `;
+  }
 
   function render() {
     const rev = ++currentGeneration;
@@ -424,7 +685,6 @@ window.deliveryTrackingFeature = (() => {
       </section>
     `;
 
-    // Click handler đơn giản
     const buttons = targetHost.querySelectorAll('.dt-order-btn');
     buttons.forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -432,21 +692,11 @@ window.deliveryTrackingFeature = (() => {
         btn.classList.add('active');
         const orderId = Number(btn.dataset.id);
         const order = MOCK_ORDERS.find((o) => o.id === orderId);
-        if (order) {
-          const detailHost = document.getElementById('dtDetailHost');
-          if (detailHost) {
-            detailHost.innerHTML = `
-              <div class="dt-section">
-                <h3 style="margin:0 0 6px">${esc(order.code)} <span class="dt-badge s-${esc(order.status)}">${esc(STATUS_LABELS[order.status])}</span></h3>
-                <p style="margin:0;color:#64748b;font-size:13px">${esc(order.deliveryAddress)}</p>
-              </div>
-            `;
-          }
-        }
+        if (order) renderDetail(order);
       });
     });
 
-    if (buttons[0]) buttons[0].click();
+    if (MOCK_ORDERS[0]) renderDetail(MOCK_ORDERS[0]);
   }
 
   return { render };

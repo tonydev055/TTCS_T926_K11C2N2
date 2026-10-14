@@ -58,6 +58,102 @@
     align-items: start;
   }
 
+  /* ── Toolbar tìm kiếm & lọc đơn hàng ── */
+  #deliveryTracking .dt-toolbar {
+    padding: 16px 18px;
+    border-bottom: 1px solid #edf1f5;
+    background: #fbfcfd;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  #deliveryTracking .dt-search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  #deliveryTracking .dt-search-icon {
+    position: absolute;
+    left: 12px;
+    color: #94a3b8;
+    font-size: 14px;
+    pointer-events: none;
+  }
+  #deliveryTracking .dt-search-input {
+    width: 100%;
+    min-height: 40px;
+    padding: 0 12px 0 34px;
+    border: 1px solid #dce3ea;
+    border-radius: 9px;
+    background: #fff;
+    color: #172033;
+    font: inherit;
+    font-size: 13px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  #deliveryTracking .dt-search-input:focus,
+  #deliveryTracking .dt-filter-select:focus {
+    border-color: var(--orange, #f47a00);
+    outline: 3px solid rgba(244, 122, 0, .14);
+  }
+  #deliveryTracking .dt-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #deliveryTracking .dt-filter-select {
+    flex: 1 1 auto;
+    min-height: 38px;
+    padding: 0 10px;
+    border: 1px solid #dce3ea;
+    border-radius: 9px;
+    background: #fff;
+    color: #172033;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  #deliveryTracking .dt-clear-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 0 12px;
+    border: 1px solid #dce3ea;
+    border-radius: 9px;
+    background: #fff;
+    color: #475569;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all .15s ease;
+  }
+  #deliveryTracking .dt-clear-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #172033;
+  }
+  #deliveryTracking .dt-clear-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  #deliveryTracking .dt-count-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 18px;
+    background: #f8fafc;
+    border-bottom: 1px solid #edf1f5;
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+  }
+  #deliveryTracking .dt-count-bar strong {
+    color: #172033;
+  }
+
   /* ── Danh sách đơn hàng bên trái ── */
   #deliveryTracking .dt-orders-list {
     margin: 0;
@@ -1004,6 +1100,12 @@ window.deliveryTrackingFeature = (() => {
     const rev = ++currentGeneration;
     const targetHost = document.getElementById('moduleContent') || document.getElementById('app') || document.body;
 
+    const state = {
+      searchQuery: '',
+      statusFilter: '',
+      selectedOrderId: MOCK_ORDERS[0]?.id || null
+    };
+
     targetHost.innerHTML = `
       <section id="deliveryTracking">
         <header class="dt-header">
@@ -1015,25 +1117,33 @@ window.deliveryTrackingFeature = (() => {
         </header>
 
         <div class="dt-layout">
-          <!-- Cột trái: Danh sách đơn hàng -->
+          <!-- Cột trái: Bộ lọc và danh sách đơn hàng -->
           <div class="dt-card">
+            <div class="dt-toolbar">
+              <div class="dt-search-box">
+                <span class="dt-search-icon" aria-hidden="true">🔍</span>
+                <input id="dtSearchInput" class="dt-search-input" type="search" placeholder="Mã đơn, địa chỉ, người nhận..." autocomplete="off" aria-label="Tìm kiếm đơn hàng">
+              </div>
+              <div class="dt-filter-row">
+                <select id="dtStatusSelect" class="dt-filter-select" aria-label="Lọc theo trạng thái giao hàng">
+                  <option value="">Tất cả trạng thái (5 bước)</option>
+                  <option value="APPROVED">1. Đã duyệt</option>
+                  <option value="PICKING">2. Đang soạn</option>
+                  <option value="SHIPPED">3. Đã xuất</option>
+                  <option value="IN_TRANSIT">4. Đang giao</option>
+                  <option value="DELIVERED">5. Đã giao</option>
+                </select>
+                <button type="button" id="dtClearFilterBtn" class="dt-clear-btn" disabled>Xoá lọc</button>
+              </div>
+            </div>
+
+            <div class="dt-count-bar">
+              <span>Hiển thị <strong id="dtResultCount">${MOCK_ORDERS.length}</strong> đơn hàng</span>
+              <span id="dtFilterSummary" style="font-size:11px;color:#94a3b8">Tất cả</span>
+            </div>
+
             <div id="dtListContainer">
-              <ul class="dt-orders-list">
-                ${MOCK_ORDERS.map((o) => `
-                  <li class="dt-order-item">
-                    <button type="button" class="dt-order-btn ${o.id === 1 ? 'active' : ''}" data-id="${o.id}">
-                      <div class="dt-order-meta">
-                        <strong>${esc(o.code)}</strong>
-                        <small>Giao: ${esc(fmtDay(o.desiredDate))} · ${o.lines.length} mặt hàng</small>
-                      </div>
-                      <div class="dt-order-right">
-                        <strong>${money(o.payable)}</strong>
-                        <span class="dt-badge s-${esc(o.status)}">${esc(STATUS_LABELS[o.status] || o.status)}</span>
-                      </div>
-                    </button>
-                  </li>
-                `).join('')}
-              </ul>
+              <!-- Danh sách đơn hàng được render tại đây -->
             </div>
           </div>
 
@@ -1047,18 +1157,135 @@ window.deliveryTrackingFeature = (() => {
       </section>
     `;
 
-    const buttons = targetHost.querySelectorAll('.dt-order-btn');
-    buttons.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        buttons.forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-        const orderId = Number(btn.dataset.id);
-        const order = MOCK_ORDERS.find((o) => o.id === orderId);
-        if (order) renderDetail(order);
+    const searchInput = targetHost.querySelector('#dtSearchInput');
+    const statusSelect = targetHost.querySelector('#dtStatusSelect');
+    const clearBtn = targetHost.querySelector('#dtClearFilterBtn');
+    const countEl = targetHost.querySelector('#dtResultCount');
+    const summaryEl = targetHost.querySelector('#dtFilterSummary');
+    const listContainer = targetHost.querySelector('#dtListContainer');
+    const detailHost = targetHost.querySelector('#dtDetailHost');
+
+    function getFilteredOrders() {
+      const q = state.searchQuery.trim().toLowerCase();
+      const status = state.statusFilter;
+
+      return MOCK_ORDERS.filter((o) => {
+        const matchesStatus = !status || o.status === status;
+        if (!matchesStatus) return false;
+
+        if (!q) return true;
+        const inCode = (o.code || '').toLowerCase().includes(q);
+        const inAddress = (o.deliveryAddress || '').toLowerCase().includes(q);
+        const inRecipient = (o.recipientName || '').toLowerCase().includes(q);
+        const inDriver = (o.driverName || '').toLowerCase().includes(q);
+        const inProducts = (o.lines || []).some((l) => (l.name || '').toLowerCase().includes(q) || (l.sku || '').toLowerCase().includes(q));
+
+        return inCode || inAddress || inRecipient || inDriver || inProducts;
       });
+    }
+
+    function renderOrderList() {
+      const filtered = getFilteredOrders();
+      countEl.textContent = filtered.length;
+
+      // Cập nhật trạng thái nút xoá lọc
+      const hasFilter = !!state.searchQuery || !!state.statusFilter;
+      clearBtn.disabled = !hasFilter;
+
+      let summaryText = 'Tất cả';
+      if (state.statusFilter) {
+        summaryText = STATUS_LABELS[state.statusFilter] || state.statusFilter;
+      }
+      if (state.searchQuery) {
+        summaryText += ` · Từ khoá: "${state.searchQuery}"`;
+      }
+      summaryEl.textContent = summaryText;
+
+      if (!filtered.length) {
+        listContainer.innerHTML = `
+          <div class="dt-empty">
+            <strong>Không tìm thấy đơn hàng phù hợp</strong>
+            <span>Thử tìm kiếm với từ khoá khác hoặc xoá bộ lọc trạng thái.</span>
+          </div>
+        `;
+        detailHost.innerHTML = `
+          <div class="dt-empty">
+            <strong>Chưa chọn đơn hàng</strong>
+            <span>Vui lòng chọn đơn hàng từ danh sách bên trái để xem tiến trình.</span>
+          </div>
+        `;
+        return;
+      }
+
+      // Đảm bảo có một đơn được chọn trong danh sách kết quả
+      if (!filtered.some((o) => o.id === state.selectedOrderId)) {
+        state.selectedOrderId = filtered[0].id;
+      }
+
+      listContainer.innerHTML = `
+        <ul class="dt-orders-list">
+          ${filtered.map((o) => {
+            const isSelected = o.id === state.selectedOrderId;
+            return `
+              <li class="dt-order-item">
+                <button type="button" class="dt-order-btn ${isSelected ? 'active' : ''}" data-id="${o.id}">
+                  <div class="dt-order-meta">
+                    <strong>${esc(o.code)}</strong>
+                    <small>Giao: ${esc(fmtDay(o.desiredDate))} · ${o.lines.length} mặt hàng</small>
+                  </div>
+                  <div class="dt-order-right">
+                    <strong>${money(o.payable)}</strong>
+                    <span class="dt-badge s-${esc(o.status)}">${esc(STATUS_LABELS[o.status] || o.status)}</span>
+                  </div>
+                </button>
+              </li>
+            `;
+          }).join('')}
+        </ul>
+      `;
+
+      // Gán sự kiện click cho từng dòng đơn hàng
+      listContainer.querySelectorAll('.dt-order-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          listContainer.querySelectorAll('.dt-order-btn').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          state.selectedOrderId = Number(btn.dataset.id);
+          const order = MOCK_ORDERS.find((o) => o.id === state.selectedOrderId);
+          if (order) renderDetail(order);
+        });
+      });
+
+      const currentOrder = MOCK_ORDERS.find((o) => o.id === state.selectedOrderId) || filtered[0];
+      if (currentOrder) renderDetail(currentOrder);
+    }
+
+    // Sự kiện ô tìm kiếm với debounce
+    let searchTimer = null;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        state.searchQuery = searchInput.value;
+        renderOrderList();
+      }, 200);
     });
 
-    if (MOCK_ORDERS[0]) renderDetail(MOCK_ORDERS[0]);
+    // Sự kiện dropdown lọc theo trạng thái
+    statusSelect.addEventListener('change', () => {
+      state.statusFilter = statusSelect.value;
+      renderOrderList();
+    });
+
+    // Sự kiện nút xoá lọc
+    clearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      statusSelect.value = '';
+      state.searchQuery = '';
+      state.statusFilter = '';
+      renderOrderList();
+    });
+
+    // Render danh sách ban đầu
+    renderOrderList();
   }
 
   return { render };

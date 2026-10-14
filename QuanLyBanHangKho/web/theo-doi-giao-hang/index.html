@@ -335,6 +335,181 @@
     font-size: 12px;
   }
 
+  /* ── Lưới thông tin giao nhận & vận chuyển ── */
+  #deliveryTracking .dt-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px 24px;
+    margin: 0;
+  }
+  #deliveryTracking .dt-info-grid dt {
+    color: #7a8699;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  #deliveryTracking .dt-info-grid dd {
+    margin: 3px 0 0;
+    color: #172033;
+    font-size: 14px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+  #deliveryTracking .dt-info-grid dd.highlight {
+    color: var(--orange-dark, #d96500);
+    font-size: 15px;
+  }
+
+  /* ── Bảng chi tiết hàng hoá & Số lượng thực giao ── */
+  #deliveryTracking .dt-table-wrap {
+    overflow-x: auto;
+    border: 1px solid #edf1f5;
+    border-radius: 12px;
+  }
+  #deliveryTracking .dt-table {
+    width: 100%;
+    min-width: 680px;
+    border-collapse: collapse;
+    background: #fff;
+  }
+  #deliveryTracking .dt-table th {
+    padding: 12px 14px;
+    background: #f8fafc;
+    color: #475569;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    border-bottom: 1px solid #edf1f5;
+  }
+  #deliveryTracking .dt-table th.num,
+  #deliveryTracking .dt-table td.num {
+    text-align: right;
+    white-space: nowrap;
+  }
+  #deliveryTracking .dt-table th.center,
+  #deliveryTracking .dt-table td.center {
+    text-align: center;
+    white-space: nowrap;
+  }
+  #deliveryTracking .dt-table td {
+    padding: 12px 14px;
+    border-top: 1px solid #edf1f5;
+    color: #334155;
+    font-size: 13px;
+    vertical-align: middle;
+  }
+  #deliveryTracking .dt-table tr:hover td {
+    background: #fffaf6;
+  }
+  #deliveryTracking .dt-table tr.short-row td {
+    background: #fffbfa;
+  }
+  #deliveryTracking .dt-table td strong {
+    display: block;
+    color: #172033;
+    font-size: 13px;
+  }
+  #deliveryTracking .dt-table td small {
+    display: block;
+    margin-top: 2px;
+    color: #8490a2;
+    font-size: 11px;
+  }
+
+  /* ── Badge số lượng thực giao (RẤT NỔI BẬT) ── */
+  #deliveryTracking .dt-qty-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  /* Giao đủ */
+  #deliveryTracking .dt-qty-badge.full {
+    background: #ecfdf3;
+    color: #067647;
+    border: 1px solid #abefc6;
+  }
+  /* Giao thiếu (Cảnh báo) */
+  #deliveryTracking .dt-qty-badge.short {
+    background: #fffaeb;
+    color: #b54708;
+    border: 1px solid #fedf89;
+  }
+  /* Đang giao / Chưa giao */
+  #deliveryTracking .dt-qty-badge.pending {
+    background: #f2f4f7;
+    color: #475467;
+    border: 1px solid #eaecf0;
+  }
+  #deliveryTracking .dt-qty-badge.delivering {
+    background: #eff8ff;
+    color: #026aa2;
+    border: 1px solid #b2ddff;
+  }
+
+  /* Lý do thiếu hàng dưới dòng */
+  #deliveryTracking .dt-short-note {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    color: #b42318;
+    font-weight: 500;
+  }
+
+  /* ── Banner cảnh báo giao thiếu ── */
+  #deliveryTracking .dt-banner-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid #fedf89;
+    background: #fffaeb;
+    color: #93370d;
+    font-size: 13px;
+    line-height: 1.45;
+    margin-top: 14px;
+  }
+  #deliveryTracking .dt-banner-alert strong {
+    color: #b54708;
+  }
+
+  /* ── Tóm tắt tổng tiền & tình trạng ── */
+  #deliveryTracking .dt-totals-box {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 16px 32px;
+    margin-top: 16px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    background: #fbfcfd;
+    border: 1px solid #edf1f5;
+  }
+  #deliveryTracking .dt-totals-box div {
+    text-align: right;
+  }
+  #deliveryTracking .dt-totals-box dt {
+    color: #7a8699;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  #deliveryTracking .dt-totals-box dd {
+    margin: 3px 0 0;
+    color: #172033;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  #deliveryTracking .dt-totals-box .pay dd {
+    color: var(--orange-dark, #d96500);
+    font-size: 18px;
+  }
+
   /* ── Trạng thái rỗng / Tải ── */
   #deliveryTracking .dt-empty {
     padding: 48px 20px;
@@ -609,6 +784,181 @@ window.deliveryTrackingFeature = (() => {
     `;
   }
 
+  /* ── Lưới thông tin giao nhận ── */
+  function buildDeliveryInfo(order) {
+    return `
+      <dl class="dt-info-grid">
+        <div>
+          <dt>Mã đơn hàng</dt>
+          <dd><strong>${esc(order.code)}</strong></dd>
+        </div>
+        <div>
+          <dt>Trạng thái</dt>
+          <dd><span class="dt-badge s-${esc(order.status)}">${esc(STATUS_LABELS[order.status] || order.status)}</span></dd>
+        </div>
+        <div>
+          <dt>Ngày giao dự kiến</dt>
+          <dd>${esc(fmtDay(order.desiredDate))}</dd>
+        </div>
+        <div>
+          <dt>Thời gian hoàn tất giao</dt>
+          <dd class="${order.deliveredDate ? 'highlight' : ''}">${order.deliveredDate ? fmtTime(order.deliveredDate) : 'Chưa hoàn tất'}</dd>
+        </div>
+        <div>
+          <dt>Người nhận & Điện thoại</dt>
+          <dd>${esc(order.recipientName || '—')} ${order.recipientPhone ? `· <a href="tel:${esc(order.recipientPhone)}" style="color:var(--orange-dark);text-decoration:none">${esc(order.recipientPhone)}</a>` : ''}</dd>
+        </div>
+        <div>
+          <dt>Đơn vị vận chuyển</dt>
+          <dd>${esc(order.carrierName || 'KhoFlow Logistics')}</dd>
+        </div>
+        <div>
+          <dt>Tài xế & Phương tiện</dt>
+          <dd>${esc(order.driverName || '—')} ${order.vehiclePlate && order.vehiclePlate !== '—' ? `(${esc(order.vehiclePlate)})` : ''}</dd>
+        </div>
+        <div>
+          <dt>Nhân viên phụ trách</dt>
+          <dd>${esc(order.salesRepName || '—')}</dd>
+        </div>
+        <div style="grid-column: 1 / -1">
+          <dt>Địa chỉ nhận hàng</dt>
+          <dd>${esc(order.deliveryAddress)}</dd>
+        </div>
+        ${order.note ? `
+          <div style="grid-column: 1 / -1">
+            <dt>Ghi chú đơn hàng</dt>
+            <dd style="font-weight: normal; color: #475569">${esc(order.note)}</dd>
+          </div>
+        ` : ''}
+      </dl>
+    `;
+  }
+
+  /* ── Bảng chi tiết dòng hàng & Số lượng thực giao ── */
+  function buildLinesTable(order) {
+    const isDelivered = order.status === 'DELIVERED';
+    const shortLines = order.lines.filter((l) => l.deliveryShort || (isDelivered && l.deliveredQuantity != null && l.deliveredQuantity < l.quantity));
+
+    return `
+      <div class="dt-table-wrap">
+        <table class="dt-table" aria-label="Danh sách sản phẩm trong đơn">
+          <thead>
+            <tr>
+              <th class="center" style="width:48px">STT</th>
+              <th>Sản phẩm</th>
+              <th class="center" style="width:70px">ĐVT</th>
+              <th class="num" style="width:90px">SL Đặt</th>
+              <th class="num" style="width:110px">Đơn giá</th>
+              <th class="center" style="width:180px;background:#f0f7ff;color:#0369a1">Số lượng thực giao</th>
+              <th class="num" style="width:120px">Thành tiền</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${order.lines.map((l, index) => {
+              const dq = l.deliveredQuantity;
+              let badgeHtml = '';
+              let isRowShort = false;
+
+              if (isDelivered) {
+                if (dq != null) {
+                  if (dq >= l.quantity) {
+                    badgeHtml = `<span class="dt-qty-badge full">✓ ${dq} ${esc(l.unitName)} (Đủ)</span>`;
+                  } else {
+                    isRowShort = true;
+                    const diff = l.quantity - dq;
+                    badgeHtml = `
+                      <span class="dt-qty-badge short">⚠ ${dq} / ${l.quantity} ${esc(l.unitName)} (Thiếu ${diff})</span>
+                      ${l.shortReason ? `<span class="dt-short-note">${esc(l.shortReason)}</span>` : ''}
+                    `;
+                  }
+                } else {
+                  badgeHtml = `<span class="dt-qty-badge pending">Chưa ghi nhận</span>`;
+                }
+              } else if (order.status === 'IN_TRANSIT') {
+                badgeHtml = `<span class="dt-qty-badge delivering">🚛 Đang vận chuyển (${l.quantity} ${esc(l.unitName)})</span>`;
+              } else if (order.status === 'SHIPPED') {
+                badgeHtml = `<span class="dt-qty-badge delivering">📦 Đã xuất kho</span>`;
+              } else if (order.status === 'PICKING') {
+                badgeHtml = `<span class="dt-qty-badge pending">Đang soạn hàng</span>`;
+              } else {
+                badgeHtml = `<span class="dt-qty-badge pending">Chờ xuất kho</span>`;
+              }
+
+              return `
+                <tr class="${isRowShort ? 'short-row' : ''}">
+                  <td class="center" style="color:#7a8699">${index + 1}</td>
+                  <td>
+                    <strong>${esc(l.name)}</strong>
+                    <small>Mã SKU: ${esc(l.sku)}</small>
+                  </td>
+                  <td class="center">${esc(l.unitName)}</td>
+                  <td class="num"><strong>${Number(l.quantity).toLocaleString('vi-VN')}</strong></td>
+                  <td class="num">${money(l.unitPrice)}</td>
+                  <td class="center" style="background:${isRowShort ? '#fff6ed' : '#f9fcfe'}">
+                    ${badgeHtml}
+                  </td>
+                  <td class="num"><strong>${money(l.payable)}</strong></td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      ${shortLines.length > 0 ? `
+        <div class="dt-banner-alert" role="alert">
+          <span style="font-size:18px">⚠</span>
+          <div>
+            <strong>Đơn hàng có ${shortLines.length} mặt hàng giao thiếu:</strong>
+            KhoFlow đã tự động ghi nhận số lượng thực tế nhận được theo biên bản giao nhận để phục vụ đối soát công nợ hoặc lên đơn bù.
+          </div>
+        </div>
+      ` : ''}
+
+      ${buildTotals(order)}
+    `;
+  }
+
+  /* ── Tóm tắt tổng tiền & tình trạng thực giao ── */
+  function buildTotals(order) {
+    const totalQty = order.lines.reduce((s, l) => s + Number(l.quantity || 0), 0);
+    const shortCount = order.lines.filter((l) => l.deliveryShort || (order.status === 'DELIVERED' && l.deliveredQuantity != null && l.deliveredQuantity < l.quantity)).length;
+
+    let deliveryStatusText = 'Chờ xuất kho';
+    if (order.status === 'DELIVERED') {
+      deliveryStatusText = shortCount > 0 ? `Đã giao (Thiếu ${shortCount} mặt hàng)` : 'Đã giao đủ 100%';
+    } else if (order.status === 'IN_TRANSIT') {
+      deliveryStatusText = 'Đang trên đường giao';
+    } else if (order.status === 'SHIPPED') {
+      deliveryStatusText = 'Đã xuất kho, chờ xe';
+    } else if (order.status === 'PICKING') {
+      deliveryStatusText = 'Đang soạn hàng tại kho';
+    }
+
+    return `
+      <div class="dt-totals-box">
+        <div>
+          <dt>Tổng mặt hàng</dt>
+          <dd>${order.lines.length} sản phẩm (${totalQty.toLocaleString('vi-VN')} đơn vị)</dd>
+        </div>
+        <div>
+          <dt>Tình trạng thực giao</dt>
+          <dd style="color: ${shortCount > 0 ? '#b54708' : order.status === 'DELIVERED' ? '#067647' : '#026aa2'}">
+            ${esc(deliveryStatusText)}
+          </dd>
+        </div>
+        <div>
+          <dt>Tiền hàng</dt>
+          <dd>${money(order.payable)}</dd>
+        </div>
+        <div class="pay">
+          <dt>Tổng thanh toán</dt>
+          <dd>${money(order.payable)}</dd>
+        </div>
+      </div>
+    `;
+  }
+
   function renderDetail(order) {
     const detailHost = document.getElementById('dtDetailHost');
     if (!detailHost) return;
@@ -628,6 +978,18 @@ window.deliveryTrackingFeature = (() => {
       <div class="dt-section">
         <h4 class="dt-section-title">Tiến trình giao hàng</h4>
         ${buildStepper(order)}
+      </div>
+
+      <!-- Khối thông tin giao nhận -->
+      <div class="dt-section">
+        <h4 class="dt-section-title">Thông tin giao nhận & vận chuyển</h4>
+        ${buildDeliveryInfo(order)}
+      </div>
+
+      <!-- Khối chi tiết sản phẩm và Số lượng thực giao -->
+      <div class="dt-section">
+        <h4 class="dt-section-title">Chi tiết hàng hoá (${order.lines.length} mặt hàng) — Số lượng thực giao</h4>
+        ${buildLinesTable(order)}
       </div>
 
       <!-- Mốc thời gian chi tiết -->

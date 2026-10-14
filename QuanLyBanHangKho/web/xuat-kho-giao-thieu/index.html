@@ -1,0 +1,20 @@
+﻿<!-- Loaded by the application shell: ../index.html -->
+<script>
+window.sprint5Features = window.sprint5Features || {};
+/* S6-05: Xac nhan xuat kho va xu ly giao thieu
+   Permission: inventory.write | Path: xuat-kho-giao-thieu
+   Epic EP-06 · Sprint 6 · MoSCoW: Must */
+window.sprint5Features['Xuat kho & Giao thieu'] = {
+  path: 'xuat-kho-giao-thieu',
+  permission: 'inventory.write',
+  render: () => warehouseUi.screen(
+    'Xuat kho & Giao thieu',
+    'Xac nhan chuyen ton giu cho thanh xuat thuc. Giao thieu se ghi nhan no hang de xu ly o luot giao sau.',
+    () => Promise.resolve({ pending: [], shortfall: [] }),
+    (host, data, revision) => {
+      const ui = warehouseUi, esc = ui.esc;
+      host.innerHTML = '<p class="wh-muted">Dang khoi tao...</p>';
+    }
+  )
+};
+</script>

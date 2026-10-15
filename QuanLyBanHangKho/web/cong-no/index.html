@@ -1,0 +1,169 @@
+<!-- Loaded by the application shell: ../index.html -->
+<!-- S7-07 – Xem công nợ của chính mình (Đại lý) -->
+<style>
+  /* ── Biến và Khung tổng thể ── */
+  #dealerDebtFeature {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--ink, #17120e);
+  }
+
+  /* ── Header module ── */
+  #dealerDebtFeature .dd-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    background: #fff;
+    padding: 20px 24px;
+    border-radius: 16px;
+    border: 1px solid var(--app-border, #e4e9ef);
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+  }
+
+  #dealerDebtFeature .dd-eyebrow {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--orange-dark, #d96500);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  #dealerDebtFeature .dd-title {
+    margin: 0 0 6px;
+    color: #172033;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  #dealerDebtFeature .dd-desc {
+    margin: 0;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  #dealerDebtFeature .dd-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* ── Nút chuẩn KhoFlow ── */
+  #dealerDebtFeature .dd-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 16px;
+    border: 1px solid #dce3ea;
+    border-radius: 9px;
+    background: #fff;
+    color: #334155;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  #dealerDebtFeature .dd-btn:hover:not(:disabled) {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+  }
+
+  #dealerDebtFeature .dd-btn.primary {
+    border-color: var(--orange, #f47a00);
+    background: var(--orange, #f47a00);
+    color: #fff;
+  }
+
+  #dealerDebtFeature .dd-btn.primary:hover:not(:disabled) {
+    background: var(--orange-dark, #d96500);
+  }
+
+  /* ── Card tiêu chuẩn ── */
+  #dealerDebtFeature .dd-card {
+    border: 1px solid var(--app-border, #e4e9ef);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+    overflow: hidden;
+  }
+
+  /* ── Layout chính ── */
+  #dealerDebtFeature .dd-main-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+</style>
+
+<div id="dealerDebtFeature">
+  <!-- Header nghiệp vụ -->
+  <header class="dd-header">
+    <div>
+      <span class="dd-eyebrow">CỔNG THÔNG TIN ĐẠI LÝ · TÀI CHÍNH & CÔNG NỢ</span>
+      <h1 class="dd-title">Sổ công nợ & Hạn mức của tôi</h1>
+      <p class="dd-desc">Theo dõi chi tiết số tiền còn nợ, hạn mức tín dụng còn được phép mua hàng và tra cứu hóa đơn.</p>
+    </div>
+    <div class="dd-header-actions">
+      <button type="button" class="dd-btn" id="ddRefreshBtn">
+        <span>↻</span> Làm mới dữ liệu
+      </button>
+      <button type="button" class="dd-btn primary" id="ddPrintStatementBtn">
+        <span>⎙</span> In bảng đối chiếu
+      </button>
+    </div>
+  </header>
+
+  <!-- Container hiển thị các phân hệ -->
+  <div class="dd-main-container" id="ddMainContainer">
+    <!-- Phân hệ KPI tổng quan và Bảng hóa đơn sẽ render ở đây -->
+  </div>
+</div>
+
+<script>
+  window.sprint5Features = window.sprint5Features || {};
+  window.sprint5Features['Công nợ của tôi'] = {
+    path: 'cong-no',
+    permission: 'orders.self',
+    render: () => window.dealerDebtFeature.render()
+  };
+
+  // Hỗ trợ các tên gọi khác để tương thích router
+  window.sprint5Features['Sổ công nợ'] = window.sprint5Features['Công nợ của tôi'];
+  window.sprint5Features['Xem công nợ của chính mình'] = window.sprint5Features['Công nợ của tôi'];
+
+  window.dealerDebtFeature = (() => {
+    function render(containerId = 'moduleContent') {
+      const host = document.getElementById(containerId);
+      if (!host) return;
+      console.log('S7-07: Đã nạp khung giao diện công nợ');
+    }
+
+    return { render };
+  })();
+
+  // Tự động khởi tạo khi xem file độc lập
+  if (typeof window !== 'undefined') {
+    const init = () => {
+      const isShell = document.getElementById('moduleContent');
+      if (!isShell || isShell.children.length === 0) {
+        window.dealerDebtFeature?.render();
+      }
+    };
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  }
+</script>

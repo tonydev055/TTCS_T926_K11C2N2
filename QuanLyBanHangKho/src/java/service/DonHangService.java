@@ -68,6 +68,9 @@ public class DonHangService {
     public Map<String, Object> chiTiet(long id, long userId, Collection<String> roles) throws SQLException {
         Map<String, Object> order = db.detail(id, scope(userId, roles), userId);
         if (order == null) throw new NoSuchElementException("Không tìm thấy đơn hàng");
+        var backorder = db.backorderInfo(id);
+        order.put("backorderCode", backorder.get("backorderCode"));
+        order.put("hasShortfall", backorder.get("hasShortfall"));
         order.put("actions", actions(order, userId, roles));
         return order;
     }
@@ -81,6 +84,8 @@ public class DonHangService {
         a.put("canCancel", TrangThaiDonHang.CANCELLABLE.contains(String.valueOf(order.get("status"))) && (manager || rep));
         a.put("canApprove", TrangThaiDonHang.PENDING_APPROVAL.equals(order.get("status")) && manager);
         a.put("canCopy", rep);
+        a.put("canBackorder", rep && Set.of("SHIPPED", "DELIVERED", "CLOSED").contains(String.valueOf(order.get("status")))
+            && Boolean.TRUE.equals(order.get("hasShortfall")) && order.get("backorderCode") == null);
         a.put("canConfirm", TrangThaiDonHang.PENDING_CONFIRM.equals(order.get("status")) && rep);
         return a;
     }

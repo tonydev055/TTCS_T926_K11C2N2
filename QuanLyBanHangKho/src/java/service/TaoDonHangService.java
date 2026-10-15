@@ -270,6 +270,26 @@ public class TaoDonHangService {
     public Map<String, Object> saoChep(long sourceId, long userId) throws SQLException {
         var source = dao.copySource(sourceId, userId);
         if (source == null) throw new NoSuchElementException("Không tìm thấy đơn hàng để sao chép");
+        return taoTuNguon(source, userId, null);
+    }
+
+    /**
+     * S6-05: lập đơn nháp giao bù cho phần còn nợ hàng của đơn đã xuất (đại lý mình phụ trách). Giá áp lại theo
+     * bảng giá hiện hành như sao chép đơn; mỗi đơn gốc chỉ có một đơn bù chưa huỷ.
+     */
+    public Map<String, Object> taoDonBu(long sourceId, long userId) throws SQLException {
+        var source = dao.backorderSource(sourceId, userId);
+        if (source == null) throw new NoSuchElementException("Không tìm thấy đơn đã xuất để lập đơn giao bù");
+        if (source.get("backorderCode") != null)
+            throw new IllegalArgumentException("Đơn " + source.get("code") + " đã có đơn giao bù " + source.get("backorderCode"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> shortLines = (List<Map<String, Object>>) source.get("lines");
+        if (shortLines.isEmpty()) throw new IllegalArgumentException("Đơn " + source.get("code") + " không còn nợ hàng");
+        source.put("note", "Giao bù phần còn nợ của đơn " + source.get("code"));
+        return taoTuNguon(source, userId, sourceId);
+    }
+
+    private Map<String, Object> taoTuNguon(Map<String, Object> source, long userId, Long backorderOf) throws SQLException {
         long customerId = ((Number) source.get("customerId")).longValue();
         Long priceListId = dao.currentPriceListId(customerId);
         if (priceListId == null) throw new IllegalArgumentException(
@@ -279,6 +299,10 @@ public class TaoDonHangService {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> sourceLines = (List<Map<String, Object>>) source.get("lines");
         for (var l : sourceLines) {
+            if (l.get("unitId") == null) {
+                skipped.add(Map.of("sku", l.get("sku"), "name", l.get("name"), "reason", "sản phẩm không còn đơn vị cơ sở để đặt phần lẻ"));
+                continue;
+            }
             long productId = ((Number) l.get("productId")).longValue(), unitId = ((Number) l.get("unitId")).longValue();
             if (dao.lineInfo(priceListId, productId, unitId) == null) {
                 Map<String, Object> s = new LinkedHashMap<>();
@@ -297,6 +321,7 @@ public class TaoDonHangService {
         body.put("note", source.get("note"));
         body.put("lines", lines);
         long id = luuNhap(null, userId, body);
+        if (backorderOf != null) dao.markBackorder(id, backorderOf, userId);
         Map<String, Object> out = new LinkedHashMap<>(dao.load(id, userId));
         out.put("copiedFrom", source.get("code"));
         out.put("skipped", skipped);

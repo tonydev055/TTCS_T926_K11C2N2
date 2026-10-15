@@ -288,7 +288,9 @@ window.orderListFeature = (() => {
       const banner = order.status === 'CANCELLED'
         ? `<p class="ol-banner" role="status"><strong>Đơn đã huỷ</strong>Lý do: ${esc(order.cancelReason)} · ${esc(when(order.cancelledAt))}</p>`
         : order.status === 'REJECTED' ? '<p class="ol-banner" role="status"><strong>Đơn bị từ chối</strong>Xem ý kiến người duyệt ở lịch sử xử lý bên dưới.</p>'
-        : order.status === 'PENDING_CONFIRM' ? '<p class="ol-banner info" role="status"><strong>Đại lý tự đặt trên cổng</strong>Đơn chờ nhân viên phụ trách xác nhận.</p>' : '';
+        : order.status === 'PENDING_CONFIRM' ? '<p class="ol-banner info" role="status"><strong>Đại lý tự đặt trên cổng</strong>Đơn chờ nhân viên phụ trách xác nhận.</p>'
+        : order.backorderCode ? `<p class="ol-banner info" role="status"><strong>Đã lập đơn giao bù</strong>Phần còn nợ được giao ở đơn ${esc(order.backorderCode)}.</p>`
+        : order.hasShortfall ? '<p class="ol-banner" role="status"><strong>Đơn còn nợ hàng</strong>Kho xuất thiếu so với đơn; lập đơn giao bù để giao ở lượt sau.</p>' : '';
       const flags = order.approvalFlags || [];
       const flagBanner = flags.length && ['PENDING_APPROVAL', 'DRAFT'].includes(order.status)
         ? `<div class="ol-banner info" role="status"><strong>${order.status === 'DRAFT' ? 'Lần gửi trước cần duyệt vì' : 'Đơn cần quản lý kinh doanh duyệt vì'}</strong><ul>${flags.map((f) => `<li>${esc(f.message)}</li>`).join('')}</ul></div>` : '';
@@ -296,6 +298,7 @@ window.orderListFeature = (() => {
           <div><h3>${esc(order.code)} ${statusChip(order.status, order.statusLabel)}</h3>
             <p>${esc(order.customerName)}${order.customerCode ? ` · ${esc(order.customerCode)}` : ''} · Tạo lúc ${esc(when(order.createdAt))}${order.createdByName ? ` bởi ${esc(order.createdByName)}` : ''}</p></div>
           <div class="ol-actions" id="olActions">
+            ${a.canBackorder ? '<button type="button" class="ol-btn primary" id="olBackorder" title="Tạo đơn nháp chỉ gồm phần hàng còn nợ, giá tính lại theo bảng giá hiện hành">Tạo đơn giao bù</button>' : ''}
             ${a.canCopy ? '<button type="button" class="ol-btn" id="olCopy" title="Tạo đơn nháp mới với cùng đại lý và dòng hàng, giá tính lại theo bảng giá hiện hành">Sao chép thành đơn mới</button>' : ''}
             <button type="button" class="ol-btn" id="olPrint" title="Chọn &quot;Lưu dưới dạng PDF&quot; trong hộp thoại in để xuất PDF">In / Xuất PDF</button>
             ${a.canCancel ? '<button type="button" class="ol-btn danger" id="olCancel">Huỷ đơn</button>' : ''}
@@ -344,6 +347,7 @@ window.orderListFeature = (() => {
       document.getElementById('olCancel')?.addEventListener('click', () => openCancel(order, revision));
       document.getElementById('olPrint').addEventListener('click', () => window.orderPrint.printOrder(order));
       document.getElementById('olCopy')?.addEventListener('click', (event) => copyOrder(order, event.currentTarget));
+      document.getElementById('olBackorder')?.addEventListener('click', (event) => copyOrder(order, event.currentTarget, 'backorder'));
       document.getElementById('olConfirm')?.addEventListener('click', (event) => confirmPortal(order, event.currentTarget, revision));
       host.querySelectorAll('[data-decide]').forEach((button) => button.addEventListener('click', () =>
         window.orderApprovalFeature.decide(order, button.dataset.decide, () => { if (alive(revision)) renderDetail(order.id, revision); })));
@@ -367,10 +371,11 @@ window.orderListFeature = (() => {
   }
 
   // S4-09: sao chép đơn cũ thành nháp mới rồi mở ngay ở màn hình Tạo đơn hàng.
-  async function copyOrder(order, button) {
+  // S6-05: kind='backorder' chỉ lấy phần còn nợ của đơn đã xuất.
+  async function copyOrder(order, button, kind = 'copy') {
     button.disabled = true;
     try {
-      const copy = await apiRequest(`sales-orders/${order.id}/copy`, jsonRequestOptions('POST', {}));
+      const copy = await apiRequest(`sales-orders/${order.id}/${kind}`, jsonRequestOptions('POST', {}));
       const skipped = copy.skipped || [];
       showToast(`Đã tạo đơn nháp ${copy.code} từ ${order.code}, giá áp theo bảng giá hiện hành` +
         (skipped.length ? `. Bỏ ${skipped.length} dòng: ${skipped.map((s) => `${s.sku} (${s.reason})`).join('; ')}` : ''),

@@ -244,7 +244,7 @@ window.sprint5Features['Xuat kho & Giao thieu'] = {
                     <td><small>${esc(o.confirmedAt)}</small></td>
                     <td style="color:#e53935;font-weight:700">${o.debtItems} san pham</td>
                     <td style="text-align:right;font-weight:700;color:#e53935">${vnd(o.debtValue)}</td>
-                    <td><span class="xk-status debt">No hang</span></td>
+                    <td>${o.backorderCode ? `<span class="xk-status">Đã lập đơn bù ${esc(o.backorderCode)}</span>` : '<span class="xk-status debt">Nợ hàng · chờ lập đơn bù</span>'}</td>
                     <td><button class="xk-btn" data-debt="${o.id}">Chi tiet no</button></td>
                   </tr>`).join('') : `
                   <tr><td colspan="8"><div class="xk-empty"><strong>Khong co don nao con no hang.</strong>Tat ca don deu da duoc xuat du!</div></td></tr>`}

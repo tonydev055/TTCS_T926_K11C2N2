@@ -107,7 +107,12 @@ public final class XacNhanGiaoHangService {
                     proofName = savedProof.getFileName().toString();
                 }
                 boolean returned = false;
-                if (FAILED.equals(outcome)) {
+                // S6-07: đơn trên chuyến chưa khởi hành chưa được giao; đơn trên chuyến đang chạy giao thất bại thì
+                // hàng vẫn thuộc trách nhiệm chuyến, chỉ nhập lại kho khi kết thúc chuyến.
+                var trip = tripOf(c, orderId);
+                if (trip != null && "DRAFT".equals(trip.get("status")))
+                    throw new IllegalArgumentException("Đơn nằm trong chuyến " + trip.get("code") + " chưa khởi hành; cho chuyến khởi hành trước khi ghi nhận kết quả giao");
+                if (FAILED.equals(outcome) && (trip == null || !"IN_TRANSIT".equals(trip.get("status")))) {
                     returned = returnGoods(c, orderId, warehouse, actor, String.valueOf(order.get("code")), reason);
                 }
 
@@ -134,8 +139,9 @@ public final class XacNhanGiaoHangService {
                 result.put("outcome", outcome);
                 result.put("returnedToWarehouse", returned);
                 result.put("hasProof", proofName != null);
-                result.put("message", SUCCESS.equals(outcome)
-                    ? "Đã xác nhận giao hàng thành công" : "Đã ghi nhận giao thất bại và hàng hoàn về kho");
+                result.put("message", SUCCESS.equals(outcome) ? "Đã xác nhận giao hàng thành công"
+                    : returned ? "Đã ghi nhận giao thất bại và hàng hoàn về kho"
+                    : "Đã ghi nhận giao thất bại; hàng vẫn thuộc trách nhiệm chuyến tới khi kết thúc chuyến");
                 return result;
             } catch (SQLException e) {
                 c.rollback();
@@ -171,7 +177,12 @@ public final class XacNhanGiaoHangService {
         }
     }
 
-    private boolean returnGoods(Connection c, long orderId, long warehouse, long actor,
+    /** Chuyến chứa đơn (bảng của S6-06); null khi đơn giao thẳng không qua chuyến. */
+    private static Map<String, Object> tripOf(Connection c, long orderId) throws SQLException {
+        return TruyVanDB.one(c, "SELECT t.code,t.status FROM delivery_trip_stops s JOIN delivery_trips t ON t.id=s.trip_id WHERE s.order_id=? FOR SHARE OF t", orderId);
+    }
+
+    boolean returnGoods(Connection c, long orderId, long warehouse, long actor,
                                 String orderCode, String reason) throws SQLException {
         List<Map<String, Object>> lines = TruyVanDB.rows(c,
             "SELECT ol.id AS line_id,ol.product_id,"

@@ -98,6 +98,170 @@
     overflow: hidden;
   }
 
+  /* ── KPI Grid (Thẻ tổng quan) ── */
+  #dealerDebtFeature .dd-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  #dealerDebtFeature .dd-kpi-card {
+    position: relative;
+    padding: 20px 22px;
+    border-radius: 16px;
+    border: 1px solid var(--app-border, #e4e9ef);
+    background: #fff;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  #dealerDebtFeature .dd-kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  }
+
+  #dealerDebtFeature .dd-kpi-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  #dealerDebtFeature .dd-kpi-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  #dealerDebtFeature .dd-kpi-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  #dealerDebtFeature .dd-kpi-val {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: #172033;
+  }
+
+  #dealerDebtFeature .dd-kpi-sub {
+    font-size: 12px;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Định dạng thẻ KPI theo mục tiêu */
+  #dealerDebtFeature .kpi-debt .dd-kpi-icon {
+    background: #fef3f2;
+    color: #d92d20;
+  }
+  #dealerDebtFeature .kpi-debt .dd-kpi-val {
+    color: #b42318;
+  }
+
+  #dealerDebtFeature .kpi-limit .dd-kpi-icon {
+    background: #eff8ff;
+    color: #175cd3;
+  }
+  #dealerDebtFeature .kpi-limit .dd-kpi-val {
+    color: #1e40af;
+  }
+
+  #dealerDebtFeature .kpi-available .dd-kpi-icon {
+    background: #ecfdf3;
+    color: #027a48;
+  }
+  #dealerDebtFeature .kpi-available .dd-kpi-val {
+    color: #027a48;
+  }
+
+  #dealerDebtFeature .kpi-overdue .dd-kpi-icon {
+    background: #fff4ed;
+    color: #c4320a;
+  }
+  #dealerDebtFeature .kpi-overdue .dd-kpi-val {
+    color: #b42318;
+  }
+
+  /* Thanh đo tỷ lệ tín dụng (Credit Meter) */
+  #dealerDebtFeature .dd-meter-box {
+    padding: 16px 20px;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  #dealerDebtFeature .dd-meter-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  #dealerDebtFeature .dd-meter-track {
+    height: 10px;
+    border-radius: 99px;
+    background: #e2e8f0;
+    overflow: hidden;
+    position: relative;
+  }
+
+  #dealerDebtFeature .dd-meter-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  #dealerDebtFeature .dd-meter-fill.safe {
+    background: linear-gradient(90deg, #12b76a, #039855);
+  }
+  #dealerDebtFeature .dd-meter-fill.warning {
+    background: linear-gradient(90deg, #f79009, #dc6803);
+  }
+  #dealerDebtFeature .dd-meter-fill.danger {
+    background: linear-gradient(90deg, #f04438, #d92d20);
+  }
+
+  /* Banner cảnh báo nhanh */
+  #dealerDebtFeature .dd-alert-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid transparent;
+  }
+  #dealerDebtFeature .dd-alert-banner.warning {
+    background: #fffcf5;
+    border-color: #fedf89;
+    color: #b54708;
+  }
+  #dealerDebtFeature .dd-alert-banner.danger {
+    background: #fef3f2;
+    border-color: #fecdca;
+    color: #b42318;
+  }
+
   /* ── Layout chính ── */
   #dealerDebtFeature .dd-main-container {
     display: flex;
@@ -126,7 +290,11 @@
 
   <!-- Container hiển thị các phân hệ -->
   <div class="dd-main-container" id="ddMainContainer">
-    <!-- Phân hệ KPI tổng quan và Bảng hóa đơn sẽ render ở đây -->
+    <!-- Phân hệ 1: Thẻ thông số tổng quan KPI -->
+    <section class="dd-kpi-section" id="ddKpiSection"></section>
+
+    <!-- Phân hệ 2: Banner cảnh báo nếu có nợ quá hạn -->
+    <div id="ddAlertHost"></div>
   </div>
 </div>
 
@@ -138,27 +306,148 @@
     render: () => window.dealerDebtFeature.render()
   };
 
-  // Hỗ trợ các tên gọi khác để tương thích router
   window.sprint5Features['Sổ công nợ'] = window.sprint5Features['Công nợ của tôi'];
   window.sprint5Features['Xem công nợ của chính mình'] = window.sprint5Features['Công nợ của tôi'];
 
   window.dealerDebtFeature = (() => {
-    function render(containerId = 'moduleContent') {
-      const host = document.getElementById(containerId);
-      if (!host) return;
-      console.log('S7-07: Đã nạp khung giao diện công nợ');
+    // Định dạng tiền tệ VND
+    function formatMoney(amount) {
+      return (Number(amount) || 0).toLocaleString('vi-VN') + ' đ';
     }
 
-    return { render };
+    // Mock Data chuẩn doanh nghiệp phân phối
+    const MOCK_SUMMARY = {
+      dealerName: 'Đại lý An Khang (Chi nhánh miền Nam)',
+      dealerCode: 'DL-ANKHANG-01',
+      creditLimit: 300000000,       // Hạn mức tín dụng: 300 triệu
+      totalOutstanding: 145200000,  // Tổng còn nợ: 145.2 triệu
+      currentDebt: 95200000,        // Nợ trong hạn: 95.2 triệu
+      overdueDebt: 50000000,        // Nợ quá hạn: 50 triệu
+      remainingCredit: 154800000,   // Hạn mức còn lại được lấy hàng: 154.8 triệu
+      paymentTermsDays: 30,         // Thời hạn thanh toán: 30 ngày
+      nextDueDate: '2026-10-18',     // Ngày đến hạn gần nhất
+      nextDueAmount: 45000000
+    };
+
+    // Render các thẻ KPI
+    function renderKpiCards(summary) {
+      const host = document.getElementById('ddKpiSection');
+      if (!host) return;
+
+      const utilRate = summary.creditLimit > 0 
+        ? Math.min(100, Math.round((summary.totalOutstanding / summary.creditLimit) * 100))
+        : 0;
+
+      let meterClass = 'safe';
+      if (utilRate >= 90) meterClass = 'danger';
+      else if (utilRate >= 70) meterClass = 'warning';
+
+      host.innerHTML = `
+        <div class="dd-kpi-grid">
+          <!-- Card 1: Tổng còn nợ -->
+          <div class="dd-kpi-card kpi-debt">
+            <div class="dd-kpi-head">
+              <span class="dd-kpi-label">Tổng còn nợ</span>
+              <span class="dd-kpi-icon">₫</span>
+            </div>
+            <div class="dd-kpi-val">${formatMoney(summary.totalOutstanding)}</div>
+            <div class="dd-kpi-sub">
+              <span>Trong hạn: <strong>${formatMoney(summary.currentDebt)}</strong></span>
+            </div>
+          </div>
+
+          <!-- Card 2: Hạn mức tín dụng -->
+          <div class="dd-kpi-card kpi-limit">
+            <div class="dd-kpi-head">
+              <span class="dd-kpi-label">Hạn mức được cấp</span>
+              <span class="dd-kpi-icon">🛡</span>
+            </div>
+            <div class="dd-kpi-val">${formatMoney(summary.creditLimit)}</div>
+            <div class="dd-kpi-sub">
+              <span>Thời hạn thanh toán: <strong>${summary.paymentTermsDays} ngày</strong></span>
+            </div>
+          </div>
+
+          <!-- Card 3: Hạn mức còn lại được lấy hàng (Tiêu chí chính của Đại lý) -->
+          <div class="dd-kpi-card kpi-available">
+            <div class="dd-kpi-head">
+              <span class="dd-kpi-label">Hạn mức còn được lấy hàng</span>
+              <span class="dd-kpi-icon">🛒</span>
+            </div>
+            <div class="dd-kpi-val">${formatMoney(summary.remainingCredit)}</div>
+            <div class="dd-kpi-sub">
+              <span>Bạn có thể đặt hàng tối đa số tiền này</span>
+            </div>
+          </div>
+
+          <!-- Card 4: Nợ quá hạn -->
+          <div class="dd-kpi-card kpi-overdue">
+            <div class="dd-kpi-head">
+              <span class="dd-kpi-label">Nợ quá hạn cần trả</span>
+              <span class="dd-kpi-icon">⚠</span>
+            </div>
+            <div class="dd-kpi-val">${formatMoney(summary.overdueDebt)}</div>
+            <div class="dd-kpi-sub">
+              <span style="color: ${summary.overdueDebt > 0 ? '#b42318' : '#027a48'}; font-weight: 600;">
+                ${summary.overdueDebt > 0 ? 'Cần thanh toán sớm để không bị chặn đơn mới' : '✓ Không có hóa đơn quá hạn'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Thanh đo tỷ lệ sử dụng hạn mức tín dụng -->
+        <div class="dd-meter-box" style="margin-top: 16px;">
+          <div class="dd-meter-head">
+            <span>Tỷ lệ sử dụng hạn mức tín dụng: <strong>${utilRate}%</strong></span>
+            <span style="color: #64748b;">Đã sử dụng ${formatMoney(summary.totalOutstanding)} / ${formatMoney(summary.creditLimit)}</span>
+          </div>
+          <div class="dd-meter-track">
+            <div class="dd-meter-fill ${meterClass}" style="width: ${utilRate}%;"></div>
+          </div>
+        </div>
+      `;
+
+      // Hiển thị banner cảnh báo nếu có nợ quá hạn
+      const alertHost = document.getElementById('ddAlertHost');
+      if (alertHost) {
+        if (summary.overdueDebt > 0) {
+          alertHost.innerHTML = `
+            <div class="dd-alert-banner danger">
+              <span style="font-size: 20px;">⚠️</span>
+              <div>
+                <strong>Cảnh báo công nợ quá hạn:</strong> Đại lý đang có khoản nợ quá hạn <strong>${formatMoney(summary.overdueDebt)}</strong>.
+                Vui lòng ưu tiên thanh toán các hóa đơn quá hạn hoặc liên hệ kế toán công nợ để tránh việc hệ thống tạm ngừng phê duyệt các đơn hàng mới.
+              </div>
+            </div>
+          `;
+        } else {
+          alertHost.innerHTML = `
+            <div class="dd-alert-banner warning">
+              <span style="font-size: 18px;">ℹ</span>
+              <div>
+                <strong>Thông báo kỳ thanh toán:</strong> Khoản thanh toán tiếp theo là <strong>${formatMoney(summary.nextDueAmount)}</strong> đến hạn vào ngày <strong>${summary.nextDueDate}</strong>.
+              </div>
+            </div>
+          `;
+        }
+      }
+    }
+
+    function render(containerId = 'moduleContent') {
+      const host = document.getElementById(containerId);
+      if (host && !host.querySelector('#dealerDebtFeature')) {
+        host.innerHTML = document.getElementById('dealerDebtFeature')?.outerHTML || '';
+      }
+      renderKpiCards(MOCK_SUMMARY);
+    }
+
+    return { render, formatMoney };
   })();
 
   // Tự động khởi tạo khi xem file độc lập
   if (typeof window !== 'undefined') {
     const init = () => {
-      const isShell = document.getElementById('moduleContent');
-      if (!isShell || isShell.children.length === 0) {
-        window.dealerDebtFeature?.render();
-      }
+      window.dealerDebtFeature?.render('ddMainContainer');
     };
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', init);

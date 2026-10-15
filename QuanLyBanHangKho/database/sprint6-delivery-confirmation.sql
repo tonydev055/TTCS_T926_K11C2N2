@@ -44,4 +44,52 @@ DROP TRIGGER IF EXISTS delivery_confirmations_audit ON delivery_confirmations;
 CREATE TRIGGER delivery_confirmations_audit
 AFTER INSERT OR UPDATE ON delivery_confirmations
 FOR EACH ROW EXECUTE FUNCTION sprint2_audit();
+
+-- Quản lý kho cũng được xác nhận kết quả giao (cổng quyền /api/delivery-confirmations là shipments.write).
+INSERT INTO role_permissions(role_id,permission_code)
+SELECT id,'shipments.write' FROM roles WHERE code='WH_MANAGER'
+ON CONFLICT DO NOTHING;
+
+-- Giao thất bại và hàng đã hoàn kho thì đơn được huỷ (Đã xuất → Đã huỷ); giao lại bằng "Sao chép thành đơn mới".
+-- Bản này thay bản trong sprint5-reservation-expiry.sql; nếu chạy lại file Sprint 5 thì chạy lại file này sau đó.
+CREATE OR REPLACE FUNCTION order_status_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE allowed TEXT[];
+BEGIN
+ IF TG_OP = 'INSERT' THEN
+  IF NEW.status NOT IN ('DRAFT','PENDING_CONFIRM') THEN
+   RAISE EXCEPTION 'Đơn mới chỉ được tạo ở trạng thái Nháp hoặc Chờ xác nhận' USING ERRCODE='P0001';
+  END IF;
+  IF NEW.status = 'PENDING_CONFIRM' THEN NEW.submitted_at = COALESCE(NEW.submitted_at, CURRENT_TIMESTAMP); END IF;
+  RETURN NEW;
+ END IF;
+ IF NEW.status = OLD.status THEN RETURN NEW; END IF;
+ allowed = CASE OLD.status
+  WHEN 'DRAFT'            THEN ARRAY['PENDING_APPROVAL','APPROVED','CANCELLED']
+  WHEN 'PENDING_CONFIRM'  THEN ARRAY['PENDING_APPROVAL','APPROVED','CANCELLED']
+  WHEN 'PENDING_APPROVAL' THEN ARRAY['APPROVED','REJECTED','DRAFT','CANCELLED']
+  WHEN 'APPROVED'         THEN ARRAY['PICKING','CANCELLED','PENDING_APPROVAL']
+  WHEN 'PICKING'          THEN ARRAY['SHIPPED','CANCELLED']
+  WHEN 'SHIPPED'          THEN CASE WHEN EXISTS(SELECT 1 FROM delivery_confirmations dc WHERE dc.order_id=NEW.id AND dc.outcome='FAILED' AND dc.returned_to_warehouse)
+                                THEN ARRAY['DELIVERED','CANCELLED'] ELSE ARRAY['DELIVERED'] END
+  WHEN 'DELIVERED'        THEN ARRAY['CLOSED']
+  ELSE ARRAY[]::TEXT[] END;
+ IF NOT (NEW.status = ANY(allowed)) THEN
+  IF OLD.status IN ('SHIPPED','DELIVERED','CLOSED') AND NEW.status = 'CANCELLED' THEN
+   RAISE EXCEPTION 'Đơn % đã xuất kho, không huỷ được. Hãy lập phiếu trả hàng', OLD.code USING ERRCODE='P0001';
+  END IF;
+  RAISE EXCEPTION 'Không thể chuyển đơn % từ trạng thái % sang %', OLD.code, OLD.status, NEW.status USING ERRCODE='P0001';
+ END IF;
+ NEW.updated_at = CURRENT_TIMESTAMP;
+ CASE NEW.status
+  WHEN 'PENDING_APPROVAL' THEN NEW.submitted_at = COALESCE(NEW.submitted_at, CURRENT_TIMESTAMP);
+  WHEN 'APPROVED'  THEN NEW.approved_at = CURRENT_TIMESTAMP; NEW.submitted_at = COALESCE(NEW.submitted_at, CURRENT_TIMESTAMP);
+  WHEN 'SHIPPED'   THEN NEW.shipped_at = CURRENT_TIMESTAMP;
+  WHEN 'DELIVERED' THEN NEW.delivered_at = CURRENT_TIMESTAMP;
+  WHEN 'CLOSED'    THEN NEW.closed_at = CURRENT_TIMESTAMP;
+  WHEN 'CANCELLED' THEN NEW.cancelled_at = CURRENT_TIMESTAMP;
+  WHEN 'DRAFT'     THEN NEW.submitted_at = NULL;
+  ELSE NULL;
+ END CASE;
+ RETURN NEW;
+END $$;
 COMMIT;

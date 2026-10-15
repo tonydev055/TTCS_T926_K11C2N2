@@ -13,7 +13,7 @@ function setup(post){
   const data={pending:[{id:11,orderCode:'DH-THAT',customer:'Đại lý thật',warehouse:'HCM',payable:500,lines:[{id:22,sku:'SKU',name:'Hàng',unit:'Cái',orderedQty:5,reservedQty:5,unitPrice:100}]}],shipped:[],shortfall:[]};
   const context={window:{},document:{getElementById:node},warehouseUi:{esc:v=>String(v??''),screen:async(title,desc,load,render)=>render(node('host'),await load(),1)},apiRequest:async(path,options)=>{calls.push({path,options});if(options)return post?.();return data;},jsonRequestOptions:(method,body)=>({method,body}),openFormDialog:()=>({form,close(){closed++;}}),showToast(){},Intl,console};
   vm.runInNewContext(script,context);
-  return {context,calls,form,error,confirm,get closed(){return closed;},render:()=>context.window.sprint5Features['Xuat kho & Giao thieu'].render()};
+  return {context,calls,form,error,confirm,get closed(){return closed;},render:()=>context.window.sprint5Features['Xuất kho & giao thiếu'].render()};
 }
 test('shipment screen loads real API data',async()=>{const app=setup();await app.render();assert.equal(app.calls[0].path,'shipments');});
 test('failed confirmation keeps form open with server error',async()=>{const app=setup(async()=>{throw Error('Không đủ tồn');});await app.render();app.confirm.onclick({stopPropagation(){}});await app.form.onsubmit({preventDefault(){}});assert.equal(app.closed,0);assert.equal(app.error.textContent,'Không đủ tồn');});

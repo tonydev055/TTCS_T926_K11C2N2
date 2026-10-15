@@ -65,7 +65,8 @@ public final class PhanQuyen {
             "warehouses.manage",
             "suppliers.read",
             "suppliers.write",
-            "reports.inventory"
+            "reports.inventory",
+            "shipments.write"
         ),
         "WAREHOUSE",
         Set.of(

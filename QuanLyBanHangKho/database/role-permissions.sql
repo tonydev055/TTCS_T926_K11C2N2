@@ -23,6 +23,7 @@ WITH defaults(role_code, permission_code) AS (VALUES
   ('WH_MANAGER','inventory.read'),('WH_MANAGER','inventory.write'),
   ('WH_MANAGER','warehouses.manage'),('WH_MANAGER','suppliers.read'),
   ('WH_MANAGER','suppliers.write'),('WH_MANAGER','reports.inventory'),
+  ('WH_MANAGER','shipments.write'),
   ('WAREHOUSE','products.read'),('WAREHOUSE','units.write'),
   ('WAREHOUSE','suppliers.read'),('WAREHOUSE','suppliers.write'),
   ('WAREHOUSE','inventory.read'),('WAREHOUSE','inventory.write'),

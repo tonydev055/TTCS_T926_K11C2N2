@@ -271,7 +271,7 @@ window.sprint5Features['Xuat kho & Giao thieu'] = {
             <td style="text-align:center"><strong style="color:#175cd3">${l.reservedQty}</strong></td>
             <td style="text-align:center">
               <input class="xk-qty-input" type="number" name="qty_${l.id}"
-                min="0" max="${l.reservedQty}" step="1" value="${l.reservedQty}"
+                min="0" max="${l.reservedQty}" step="0.000001" value="${l.reservedQty}"
                 data-ordered="${l.orderedQty}" data-line="${l.id}" data-unit="${esc(l.unit)}" data-price="${l.unitPrice||0}">
             </td>
             <td class="xk-diff" id="diff_${l.id}">—</td>

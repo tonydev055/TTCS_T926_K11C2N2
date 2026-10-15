@@ -35,8 +35,8 @@ public class XuatKhoService {
             long id=KhoService.id(line.get("lineId"));if(quantities.putIfAbsent(id,PhieuNhapKhoService.quantity(line.get("actualQuantity"),true))!=null)throw new IllegalArgumentException("Dòng xuất bị trùng");
             if(line.containsKey("allocations")){if(!(line.get("allocations") instanceof List<?> bins)||bins.size()>2000)throw new IllegalArgumentException("Phân bổ lô không hợp lệ");var selected=new LinkedHashMap<Long,BigDecimal>();for(Object raw:bins){if(!(raw instanceof Map<?,?> bin))throw new IllegalArgumentException("Lô không hợp lệ");if(selected.putIfAbsent(KhoService.id(bin.get("binId")),PhieuNhapKhoService.quantity(bin.get("quantity"),false))!=null)throw new IllegalArgumentException("Lô bị trùng");}for(BigDecimal q:selected.values())if(q.stripTrailingZeros().scale()>0)throw new IllegalArgumentException("Phân bổ lô phải nguyên đơn vị cơ sở");allocations.put(id,selected);}
         }
-        if(!allocations.isEmpty()&&allocationReason.isBlank())throw new IllegalArgumentException("Nhập lý do xác nhận hoặc thay đổi lô FEFO");
-        if(!allocations.isEmpty())reason="Chọn lô: "+allocationReason+". "+reason;
+        if(!allocationReason.isBlank())reason="Chọn lô khác gợi ý: "+allocationReason+". "+reason;
+        boolean deviated=false;
         try(Connection c=KetNoiDB.getConnection()){c.setAutoCommit(false);try{
             var head=TruyVanDB.one(c,"SELECT warehouse_id FROM orders WHERE id=?",orderId);
             if(head==null||head.get("warehouse_id")==null)throw new NoSuchElementException("Không tìm thấy đơn có kho phục vụ");
@@ -74,6 +74,11 @@ public class XuatKhoService {
                 for(var loc:locations){var used=TruyVanDB.one(c,"SELECT COALESCE(-SUM(m.delta),0) qty FROM stock_movements m JOIN stock_bins b ON b.id=m.bin_id JOIN pick_list_orders po ON po.order_id=m.document_id WHERE m.kind='SHIPMENT_OUT' AND po.pick_list_id=? AND m.product_id=? AND b.location_id IS NOT DISTINCT FROM ?",pickId,product,loc.get("location_id"));allowances.put(String.valueOf(loc.get("location_id")),((BigDecimal)loc.get("picked")).subtract((BigDecimal)used.get("qty")).max(BigDecimal.ZERO));}
                 // FEFO áp dụng trên toàn bộ vị trí đã soạn, không ưu tiên ID vị trí.
                 var bins=TruyVanDB.rows(c,"SELECT id,location_id,on_hand FROM stock_bins WHERE warehouse_id=? AND product_id=? AND on_hand>0 AND (expiry_date IS NULL OR expiry_date>=CURRENT_DATE) ORDER BY expiry_date NULLS LAST,id FOR UPDATE",wh,product);
+                if(selected!=null){// Gợi ý FEFO mặc định trên cùng dữ liệu đã khóa; chỉ bắt lý do khi thủ kho chọn khác.
+                    Map<String,BigDecimal> planAllow=new HashMap<>(allowances);Map<Long,BigDecimal> plan=new HashMap<>();BigDecimal left=base;
+                    for(var b:bins){if(left.signum()==0)break;String loc=String.valueOf(b.get("location_id"));BigDecimal q=left.min(planAllow.getOrDefault(loc,BigDecimal.ZERO)).min((BigDecimal)b.get("on_hand"));if(q.signum()>0){plan.put(TruyVanDB.id(b),q);left=left.subtract(q);planAllow.put(loc,planAllow.get(loc).subtract(q));}}
+                    for(var id:new HashSet<Long>(){{addAll(plan.keySet());addAll(selected.keySet());}})if(plan.getOrDefault(id,BigDecimal.ZERO).compareTo(selected.getOrDefault(id,BigDecimal.ZERO))!=0){deviated=true;break;}
+                }
                 for(var b:bins){String location=String.valueOf(b.get("location_id"));BigDecimal allowance=allowances.getOrDefault(location,BigDecimal.ZERO);
                     BigDecimal chosen=selected==null?remaining:selected.getOrDefault(TruyVanDB.id(b),BigDecimal.ZERO);
                     if(selected!=null&&(chosen.compareTo(allowance)>0||chosen.compareTo((BigDecimal)b.get("on_hand"))>0))throw new IllegalArgumentException("Lô chọn vượt tồn hoặc số lượng đã soạn tại vị trí");
@@ -86,6 +91,7 @@ public class XuatKhoService {
                 TruyVanDB.update(c,"UPDATE order_lines SET delivered_base_quantity=? WHERE id=?",base,lineId);
                 if(base.signum()>0)TruyVanDB.update(c,"INSERT INTO stock_reservations(order_id,warehouse_id,product_id,quantity,status,released_at) VALUES(?,?,?,?,'CONSUMED',CURRENT_TIMESTAMP)",orderId,wh,product,base);
             }
+            if(deviated&&allocationReason.isBlank())throw new IllegalArgumentException("Lô chọn khác gợi ý FEFO; bắt buộc nhập lý do thay đổi lô");
             TruyVanDB.update(c,"UPDATE orders SET status='SHIPPED' WHERE id=?",orderId);
             c.commit();
         }catch(SQLException e){c.rollback();throw TrangThaiDonHang.rethrow(e);}catch(RuntimeException e){c.rollback();throw e;}}

@@ -46,18 +46,19 @@ public class PhieuSoanService {
                 TruyVanDB.update(c,"UPDATE orders SET status='PICKING' WHERE id=?",oid);
             }
             // Phân bổ đủ số lượng qua các vị trí, không dồn toàn bộ vào một vị trí thiếu hàng.
+            // Chỉ tính lô còn hạn để xuất kho không bị chặn bởi phần tồn đã quá hạn; ưu tiên vị trí có hạn gần nhất.
             var demands=TruyVanDB.rows(c,"SELECT ol.product_id,SUM(ol.base_quantity) qty FROM order_lines ol WHERE ol.order_id IN ("+String.join(",",Collections.nCopies(orders.size(),"?"))+") GROUP BY ol.product_id ORDER BY ol.product_id",orders.toArray());
             for(var demand:demands){
                 long product=((Number)demand.get("product_id")).longValue();
                 BigDecimal remaining=(BigDecimal)demand.get("qty");
                 var reserved=TruyVanDB.one(c,"SELECT COALESCE(SUM(quantity),0) qty FROM stock_reservations WHERE warehouse_id=? AND product_id=? AND status='ACTIVE' AND order_id IN (SELECT order_id FROM pick_list_orders WHERE pick_list_id=?)",warehouse,product,id);
                 if(((BigDecimal)reserved.get("qty")).compareTo(remaining)<0)throw new IllegalArgumentException("Đơn không còn đủ tồn giữ chỗ; hãy kiểm tra lại trước khi soạn");
-                for(var bucket:TruyVanDB.rows(c,"SELECT location_id,SUM(on_hand) qty FROM stock_bins WHERE warehouse_id=? AND product_id=? AND on_hand>0 GROUP BY location_id ORDER BY location_id NULLS LAST",warehouse,product)){
+                for(var bucket:TruyVanDB.rows(c,"SELECT location_id,SUM(on_hand) qty FROM stock_bins WHERE warehouse_id=? AND product_id=? AND on_hand>0 AND (expiry_date IS NULL OR expiry_date>=CURRENT_DATE) GROUP BY location_id ORDER BY MIN(expiry_date) NULLS LAST,location_id NULLS LAST",warehouse,product)){
                     BigDecimal take=remaining.min((BigDecimal)bucket.get("qty"));
                     if(take.signum()>0)TruyVanDB.update(c,"INSERT INTO pick_list_lines(pick_list_id,product_id,location_id,requested_quantity) VALUES(?,?,?,?)",id,product,bucket.get("location_id"),take);
                     remaining=remaining.subtract(take);if(remaining.signum()==0)break;
                 }
-                if(remaining.signum()>0)throw new IllegalArgumentException("Tồn vị trí không đủ để lập phiếu soạn");
+                if(remaining.signum()>0)throw new IllegalArgumentException("Tồn còn hạn tại các vị trí không đủ để lập phiếu soạn");
             }
             if(TruyVanDB.one(c,"SELECT 1 FROM pick_list_lines WHERE pick_list_id=?",id)==null)throw new IllegalArgumentException("Các đơn đã chọn không có dòng hàng");
             c.commit();return id;
@@ -68,7 +69,7 @@ public class PhieuSoanService {
         try(Connection c=KetNoiDB.getConnection()){c.setAutoCommit(false);try {
             var p=TruyVanDB.one(c,"SELECT * FROM pick_lists WHERE id=? FOR UPDATE",id);if(p==null)throw new NoSuchElementException("Không tìm thấy phiếu soạn");KhoService.access(c,((Number)p.get("warehouse_id")).longValue(),user,roles);if(!"PICKING".equals(p.get("status")))throw new IllegalArgumentException("Phiếu soạn đã hoàn tất");KhoService.actor(c,user);
             Set<Long> seen=new HashSet<>();for(Object item:lines){if(!(item instanceof Map<?,?> m))throw new IllegalArgumentException("Dòng soạn không hợp lệ");long line=KhoService.id(m.get("lineId"));if(!seen.add(line))throw new IllegalArgumentException("Dòng soạn bị trùng");BigDecimal qty=PhieuNhapKhoService.quantity(m.get("actualQuantity"),true);String reason=KhoService.text(m.get("shortageReason"),"Lý do soạn thiếu",1000,false);
-                var current=TruyVanDB.one(c,"SELECT requested_quantity FROM pick_list_lines WHERE id=? AND pick_list_id=?",line,id);if(current==null)throw new IllegalArgumentException("Dòng hàng không thuộc phiếu soạn");if(qty.compareTo((BigDecimal)current.get("requested_quantity"))>0)throw new IllegalArgumentException("Không được soạn vượt số lượng yêu cầu");if(qty.compareTo((BigDecimal)current.get("requested_quantity"))>0)throw new IllegalArgumentException("Không được soạn vượt số lượng yêu cầu");if(qty.compareTo((BigDecimal)current.get("requested_quantity"))<0&&reason.isBlank())throw new IllegalArgumentException("Bắt buộc nhập lý do khi soạn thiếu");
+                var current=TruyVanDB.one(c,"SELECT requested_quantity FROM pick_list_lines WHERE id=? AND pick_list_id=?",line,id);if(current==null)throw new IllegalArgumentException("Dòng hàng không thuộc phiếu soạn");if(qty.compareTo((BigDecimal)current.get("requested_quantity"))>0)throw new IllegalArgumentException("Không được soạn vượt số lượng yêu cầu");if(qty.compareTo((BigDecimal)current.get("requested_quantity"))<0&&reason.isBlank())throw new IllegalArgumentException("Bắt buộc nhập lý do khi soạn thiếu");
                 TruyVanDB.update(c,"UPDATE pick_list_lines SET actual_quantity=?,picked=TRUE,shortage_reason=? WHERE id=? AND pick_list_id=?",qty,reason,line,id);
             }
             long total=((Number)TruyVanDB.one(c,"SELECT count(*) n FROM pick_list_lines WHERE pick_list_id=?",id).get("n")).longValue();long picked=((Number)TruyVanDB.one(c,"SELECT count(*) n FROM pick_list_lines WHERE pick_list_id=? AND picked",id).get("n")).longValue();

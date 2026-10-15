@@ -119,6 +119,10 @@ public final class XacNhanGiaoHangService {
                     proofName, FAILED.equals(outcome) ? reason : null, returned, actor);
                 long confirmationId = TruyVanDB.id(created);
 
+                if (FAILED.equals(outcome) && returned) {
+                    // Hàng đã về kho: huỷ đơn để không treo ở Đã xuất; giao lại bằng sao chép thành đơn mới.
+                    cancelFailedOrder(c, orderId, actor, reason);
+                }
                 if (SUCCESS.equals(outcome)) {
                     TrangThaiDonHang.setContext(c, actor, "Giao hàng thành công, xác nhận bởi nhân viên kho");
                     if (TruyVanDB.update(c, "UPDATE orders SET status='DELIVERED' WHERE id=? AND status='SHIPPED'", orderId) != 1)
@@ -135,7 +139,7 @@ public final class XacNhanGiaoHangService {
                 result.put("returnedToWarehouse", returned);
                 result.put("hasProof", proofName != null);
                 result.put("message", SUCCESS.equals(outcome)
-                    ? "Đã xác nhận giao hàng thành công" : "Đã ghi nhận giao thất bại và hàng hoàn về kho");
+                    ? "Đã xác nhận giao hàng thành công" : "Đã ghi nhận giao thất bại, hàng hoàn về kho và đơn được huỷ; dùng Sao chép thành đơn mới nếu cần giao lại");
                 return result;
             } catch (SQLException e) {
                 c.rollback();
@@ -148,6 +152,14 @@ public final class XacNhanGiaoHangService {
             if (savedProof != null) Files.deleteIfExists(savedProof);
             throw e;
         }
+    }
+
+    static void cancelFailedOrder(Connection c, long orderId, long actor, String reason) throws SQLException {
+        String text = ("Giao thất bại, hàng đã hoàn kho: " + reason);
+        if (text.length() > 500) text = text.substring(0, 500); // orders.cancel_reason VARCHAR(500)
+        TrangThaiDonHang.setContext(c, actor, text);
+        if (TruyVanDB.update(c, "UPDATE orders SET status='CANCELLED',cancel_reason=? WHERE id=? AND status='SHIPPED'", text, orderId) != 1)
+            throw new IllegalArgumentException("Trạng thái đơn đã thay đổi, vui lòng tải lại dữ liệu");
     }
 
     /** Trả chứng từ qua endpoint có kiểm tra phân quyền theo kho của đơn. */

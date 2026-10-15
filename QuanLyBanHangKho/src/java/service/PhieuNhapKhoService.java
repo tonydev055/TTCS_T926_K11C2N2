@@ -63,9 +63,11 @@ public class PhieuNhapKhoService {
                 String expiryText=Objects.toString(l.get("expiryDate"),"");if(!expiryText.isEmpty()){try{expiry=LocalDate.parse(expiryText);}catch(Exception e){throw new IllegalArgumentException("Hạn sử dụng không hợp lệ");}}
                 if(Boolean.TRUE.equals(p.get("lot_managed"))&&expiry==null)throw new IllegalArgumentException("Hàng quản lý lô phải có hạn sử dụng");
                 if(direction>0&&expiry!=null&&expiry.isBefore(date))throw new IllegalArgumentException("Hàng đã hết hạn tại ngày nhập");
+                // S6-01: ngày sản xuất ghi ngay khi nhập, không sau ngày nhập và không sau hạn dùng.
+                LocalDate made=null;String madeText=Objects.toString(l.get("manufacturedDate"),"");if(direction>0&&!madeText.isEmpty()){try{made=LocalDate.parse(madeText);}catch(Exception e){throw new IllegalArgumentException("Ngày sản xuất không hợp lệ");}if(made.isAfter(date))throw new IllegalArgumentException("Ngày sản xuất không được sau ngày nhập");if(expiry!=null&&made.isAfter(expiry))throw new IllegalArgumentException("Ngày sản xuất phải trước hạn sử dụng");}
                 if(source!=null&&TruyVanDB.one(c,"SELECT id FROM stock_receipt_lines WHERE receipt_id=? AND product_id=? AND location_id IS NOT DISTINCT FROM ? AND lot_number=? AND expiry_date IS NOT DISTINCT FROM ?",source,product,location,lot,expiry)==null)
                     throw new IllegalArgumentException("Dòng điều chỉnh phải thuộc sản phẩm, vị trí, số lô và hạn dùng của phiếu gốc");
-                TruyVanDB.update(c,"INSERT INTO stock_receipt_lines(receipt_id,product_id,unit_id,quantity,conversion_factor,location_id,lot_number,expiry_date) VALUES(?,?,?,?,?,?,?,?)",result,product,unit,qty,p.get("factor"),location,lot,expiry);
+                TruyVanDB.update(c,"INSERT INTO stock_receipt_lines(receipt_id,product_id,unit_id,quantity,conversion_factor,location_id,lot_number,expiry_date,manufactured_date) VALUES(?,?,?,?,?,?,?,?,?)",result,product,unit,qty,p.get("factor"),location,lot,expiry,made==null?null:java.sql.Date.valueOf(made));
             }
             c.commit();return result;
         }catch(SQLException|RuntimeException e){c.rollback();throw e;}}
@@ -84,6 +86,7 @@ public class PhieuNhapKhoService {
                 if(Boolean.TRUE.equals(product.get("lot_managed"))&&(Objects.toString(l.get("lot_number"),"").isBlank()||l.get("expiry_date")==null))throw new IllegalArgumentException("Sản phẩm đã chuyển sang quản lý lô; sửa nháp để bổ sung số lô và hạn sử dụng");
             }
             for(var l:ls){long product=((Number)l.get("product_id")).longValue();StockLedgerDB.lockStock(c,wh,product);long bin=StockLedgerDB.bin(c,wh,product,l.get("location_id"),String.valueOf(l.get("lot_number")),l.get("expiry_date"));
+                if(l.get("manufactured_date")!=null){var target=TruyVanDB.one(c,"SELECT manufactured_date FROM stock_bins WHERE id=? FOR UPDATE",bin);if(target.get("manufactured_date")==null)TruyVanDB.update(c,"UPDATE stock_bins SET manufactured_date=? WHERE id=?",l.get("manufactured_date"),bin);else if(!target.get("manufactured_date").equals(l.get("manufactured_date")))throw new IllegalArgumentException("Lô "+l.get("lot_number")+" đã có ngày sản xuất khác tại vị trí này");}
                 StockLedgerDB.change(c,wh,product,bin,((BigDecimal)l.get("base_quantity")).multiply(new BigDecimal(r.get("direction").toString())),"RECEIPT",id,TruyVanDB.id(l),user,String.valueOf(r.get("note")));}
             TruyVanDB.update(c,"UPDATE stock_receipts SET status='POSTED',posted_at=CURRENT_TIMESTAMP WHERE id=?",id);c.commit();
         }catch(SQLException|RuntimeException e){c.rollback();throw e;}}

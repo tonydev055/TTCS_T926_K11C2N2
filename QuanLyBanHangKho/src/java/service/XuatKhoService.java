@@ -71,7 +71,7 @@ public class XuatKhoService {
                     var used=TruyVanDB.one(c,"SELECT COALESCE(-SUM(m.delta),0) qty FROM stock_movements m JOIN stock_bins b ON b.id=m.bin_id JOIN pick_list_orders po ON po.order_id=m.document_id WHERE m.kind='SHIPMENT_OUT' AND po.pick_list_id=? AND m.product_id=? AND b.location_id IS NOT DISTINCT FROM ?",pickId,product,loc.get("location_id"));
                     BigDecimal allowance=((BigDecimal)loc.get("picked")).subtract((BigDecimal)used.get("qty")).max(BigDecimal.ZERO);
                     if(allowance.signum()==0)continue;
-                    var bins=TruyVanDB.rows(c,"SELECT id,on_hand FROM stock_bins WHERE warehouse_id=? AND product_id=? AND location_id IS NOT DISTINCT FROM ? AND on_hand>0 AND (? OR expiry_date IS NULL OR expiry_date>=CURRENT_DATE) ORDER BY expiry_date NULLS LAST,id FOR UPDATE",wh,product,loc.get("location_id"),expiredOverride);
+                    var bins=TruyVanDB.rows(c,"SELECT id,on_hand FROM stock_bins WHERE warehouse_id=? AND product_id=? AND location_id IS NOT DISTINCT FROM ? AND on_hand>0 AND (? OR expiry_date IS NULL OR expiry_date>=CURRENT_DATE) ORDER BY (expiry_date<CURRENT_DATE) NULLS FIRST,expiry_date NULLS LAST,id FOR UPDATE",wh,product,loc.get("location_id"),expiredOverride);
                     for(var b:bins){BigDecimal take=remaining.min(allowance).min((BigDecimal)b.get("on_hand"));if(take.signum()>0){
                         StockLedgerDB.change(c,wh,product,TruyVanDB.id(b),take.negate(),"SHIPMENT_OUT",orderId,lineId,user,expiredOverride?"Ghi đè lô hết hạn: "+expiryReason+". "+reason:reason);
                         remaining=remaining.subtract(take);allowance=allowance.subtract(take);

@@ -1,5 +1,6 @@
 BEGIN;
 ALTER TABLE stock_bins ADD COLUMN IF NOT EXISTS manufactured_date DATE;
+ALTER TABLE stock_receipt_lines ADD COLUMN IF NOT EXISTS manufactured_date DATE;
 ALTER TABLE products ADD COLUMN IF NOT EXISTS expiry_alert_days INTEGER NOT NULL DEFAULT 30 CHECK(expiry_alert_days BETWEEN 0 AND 3650);
 DO $$ BEGIN
  IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conname='stock_bins_manufactured_before_expiry') THEN

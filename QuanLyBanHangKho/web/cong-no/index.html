@@ -55,7 +55,7 @@
     gap: 10px;
   }
 
-  /* ── Nút chuẩn KhoFlow ── */
+  /* ── Nút bấm chuẩn KhoFlow ── */
   #dealerDebtFeature .dd-btn {
     display: inline-flex;
     align-items: center;
@@ -105,7 +105,7 @@
     overflow: hidden;
   }
 
-  /* ── KPI Grid ── */
+  /* ── KPI Grid (Thẻ tổng quan) ── */
   #dealerDebtFeature .dd-kpi-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -219,7 +219,117 @@
   #dealerDebtFeature .dd-meter-fill.warning { background: linear-gradient(90deg, #f79009, #dc6803); }
   #dealerDebtFeature .dd-meter-fill.danger { background: linear-gradient(90deg, #f04438, #d92d20); }
 
-  /* Bảng hoá đơn công nợ */
+  /* Banner cảnh báo nhanh */
+  #dealerDebtFeature .dd-alert-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid transparent;
+  }
+  #dealerDebtFeature .dd-alert-banner.warning {
+    background: #fffcf5;
+    border-color: #fedf89;
+    color: #b54708;
+  }
+  #dealerDebtFeature .dd-alert-banner.danger {
+    background: #fef3f2;
+    border-color: #fecdca;
+    color: #b42318;
+  }
+
+  /* ── Toolbar lọc và tìm kiếm ── */
+  #dealerDebtFeature .dd-toolbar {
+    padding: 16px 20px;
+    border-bottom: 1px solid #edf1f5;
+    background: #fbfcfd;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  #dealerDebtFeature .dd-toolbar-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  #dealerDebtFeature .dd-search-box {
+    position: relative;
+    flex: 1 1 260px;
+    display: flex;
+    align-items: center;
+  }
+
+  #dealerDebtFeature .dd-search-icon {
+    position: absolute;
+    left: 12px;
+    color: #94a3b8;
+    pointer-events: none;
+    font-size: 14px;
+  }
+
+  #dealerDebtFeature .dd-input {
+    width: 100%;
+    min-height: 38px;
+    padding: 8px 12px 8px 34px;
+    border: 1px solid #dce3ea;
+    border-radius: 8px;
+    background: #fff;
+    font: inherit;
+    font-size: 13px;
+    color: #1e293b;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  #dealerDebtFeature .dd-input:focus {
+    border-color: var(--orange, #f47a00);
+    box-shadow: 0 0 0 3px rgba(244, 122, 0, 0.12);
+  }
+
+  #dealerDebtFeature .dd-select {
+    min-height: 38px;
+    padding: 8px 12px;
+    border: 1px solid #dce3ea;
+    border-radius: 8px;
+    background: #fff;
+    font: inherit;
+    font-size: 13px;
+    color: #1e293b;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+  }
+
+  #dealerDebtFeature .dd-select:focus {
+    border-color: var(--orange, #f47a00);
+  }
+
+  #dealerDebtFeature .dd-date-picker {
+    min-height: 38px;
+    padding: 6px 10px;
+    border: 1px solid #dce3ea;
+    border-radius: 8px;
+    background: #fff;
+    font: inherit;
+    font-size: 13px;
+    color: #1e293b;
+  }
+
+  #dealerDebtFeature .dd-filter-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  /* ── Bảng dữ liệu hóa đơn ── */
   #dealerDebtFeature .dd-table-container {
     overflow-x: auto;
   }
@@ -296,7 +406,6 @@
     border: 1px solid #a6f4c5;
   }
 
-  /* Thao tác dòng */
   #dealerDebtFeature .dd-actions-cell {
     display: flex;
     align-items: center;
@@ -368,7 +477,6 @@
     gap: 10px;
   }
 
-  /* Hóa đơn VAT chi tiết trong modal */
   .dd-invoice-doc {
     background: #fff;
     padding: 24px;
@@ -491,7 +599,7 @@
     </div>
     <div class="dd-header-actions">
       <button type="button" class="dd-btn" id="ddRefreshBtn">
-        <span>↻</span> Làm mới dữ liệu
+        <span id="ddRefreshIcon">↻</span> Làm mới dữ liệu
       </button>
       <button type="button" class="dd-btn primary" id="ddPrintStatementBtn">
         <span>⎙</span> In bảng đối chiếu
@@ -507,18 +615,57 @@
     <!-- Phân hệ 2: Banner cảnh báo nếu có nợ quá hạn -->
     <div id="ddAlertHost"></div>
 
-    <!-- Phân hệ 3: Card Danh sách hoá đơn công nợ -->
+    <!-- Phân hệ 3: Card Danh sách hoá đơn công nợ kèm Bộ lọc -->
     <section class="dd-card" id="ddInvoicesCard">
-      <div style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <h2 style="font-size: 16px; font-weight: 700; margin: 0; color: #1e293b;">Danh sách hóa đơn bán hàng & công nợ</h2>
-          <span style="font-size: 12px; color: #64748b;">Xem chi tiết các hóa đơn phát sinh, số tiền đã trả và số dư còn phải thanh toán</span>
+      <!-- Toolbar bộ lọc tìm kiếm -->
+      <div class="dd-toolbar">
+        <div class="dd-toolbar-row">
+          <!-- Ô tìm kiếm từ khóa -->
+          <div class="dd-search-box">
+            <span class="dd-search-icon">🔍</span>
+            <input type="text" id="ddSearchInput" class="dd-input" placeholder="Tìm theo mã hóa đơn, mã đơn hàng, sản phẩm...">
+          </div>
+
+          <!-- Lọc trạng thái -->
+          <select id="ddStatusSelect" class="dd-select">
+            <option value="">Tất cả trạng thái</option>
+            <option value="OVERDUE">Quá hạn thanh toán</option>
+            <option value="PENDING">Chờ thanh toán (Trong hạn)</option>
+            <option value="PARTIAL">Thanh toán 1 phần</option>
+            <option value="PAID">Đã thanh toán đủ</option>
+          </select>
+
+          <!-- Lọc thời gian nhanh -->
+          <select id="ddTimeSelect" class="dd-select">
+            <option value="ALL">Tất cả thời gian</option>
+            <option value="THIS_MONTH">Tháng này (10/2026)</option>
+            <option value="LAST_MONTH">Tháng trước (09/2026)</option>
+            <option value="CUSTOM">Tùy chọn khoảng ngày...</option>
+          </select>
+
+          <!-- Nút reset bộ lọc -->
+          <button type="button" class="dd-btn" id="ddResetFilterBtn" title="Xóa các bộ lọc đang chọn">
+            <span>↺</span> Xóa lọc
+          </button>
         </div>
-        <div id="ddInvoicesCount" style="font-size: 13px; font-weight: 600; color: #475569;">
-          <!-- Số lượng hóa đơn -->
+
+        <!-- Hàng ngày tùy chọn (ẩn hiện theo ddTimeSelect) -->
+        <div class="dd-toolbar-row" id="ddCustomDateRow" style="display: none;">
+          <span style="font-size: 13px; color: #475569; font-weight: 500;">Từ ngày:</span>
+          <input type="date" id="ddFromDate" class="dd-date-picker">
+          <span style="font-size: 13px; color: #475569; font-weight: 500;">Đến ngày:</span>
+          <input type="date" id="ddToDate" class="dd-date-picker">
+          <button type="button" class="dd-btn sm primary" id="ddApplyDateBtn">Áp dụng ngày</button>
+        </div>
+
+        <!-- Tóm tắt số lượng & tổng tiền kết quả lọc -->
+        <div class="dd-filter-summary">
+          <span id="ddFilterSummaryText">Đang hiển thị toàn bộ hóa đơn</span>
+          <span id="ddFilterTotalDebt" style="font-weight: 700; color: #b42318;"></span>
         </div>
       </div>
 
+      <!-- Bảng hóa đơn -->
       <div class="dd-table-container">
         <table class="dd-table">
           <thead>
@@ -553,9 +700,7 @@
       </div>
       <button type="button" class="dd-btn sm" id="ddCloseModalBtn" style="border: none; font-size: 18px; padding: 4px 8px;">✕</button>
     </div>
-    <div class="dd-modal-body" id="ddModalBody">
-      <!-- Nội dung hóa đơn VAT sẽ được render động tại đây -->
-    </div>
+    <div class="dd-modal-body" id="ddModalBody"></div>
     <div class="dd-modal-footer">
       <button type="button" class="dd-btn" id="ddModalCloseFooterBtn">Đóng</button>
       <button type="button" class="dd-btn" id="ddModalDownloadPdfBtn">
@@ -590,6 +735,7 @@
       return isNaN(d) ? dateStr : d.toLocaleDateString('vi-VN');
     }
 
+    // Mock Data chuẩn doanh nghiệp phân phối
     const MOCK_SUMMARY = {
       dealerName: 'Đại lý An Khang (Chi nhánh miền Nam)',
       dealerCode: 'DL-ANKHANG-01',
@@ -637,7 +783,7 @@
         remainingAmount: 45200000,
         status: 'PARTIAL',
         statusText: 'Thanh toán 1 phần',
-        note: 'Đã thanh toán đợt 1',
+        note: 'Đã thanh toán đợt 1 ngày 25/09',
         taxRate: 10,
         subTotal: 59272727,
         taxAmount: 5927273,
@@ -692,8 +838,39 @@
         payments: [
           { date: '2026-09-10', method: 'Chuyển khoản MB Bank', transNo: 'MB-10293', amount: 82000000 }
         ]
+      },
+      {
+        id: 105,
+        code: 'HD-2026-0690',
+        orderCode: 'DH-2026-0008',
+        issueDate: '2026-07-20',
+        dueDate: '2026-08-19',
+        totalAmount: 48500000,
+        paidAmount: 48500000,
+        remainingAmount: 0,
+        status: 'PAID',
+        statusText: 'Đã thanh toán',
+        note: 'Thanh toán đầy đủ đúng hạn',
+        taxRate: 10,
+        subTotal: 44090909,
+        taxAmount: 4409091,
+        lines: [
+          { sku: 'GAO-ST25', name: 'Gạo ST25 đặc sản túi 5kg', unit: 'Túi', quantity: 250, price: 194000, amount: 48500000 }
+        ],
+        payments: [
+          { date: '2026-08-12', method: 'Chuyển khoản Vietcombank', transNo: 'VCB-77112', amount: 48500000 }
+        ]
       }
     ];
+
+    let currentInvoices = [...MOCK_INVOICES];
+    let filterState = {
+      keyword: '',
+      status: '',
+      timePreset: 'ALL',
+      fromDate: '',
+      toDate: ''
+    };
 
     function renderKpiCards(summary) {
       const host = document.getElementById('ddKpiSection');
@@ -779,25 +956,83 @@
               </div>
             </div>
           `;
+        } else {
+          alertHost.innerHTML = `
+            <div class="dd-alert-banner warning">
+              <span style="font-size: 18px;">ℹ</span>
+              <div>
+                <strong>Thông báo kỳ thanh toán:</strong> Khoản thanh toán tiếp theo là <strong>${formatMoney(summary.nextDueAmount)}</strong> đến hạn vào ngày <strong>${summary.nextDueDate}</strong>.
+              </div>
+            </div>
+          `;
         }
       }
     }
 
+    function applyFilterAndRender() {
+      const keyword = (filterState.keyword || '').trim().toLowerCase();
+      const status = filterState.status;
+      const preset = filterState.timePreset;
+
+      let filtered = currentInvoices.filter(inv => {
+        // Lọc từ khóa
+        if (keyword) {
+          const matchCode = (inv.code || '').toLowerCase().includes(keyword);
+          const matchOrder = (inv.orderCode || '').toLowerCase().includes(keyword);
+          const matchNote = (inv.note || '').toLowerCase().includes(keyword);
+          const matchLine = (inv.lines || []).some(l => 
+            (l.name || '').toLowerCase().includes(keyword) || 
+            (l.sku || '').toLowerCase().includes(keyword)
+          );
+          if (!matchCode && !matchOrder && !matchNote && !matchLine) return false;
+        }
+
+        // Lọc trạng thái
+        if (status && inv.status !== status) {
+          return false;
+        }
+
+        // Lọc thời gian
+        if (preset === 'THIS_MONTH') {
+          // Tháng 10/2026
+          if (!inv.issueDate.startsWith('2026-10')) return false;
+        } else if (preset === 'LAST_MONTH') {
+          // Tháng 09/2026
+          if (!inv.issueDate.startsWith('2026-09')) return false;
+        } else if (preset === 'CUSTOM') {
+          if (filterState.fromDate && inv.issueDate < filterState.fromDate) return false;
+          if (filterState.toDate && inv.issueDate > filterState.toDate) return false;
+        }
+
+        return true;
+      });
+
+      // Cập nhật tóm tắt bộ lọc
+      const summaryTextEl = document.getElementById('ddFilterSummaryText');
+      const totalDebtEl = document.getElementById('ddFilterTotalDebt');
+      const totalRemaining = filtered.reduce((sum, i) => sum + (i.remainingAmount || 0), 0);
+
+      if (summaryTextEl) {
+        summaryTextEl.textContent = `Hiển thị ${filtered.length} / ${currentInvoices.length} hóa đơn`;
+      }
+      if (totalDebtEl) {
+        totalDebtEl.textContent = `Tổng nợ trong kết quả: ${formatMoney(totalRemaining)}`;
+      }
+
+      renderInvoicesTable(filtered);
+    }
+
     function renderInvoicesTable(invoices) {
       const tbody = document.getElementById('ddInvoicesTbody');
-      const countEl = document.getElementById('ddInvoicesCount');
       if (!tbody) return;
-
-      if (countEl) {
-        countEl.textContent = `Tổng cộng: ${invoices.length} hóa đơn`;
-      }
 
       if (!invoices.length) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="9" style="text-align: center; padding: 40px; color: #64748b;">
-              <strong>Không có hóa đơn nào phù hợp</strong>
-              <div style="font-size: 12px; margin-top: 4px;">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.</div>
+            <td colspan="9" style="text-align: center; padding: 48px 20px; color: #64748b;">
+              <div style="font-size: 28px; margin-bottom: 8px;">📋</div>
+              <strong style="font-size: 15px; color: #334155;">Không tìm thấy hóa đơn nào phù hợp</strong>
+              <div style="font-size: 13px; margin-top: 4px;">Thử thay đổi bộ lọc trạng thái, thời gian hoặc từ khóa tìm kiếm.</div>
             </td>
           </tr>
         `;
@@ -842,11 +1077,10 @@
         `;
       }).join('');
 
-      // Gắn sự kiện xem & tải hóa đơn
       tbody.querySelectorAll('button[data-action="view"]').forEach(btn => {
         btn.onclick = () => {
           const invId = Number(btn.dataset.id);
-          const invoice = MOCK_INVOICES.find(i => i.id === invId);
+          const invoice = currentInvoices.find(i => i.id === invId);
           if (invoice) openInvoiceModal(invoice);
         };
       });
@@ -854,13 +1088,12 @@
       tbody.querySelectorAll('button[data-action="download"]').forEach(btn => {
         btn.onclick = () => {
           const invId = Number(btn.dataset.id);
-          const invoice = MOCK_INVOICES.find(i => i.id === invId);
+          const invoice = currentInvoices.find(i => i.id === invId);
           if (invoice) downloadInvoiceFile(invoice);
         };
       });
     }
 
-    // Modal xem hóa đơn chi tiết
     function openInvoiceModal(invoice) {
       const modal = document.getElementById('ddInvoiceModal');
       const body = document.getElementById('ddModalBody');
@@ -955,7 +1188,6 @@
             </div>
           </div>
 
-          <!-- Lịch sử thanh toán -->
           <div style="margin-top: 24px; padding-top: 14px; border-top: 1px dashed #cbd5e1;">
             <h4 style="font-size: 13px; font-weight: 700; margin: 0 0 8px; color: #334155;">Lịch sử thanh toán cho hóa đơn này</h4>
             ${(invoice.payments && invoice.payments.length > 0) ? `
@@ -1005,7 +1237,6 @@
       if (modal) modal.classList.remove('show');
     }
 
-    // Mô phỏng tải hóa đơn PDF
     function downloadInvoiceFile(invoice) {
       const content = `
 HOA DON GIA TRI GIA TANG KHOFLOW
@@ -1035,13 +1266,93 @@ Chung tu duoc xuat tu he thong Quan ly kho & ban hang KhoFlow.
       URL.revokeObjectURL(url);
     }
 
-    function render(containerId = 'moduleContent') {
+    // Tích hợp fetch API backend (nếu có)
+    async function loadDebtData() {
+      try {
+        if (typeof window.apiRequest === 'function') {
+          const res = await window.apiRequest('api/portal/debt');
+          if (res && res.summary) {
+            Object.assign(MOCK_SUMMARY, res.summary);
+          }
+          if (res && Array.isArray(res.invoices)) {
+            currentInvoices = res.invoices;
+          }
+        }
+      } catch (err) {
+        console.warn('S7-07: API chưa triển khai hoặc lỗi mạng, sử dụng dữ liệu cục bộ.', err);
+      }
+    }
+
+    function setupFilterEvents() {
+      const searchInput = document.getElementById('ddSearchInput');
+      const statusSelect = document.getElementById('ddStatusSelect');
+      const timeSelect = document.getElementById('ddTimeSelect');
+      const customRow = document.getElementById('ddCustomDateRow');
+      const fromDate = document.getElementById('ddFromDate');
+      const toDate = document.getElementById('ddToDate');
+      const applyDateBtn = document.getElementById('ddApplyDateBtn');
+      const resetBtn = document.getElementById('ddResetFilterBtn');
+
+      let timer = null;
+      searchInput?.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          filterState.keyword = searchInput.value;
+          applyFilterAndRender();
+        }, 200);
+      });
+
+      statusSelect?.addEventListener('change', () => {
+        filterState.status = statusSelect.value;
+        applyFilterAndRender();
+      });
+
+      timeSelect?.addEventListener('change', () => {
+        filterState.timePreset = timeSelect.value;
+        if (timeSelect.value === 'CUSTOM') {
+          if (customRow) customRow.style.display = 'flex';
+        } else {
+          if (customRow) customRow.style.display = 'none';
+          filterState.fromDate = '';
+          filterState.toDate = '';
+          applyFilterAndRender();
+        }
+      });
+
+      applyDateBtn?.addEventListener('click', () => {
+        filterState.fromDate = fromDate?.value || '';
+        filterState.toDate = toDate?.value || '';
+        applyFilterAndRender();
+      });
+
+      resetBtn?.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        if (statusSelect) statusSelect.value = '';
+        if (timeSelect) timeSelect.value = 'ALL';
+        if (customRow) customRow.style.display = 'none';
+        if (fromDate) fromDate.value = '';
+        if (toDate) toDate.value = '';
+        filterState = {
+          keyword: '',
+          status: '',
+          timePreset: 'ALL',
+          fromDate: '',
+          toDate: ''
+        };
+        applyFilterAndRender();
+      });
+    }
+
+    async function render(containerId = 'moduleContent') {
       const host = document.getElementById(containerId);
       if (host && !host.querySelector('#dealerDebtFeature')) {
         host.innerHTML = document.getElementById('dealerDebtFeature')?.outerHTML || '';
       }
+
+      await loadDebtData();
       renderKpiCards(MOCK_SUMMARY);
-      renderInvoicesTable(MOCK_INVOICES);
+      applyFilterAndRender();
+      setupFilterEvents();
 
       // Gắn sự kiện modal & in ấn
       document.getElementById('ddCloseModalBtn')?.addEventListener('click', closeModal);
@@ -1061,12 +1372,23 @@ Chung tu duoc xuat tu he thong Quan ly kho & ban hang KhoFlow.
       document.getElementById('ddModalDownloadPdfBtn')?.addEventListener('click', () => {
         const titleEl = document.getElementById('ddModalInvoiceTitle');
         const code = titleEl ? titleEl.textContent.split(': ')[1] : 'HoaDon';
-        const inv = MOCK_INVOICES.find(i => i.code === code) || MOCK_INVOICES[0];
+        const inv = currentInvoices.find(i => i.code === code) || currentInvoices[0];
         downloadInvoiceFile(inv);
+      });
+
+      document.getElementById('ddRefreshBtn')?.addEventListener('click', async () => {
+        const icon = document.getElementById('ddRefreshIcon');
+        if (icon) icon.style.transform = 'rotate(360deg)';
+        await loadDebtData();
+        renderKpiCards(MOCK_SUMMARY);
+        applyFilterAndRender();
+        setTimeout(() => {
+          if (icon) icon.style.transform = 'none';
+        }, 400);
       });
     }
 
-    return { render, formatMoney, formatDate, openInvoiceModal, downloadInvoiceFile };
+    return { render, formatMoney, formatDate, openInvoiceModal, downloadInvoiceFile, applyFilterAndRender };
   })();
 
   if (typeof window !== 'undefined') {

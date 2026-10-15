@@ -11,7 +11,7 @@ public class XuatKhoService {
     public Map<String,Object> list(long user,Collection<String> roles)throws SQLException {
         try(Connection c=KetNoiDB.getConnection()){
             String scope=KhoService.manager(roles)?"":" AND EXISTS(SELECT 1 FROM user_warehouses uw WHERE uw.user_id=? AND uw.warehouse_id=o.warehouse_id)";
-            var rows=TruyVanDB.rows(c,"SELECT o.id,o.code AS \"orderCode\",o.status,COALESCE(k.name,cu.full_name,'') AS customer,o.delivery_address AS address,w.name AS warehouse,o.desired_delivery_date::text AS \"desiredDate\",o.shipped_at::text AS \"confirmedAt\",o.payable " +
+            var rows=TruyVanDB.rows(c,"SELECT o.id,o.code AS \"orderCode\",o.status,COALESCE(k.name,cu.full_name,'') AS customer,o.delivery_address AS address,w.name AS warehouse,o.desired_delivery_date::text AS \"desiredDate\",to_char(o.shipped_at,'YYYY-MM-DD HH24:MI:SS') AS \"confirmedAt\",o.payable " +
                 "FROM orders o JOIN warehouses w ON w.id=o.warehouse_id LEFT JOIN customers k ON k.id=o.agent_id LEFT JOIN users cu ON cu.id=o.customer_id " +
                 "WHERE ((o.status='PICKING' AND EXISTS(SELECT 1 FROM pick_list_orders po JOIN pick_lists p ON p.id=po.pick_list_id WHERE po.order_id=o.id AND p.status='COMPLETED')) OR o.status IN ('SHIPPED','DELIVERED','CLOSED'))"+scope+" ORDER BY o.id DESC LIMIT 200",KhoService.manager(roles)?new Object[]{}:new Object[]{user});
             var pending=new ArrayList<Map<String,Object>>();var shipped=new ArrayList<Map<String,Object>>();var debts=new ArrayList<Map<String,Object>>();

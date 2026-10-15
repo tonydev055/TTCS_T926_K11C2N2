@@ -715,7 +715,7 @@ window.sprint5Features['Theo dõi giao hàng'] = {
 window.deliveryTrackingFeature = (() => {
   let currentGeneration = 0;
 
-  const STATUS_FLOW = ['APPROVED', 'PICKING', 'SHIPPED', 'DELIVERED'];
+  const STATUS_FLOW = ['APPROVED', 'PICKING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED'];
 
   const STATUS_LABELS = {
     PENDING_CONFIRM: 'Chờ xác nhận', PENDING_APPROVAL: 'Chờ duyệt', REJECTED: 'Từ chối', CANCELLED: 'Đã hủy', CLOSED: 'Đã đóng',
@@ -745,6 +745,7 @@ window.deliveryTrackingFeature = (() => {
       { key: 'APPROVED', label: 'Đã duyệt', icon: '✓', desc: 'Đơn hàng được duyệt & giữ chỗ tồn' },
       { key: 'PICKING', label: 'Đang soạn', icon: '📦', desc: 'Kho đóng gói và niêm phong kiện' },
       { key: 'SHIPPED', label: 'Đã xuất', icon: '↗', desc: 'Hàng xuất kho bàn giao vận chuyển' },
+      { key: 'IN_TRANSIT', label: 'Đang giao', icon: '🚛', desc: 'Xe giao hàng đã khởi hành' },
       { key: 'DELIVERED', label: 'Đã giao', icon: '✔', desc: 'Đại lý xác nhận nhận đủ hàng' }
     ];
 
@@ -758,7 +759,8 @@ window.deliveryTrackingFeature = (() => {
       <div class="dt-stepper-wrap">
         <ol class="dt-stepper" aria-label="Tiến trình giao hàng các bước">
           ${steps.map((step, idx) => {
-            const isDone = idx < currentIdx && !!historyMap[step.key];
+            // Đơn giao thẳng không qua chuyến vẫn coi bước Đang giao đã qua.
+            const isDone = idx < currentIdx && (!!historyMap[step.key] || step.key === 'IN_TRANSIT');
             const isCurrent = idx === currentIdx;
             const cls = isDone ? 'done' : isCurrent ? 'current' : '';
             const historyItem = historyMap[step.key];
@@ -1024,9 +1026,13 @@ window.deliveryTrackingFeature = (() => {
 
   function normalizeOrder(row) {
     const number = value => value == null ? null : Number(value);
-    return {...row, id: Number(row.id), deliveredDate: row.deliveredAt || null,
-      lines: (row.lines || []).map(l => ({...l, quantity: number(l.quantity), deliveredQuantity: number(l.deliveredQuantity), unitPrice: number(l.unitPrice), payable: number(l.payable)})),
-      history: (row.history || []).map(h => ({status: h.toStatus, at: h.changedAt, note: h.reason || ''}))};
+    // Đơn Đã xuất nằm trên chuyến đã khởi hành thì hiển thị mốc Đang giao kèm giờ xe chạy.
+    const inTransit = row.status === 'SHIPPED' && row.trip && row.trip.departedAt;
+    const history = (row.history || []).map(h => ({status: h.toStatus, at: h.changedAt, note: h.reason || ''}));
+    if (row.trip && row.trip.departedAt) history.push({status: 'IN_TRANSIT', at: row.trip.departedAt, note: `Chuyến ${row.trip.code} · xe ${row.trip.vehiclePlate} · tài xế ${row.trip.driverName} (${row.trip.driverPhone}) · dự kiến xong ${fmtTime(row.trip.expectedAt)}`});
+    history.sort((x, y) => String(x.at || '').localeCompare(String(y.at || '')));
+    return {...row, id: Number(row.id), status: inTransit ? 'IN_TRANSIT' : row.status, driverName: row.trip ? row.trip.driverName : row.driverName, deliveredDate: row.deliveredAt || null, history,
+      lines: (row.lines || []).map(l => ({...l, quantity: number(l.quantity), deliveredQuantity: number(l.deliveredQuantity), unitPrice: number(l.unitPrice), payable: number(l.payable)}))};
   }
   async function render() {
     const rev = ++currentGeneration;
@@ -1097,7 +1103,8 @@ window.deliveryTrackingFeature = (() => {
                   <option value="PICKING">2. Đang soạn</option>
                   <option value="SHIPPED">3. Đã xuất</option>
                   <option value="PENDING_CONFIRM">Chờ xác nhận</option><option value="PENDING_APPROVAL">Chờ duyệt</option><option value="CANCELLED">Đã hủy</option><option value="REJECTED">Từ chối</option><option value="CLOSED">Đã đóng</option>
-                  <option value="DELIVERED">4. Đã giao</option>
+                  <option value="IN_TRANSIT">4. Đang giao</option>
+                  <option value="DELIVERED">5. Đã giao</option>
                 </select>
                 <button type="button" id="dtClearFilterBtn" class="dt-clear-btn" disabled>Xoá lọc</button>
               </div>

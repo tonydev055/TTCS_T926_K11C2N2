@@ -12,6 +12,7 @@ import util.KetNoiDB;
  * (customers.portal_user_id); không nhận mã đại lý từ phía giao diện.
  */
 public class CongDaiLyDB extends CoSoDB {
+    private static final Set<String> TRIP_STATES = Set.of("SHIPPED", "DELIVERED", "CLOSED");
 
     /** Đại lý gắn với tài khoản; null nếu tài khoản chưa được liên kết. */
     public Map<String, Object> customerOf(long userId) throws SQLException {
@@ -97,8 +98,25 @@ public class CongDaiLyDB extends CoSoDB {
             "SELECT o.id, o.code, o.status, o.source, o.payable, " + DonHangDB.iso("o.created_at") + " AS \"createdAt\", " +
             "o.delivery_address AS \"deliveryAddress\", o.desired_delivery_date::text AS \"desiredDate\", (SELECT count(*) FROM order_lines l WHERE l.order_id=o.id) AS \"lineCount\" " +
             "FROM orders o WHERE o.agent_id=? AND o.status<>'DRAFT' ORDER BY o.created_at DESC, o.id DESC LIMIT 100", customerId);
-        for (var r : rows) r.put("statusLabel", TrangThaiDonHang.label(r.get("status")));
+        for (var r : rows) {
+            r.put("statusLabel", TrangThaiDonHang.label(r.get("status")));
+            if (TRIP_STATES.contains(String.valueOf(r.get("status")))) r.put("trip", trip(((Number) r.get("id")).longValue()));
+        }
         return rows;
+    }
+
+    /**
+     * S6-09: chuyến giao đã khởi hành của đơn (mốc "Đang giao"); null khi đơn chưa lên chuyến hoặc chuyến chưa chạy.
+     * Bảng chuyến giao thuộc migration S6-06; khi database chưa chạy migration đó thì coi như chưa có chuyến.
+     */
+    Map<String, Object> trip(long orderId) throws SQLException {
+        if (!Boolean.TRUE.equals(query("SELECT to_regclass('public.delivery_trip_stops') IS NOT NULL AS ok").get(0).get("ok"))) return null;
+        var rows = query("SELECT t.code, t.status, " + DonHangDB.iso("t.departed_at") + " AS \"departedAt\", " +
+            DonHangDB.iso("t.expected_at") + " AS \"expectedAt\", d.name AS \"driverName\", d.phone AS \"driverPhone\", " +
+            "v.plate AS \"vehiclePlate\", s.sequence FROM delivery_trip_stops s JOIN delivery_trips t ON t.id=s.trip_id " +
+            "JOIN delivery_drivers d ON d.id=t.driver_id JOIN delivery_vehicles v ON v.id=t.vehicle_id " +
+            "WHERE s.order_id=? AND t.departed_at IS NOT NULL", orderId);
+        return rows.isEmpty() ? null : rows.get(0);
     }
 
     /** Chi tiết một đơn của đại lý: dòng hàng (không có giá sàn) và lịch sử trạng thái. */
@@ -125,6 +143,7 @@ public class CongDaiLyDB extends CoSoDB {
         }
         order.put("lines", lines);
         order.put("history", dealerHistory(customerId, id));
+        if (TRIP_STATES.contains(String.valueOf(order.get("status")))) order.put("trip", trip(id));
         return order;
     }
 

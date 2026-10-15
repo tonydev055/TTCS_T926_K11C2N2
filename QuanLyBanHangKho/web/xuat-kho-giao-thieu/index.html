@@ -54,13 +54,13 @@
 window.sprint5Features = window.sprint5Features || {};
 
 /* ===================================================================
-   S6-05: Xac nhan xuat kho va xu ly giao thieu
-   User Story: Nhan vien kho xac nhan xuat, phan thieu ghi no hang.
-   Acceptance Criteria:
-     1. Xac nhan xuat -> chuyen ton giu cho thanh xuat thuc
-     2. Giao thieu -> ghi nhan no hang tu dong
-     3. Phieu da xac nhan: khoa, read-only
-     4. Tab/bang rieng don con no hang
+   S6-05: Xác nhận xuất kho và xử lý giao thiếu
+   User Story: Nhân viên kho xác nhận xuất, phần thiếu ghi nợ hàng.
+   Tiêu chí chấp nhận:
+     1. Xác nhận xuất -> chuyển tồn giữ chỗ thành xuất thực
+     2. Giao thiếu -> ghi nhận nợ hàng tự động
+     3. Phiếu đã xác nhận: khoá, chỉ xem
+     4. Tab riêng cho đơn còn nợ hàng
    =================================================================== */
 
 // Dữ liệu được nạp và ghi qua API shipments.
@@ -69,7 +69,7 @@ window.sprint5Features['Xuất kho & giao thiếu'] = {
   permission: 'inventory.write',
   render: () => warehouseUi.screen(
     'Xuất kho & giao thiếu',
-    'Xac nhan chuyen ton giu cho thanh xuat thuc. Giao thieu se ghi nhan no hang de xu ly o luot giao sau.',
+    'Xác nhận chuyển tồn giữ chỗ thành xuất thực. Giao thiếu sẽ ghi nhận nợ hàng để xử lý ở lượt giao sau.',
     () => apiRequest('shipments'),
     (host, data, revision) => {
       const ui = warehouseUi, esc = ui.esc;
@@ -86,13 +86,13 @@ window.sprint5Features['Xuất kho & giao thiếu'] = {
             <div style="padding:14px 20px;border-bottom:1px solid #edf1f5">
               <div class="xk-tabs" role="tablist">
                 <button class="xk-tab" role="tab" id="xkTabPending" aria-selected="true" aria-controls="xkPanel">
-                  Don cho xuat <span class="xk-badge" id="xkCntPending">${data.pending.length}</span>
+                  Đơn chờ xuất <span class="xk-badge" id="xkCntPending">${data.pending.length}</span>
                 </button>
                 <button class="xk-tab" role="tab" id="xkTabShipped" aria-selected="false" aria-controls="xkPanel">
-                  Da xuat kho <span class="xk-badge" id="xkCntShipped">${data.shipped.length}</span>
+                  Đã xuất kho <span class="xk-badge" id="xkCntShipped">${data.shipped.length}</span>
                 </button>
                 <button class="xk-tab" role="tab" id="xkTabDebt" aria-selected="false" aria-controls="xkPanel">
-                  No hang <span class="xk-badge warn" id="xkCntDebt">${data.shortfall.length}</span>
+                  Nợ hàng <span class="xk-badge warn" id="xkCntDebt">${data.shortfall.length}</span>
                 </button>
               </div>
             </div>
@@ -124,21 +124,21 @@ window.sprint5Features['Xuất kho & giao thiếu'] = {
         const totalVal = rows.reduce((s, o) => s + o.payable, 0);
         panel.innerHTML = `
           <div class="xk-toolbar">
-            <label class="xk-search"><span>⌕</span><input id="xkSearchPending" type="search" placeholder="Tim ma don, dai ly, kho..." value="${esc(q)}"></label>
+            <label class="xk-search"><span>⌕</span><input id="xkSearchPending" type="search" placeholder="Tìm mã đơn, đại lý, kho..." value="${esc(q)}"></label>
             <select class="xk-select" id="xkFilterWh">
-              <option value="">Tat ca kho</option>
+              <option value="">Tất cả kho</option>
               ${[...new Set(data.pending.map(o=>o.warehouse))].map(w=>`<option value="${esc(w)}" ${wh===w?'selected':''}>${esc(w)}</option>`).join('')}
             </select>
           </div>
           <div class="xk-summary">
-            <span><strong>${rows.length}</strong> don cho xuat</span>
-            <span>Tong gia tri: <strong style="color:#f47a00">${vnd(totalVal)}</strong></span>
+            <span><strong>${rows.length}</strong> đơn chờ xuất</span>
+            <span>Tổng giá trị: <strong style="color:#f47a00">${vnd(totalVal)}</strong></span>
           </div>
           <div class="xk-table-wrap">
             <table class="xk-table">
               <thead><tr>
-                <th>Ma don</th><th>Dai ly</th><th>Kho</th><th>Ngay giao</th>
-                <th>So dong</th><th style="text-align:right">Gia tri</th><th>Trang thai</th><th>Thao tac</th>
+                <th>Mã đơn</th><th>Đại lý</th><th>Kho</th><th>Ngày giao</th>
+                <th>Số dòng</th><th style="text-align:right">Giá trị</th><th>Trạng thái</th><th>Thao tác</th>
               </tr></thead>
               <tbody>
                 ${rows.length ? rows.map(o => `
@@ -150,13 +150,13 @@ window.sprint5Features['Xuất kho & giao thiếu'] = {
                     <td>${o.lines.length} dong</td>
                     <td style="text-align:right;font-weight:700;color:#f47a00">${vnd(o.payable)}</td>
                     <td><span class="xk-status pending">Đã soạn xong</span></td>
-                    <td><button class="xk-btn primary xk-confirm-btn" data-id="${o.id}">Xac nhan xuat</button></td>
+                    <td><button class="xk-btn primary xk-confirm-btn" data-id="${o.id}">Xác nhận xuất</button></td>
                   </tr>`).join('') : `
-                  <tr><td colspan="8"><div class="xk-empty"><strong>Khong co don nao cho xuat.</strong>Các đơn có phiếu soạn hoàn tất sẽ xuất hiện ở đây.</div></td></tr>`}
+                  <tr><td colspan="8"><div class="xk-empty"><strong>Không có đơn nào chờ xuất.</strong>Các đơn có phiếu soạn hoàn tất sẽ xuất hiện ở đây.</div></td></tr>`}
               </tbody>
             </table>
           </div>
-          <div class="xk-footer"><span id="xkCountPending">${rows.length} don hang</span></div>`;
+          <div class="xk-footer"><span id="xkCountPending">${rows.length} đơn hàng</span></div>`;
 
         document.getElementById('xkSearchPending').addEventListener('input', e => renderPending(e.target.value, document.getElementById('xkFilterWh').value));
         document.getElementById('xkFilterWh').addEventListener('change', e => renderPending(document.getElementById('xkSearchPending').value, e.target.value));
@@ -176,17 +176,17 @@ window.sprint5Features['Xuất kho & giao thiếu'] = {
         const rows = all.filter(o => !q || [o.orderCode, o.customer, o.warehouse].some(v => v.toLowerCase().includes(q.toLowerCase())));
         panel.innerHTML = `
           <div class="xk-toolbar">
-            <label class="xk-search"><span>⌕</span><input id="xkSearchShipped" type="search" placeholder="Tim ma don, dai ly..." value="${esc(q)}"></label>
+            <label class="xk-search"><span>⌕</span><input id="xkSearchShipped" type="search" placeholder="Tìm mã đơn, đại lý..." value="${esc(q)}"></label>
           </div>
           <div class="xk-summary">
-            <span><strong>${rows.length}</strong> don da xuat</span>
-            <span>Co giao thieu: <strong style="color:#e53935">${rows.filter(o=>o.hasShortfall).length} don</strong></span>
+            <span><strong>${rows.length}</strong> đơn đã xuất</span>
+            <span>Có giao thiếu: <strong style="color:#e53935">${rows.filter(o=>o.hasShortfall).length} đơn</strong></span>
           </div>
           <div class="xk-table-wrap">
             <table class="xk-table">
               <thead><tr>
-                <th>Ma don</th><th>Dai ly</th><th>Kho</th><th>Thoi gian xuat</th>
-                <th>Trang thai giao</th><th style="text-align:right">Gia tri</th><th>Thao tac</th>
+                <th>Mã đơn</th><th>Đại lý</th><th>Kho</th><th>Thời gian xuất</th>
+                <th>Trạng thái giao</th><th style="text-align:right">Giá trị</th><th>Thao tác</th>
               </tr></thead>
               <tbody>
                 ${rows.length ? rows.map(o => `
@@ -195,11 +195,11 @@ window.sprint5Features['Xuất kho & giao thiếu'] = {
                     <td>${esc(o.customer)}<small>${esc(o.address)}</small></td>
                     <td>${esc(o.warehouse)}</td>
                     <td><small>${esc(o.confirmedAt)}</small></td>
-                    <td><span class="xk-status ${o.hasShortfall ? 'short' : 'shipped'}">${o.hasShortfall ? 'Co giao thieu' : 'Giao du'}</span></td>
+                    <td><span class="xk-status ${o.hasShortfall ? 'short' : 'shipped'}">${o.hasShortfall ? 'Có giao thiếu' : 'Giao đủ'}</span></td>
                     <td style="text-align:right;font-weight:700">${vnd(o.payable)}</td>
-                    <td><button class="xk-btn" data-view="${o.id}">Xem phieu (Khoa)</button></td>
+                    <td><button class="xk-btn" data-view="${o.id}">Xem phiếu (đã khoá)</button></td>
                   </tr>`).join('') : `
-                  <tr><td colspan="7"><div class="xk-empty"><strong>Chua co don da xuat.</strong></div></td></tr>`}
+                  <tr><td colspan="7"><div class="xk-empty"><strong>Chưa có đơn đã xuất.</strong></div></td></tr>`}
               </tbody>
             </table>
           </div>`;
@@ -223,17 +223,17 @@ window.sprint5Features['Xuất kho & giao thiếu'] = {
 
         panel.innerHTML = `
           <div class="xk-toolbar">
-            <label class="xk-search"><span>⌕</span><input id="xkSearchDebt" type="search" placeholder="Tim ma don, dai ly no hang..." value="${esc(q)}"></label>
+            <label class="xk-search"><span>⌕</span><input id="xkSearchDebt" type="search" placeholder="Tìm mã đơn, đại lý nợ hàng..." value="${esc(q)}"></label>
           </div>
           <div class="xk-summary">
-            <span><strong>${rows.length}</strong> don con no hang</span>
-            <span>Tong gia tri no: <strong style="color:#e53935">${vnd(totalDebt)}</strong></span>
+            <span><strong>${rows.length}</strong> đơn còn nợ hàng</span>
+            <span>Tổng giá trị nợ: <strong style="color:#e53935">${vnd(totalDebt)}</strong></span>
           </div>
           <div class="xk-table-wrap">
             <table class="xk-table">
               <thead><tr>
-                <th>Ma don</th><th>Dai ly</th><th>Kho</th><th>Thoi gian xuat</th>
-                <th>So kien con no</th><th style="text-align:right">Gia tri no</th><th>Trang thai</th><th>Thao tac</th>
+                <th>Mã đơn</th><th>Đại lý</th><th>Kho</th><th>Thời gian xuất</th>
+                <th>Số kiện còn nợ</th><th style="text-align:right">Giá trị nợ</th><th>Trạng thái</th><th>Thao tác</th>
               </tr></thead>
               <tbody>
                 ${rows.length ? rows.map(o => `
@@ -242,12 +242,12 @@ window.sprint5Features['Xuất kho & giao thiếu'] = {
                     <td>${esc(o.customer)}<small>${esc(o.address)}</small></td>
                     <td>${esc(o.warehouse)}</td>
                     <td><small>${esc(o.confirmedAt)}</small></td>
-                    <td style="color:#e53935;font-weight:700">${o.debtItems} san pham</td>
+                    <td style="color:#e53935;font-weight:700">${o.debtItems} sản phẩm</td>
                     <td style="text-align:right;font-weight:700;color:#e53935">${vnd(o.debtValue)}</td>
                     <td>${o.backorderCode ? `<span class="xk-status">Đã lập đơn bù ${esc(o.backorderCode)}</span>` : '<span class="xk-status debt">Nợ hàng · chờ lập đơn bù</span>'}</td>
-                    <td><button class="xk-btn" data-debt="${o.id}">Chi tiet no</button></td>
+                    <td><button class="xk-btn" data-debt="${o.id}">Chi tiết nợ</button></td>
                   </tr>`).join('') : `
-                  <tr><td colspan="8"><div class="xk-empty"><strong>Khong co don nao con no hang.</strong>Tat ca don deu da duoc xuat du!</div></td></tr>`}
+                  <tr><td colspan="8"><div class="xk-empty"><strong>Không có đơn nào còn nợ hàng.</strong>Tất cả đơn đều đã được xuất đủ!</div></td></tr>`}
               </tbody>
             </table>
           </div>`;
@@ -280,16 +280,16 @@ window.sprint5Features['Xuất kho & giao thiếu'] = {
         const body = `
           <div class="form-group full">
             <div style="padding:10px 14px;background:#eff8ff;border-radius:10px;border:1px solid #b2ddff;color:#175cd3;font-size:13px;margin-bottom:14px">
-              <strong>Huong dan:</strong> He thong mac dinh xuat theo <em>Ton giu cho</em>. Neu thuc te giao thieu, hay nhap dung so luong thuc xuat. Phan chenh lech se duoc tu dong ghi nhan thanh <strong>No hang</strong>.
+              <strong>Hướng dẫn:</strong> Hệ thống mặc định xuất theo <em>Tồn giữ chỗ</em>. Nếu thực tế giao thiếu, hãy nhập đúng số lượng thực xuất. Phần chênh lệch sẽ được tự động ghi nhận thành <strong>Nợ hàng</strong>.
             </div>
             <div class="xk-table-wrap">
               <table class="xk-lines-table">
                 <thead><tr>
-                  <th>San pham</th>
-                  <th style="text-align:center">Dat hang</th>
-                  <th style="text-align:center">Giu cho</th>
-                  <th style="text-align:center">Thuc xuat *</th>
-                  <th>Giao thieu</th>
+                  <th>Sản phẩm</th>
+                  <th style="text-align:center">Đặt hàng</th>
+                  <th style="text-align:center">Giữ chỗ</th>
+                  <th style="text-align:center">Thực xuất *</th>
+                  <th>Giao thiếu</th>
                 </tr></thead>
                 <tbody id="xkConfirmLines">${linesHtml}</tbody>
               </table>
@@ -298,7 +298,7 @@ window.sprint5Features['Xuất kho & giao thiếu'] = {
             <div id="xkConfirmSummary" style="margin-top:14px;padding:12px 14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;font-size:13px"></div>
           </div>`;
 
-        const { form, close } = openFormDialog(`Xac nhan xuat kho — ${order.orderCode}`, body, 'Xac nhan xuat kho');
+        const { form, close } = openFormDialog(`Xác nhận xuất kho — ${order.orderCode}`, body, 'Xác nhận xuất kho');
 
         function updateDiff() {
           let totalShort = 0, totalShortVal = 0;
@@ -315,9 +315,9 @@ window.sprint5Features['Xuất kho & giao thiếu'] = {
           });
           const sumEl = document.getElementById('xkConfirmSummary');
           if (totalShort > 0) {
-            sumEl.innerHTML = `<span style="color:#e53935;font-weight:600">⚠ Phat hien giao thieu ${totalShort} san pham — Se tu dong ghi nhan No hang: <strong>${vnd(totalShortVal)}</strong></span>`;
+            sumEl.innerHTML = `<span style="color:#e53935;font-weight:600">⚠ Phát hiện giao thiếu ${totalShort} sản phẩm — Sẽ tự động ghi nhận nợ hàng: <strong>${vnd(totalShortVal)}</strong></span>`;
           } else {
-            sumEl.innerHTML = `<span style="color:#067647;font-weight:600">✓ Giao du toan bo — Chuyen toan bo ton giu cho thanh xuat thuc</span>`;
+            sumEl.innerHTML = `<span style="color:#067647;font-weight:600">✓ Giao đủ toàn bộ — Chuyển toàn bộ tồn giữ chỗ thành xuất thực</span>`;
           }
         }
 
@@ -371,29 +371,29 @@ window.sprint5Features['Xuất kho & giao thiếu'] = {
             ${locked ? `
               <div style="padding:10px 14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;color:#475569;font-size:12px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
                 <span style="font-size:16px">🔒</span>
-                <span><strong>Phieu xuat da hoan tat & khoa chinh sua:</strong> Toan bo ton giu cho da duoc chuyen thanh xuat thuc te vao kho. Don hang o che do Read-only.</span>
+                <span><strong>Phiếu xuất đã hoàn tất và khoá chỉnh sửa:</strong> Toàn bộ tồn giữ chỗ đã được chuyển thành xuất thực tế khỏi kho. Đơn hàng ở chế độ chỉ xem.</span>
               </div>` : ''}
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;font-size:13px">
-              <div><strong>Dai ly:</strong> ${esc(order.customer)}</div>
-              <div><strong>Kho xuat:</strong> ${esc(order.warehouse)}</div>
-              <div><strong>Thoi gian xuat:</strong> ${esc(order.confirmedAt || '—')}</div>
-              <div><strong>Tong gia tri xuat:</strong> <span style="color:#067647;font-weight:700">${vnd(order.payable)}</span></div>
+              <div><strong>Đại lý:</strong> ${esc(order.customer)}</div>
+              <div><strong>Kho xuất:</strong> ${esc(order.warehouse)}</div>
+              <div><strong>Thời gian xuất:</strong> ${esc(order.confirmedAt || '—')}</div>
+              <div><strong>Tổng giá trị xuất:</strong> <span style="color:#067647;font-weight:700">${vnd(order.payable)}</span></div>
             </div>
             <div class="xk-table-wrap">
               <table class="xk-lines-table">
                 <thead><tr>
-                  <th>San pham</th>
-                  <th style="text-align:right">Don gia</th>
-                  <th style="text-align:center">Da dat</th>
-                  <th style="text-align:center">Thuc xuat</th>
-                  <th style="text-align:center">Giao thieu</th>
-                  <th style="text-align:right">Thanh tien</th>
+                  <th>Sản phẩm</th>
+                  <th style="text-align:right">Đơn giá</th>
+                  <th style="text-align:center">Đã đặt</th>
+                  <th style="text-align:center">Thực xuất</th>
+                  <th style="text-align:center">Giao thiếu</th>
+                  <th style="text-align:right">Thành tiền</th>
                 </tr></thead>
                 <tbody>${linesHtml}</tbody>
               </table>
             </div>
           </div>`;
-        openFormDialog(`Phieu xuat — ${order.orderCode}`, body, null);
+        openFormDialog(`Phiếu xuất — ${order.orderCode}`, body, null);
       }
 
       // ─── DIALOG: CHI TIET NO HANG
@@ -410,28 +410,28 @@ window.sprint5Features['Xuất kho & giao thiếu'] = {
         const body = `
           <div class="form-group full">
             <div style="padding:12px 14px;background:#fef3f2;border-radius:10px;border:1px solid #fee4e2;color:#b42318;font-size:13px;margin-bottom:12px">
-              <strong>Danh sach mat hang con thieu:</strong> Cac mat hang duoi day can duoc uu tien xuat bo sung trong dot giao hang tiep theo. Tong gia tri con no: <strong>${vnd(order.debtValue)}</strong>.
+              <strong>Danh sách mặt hàng còn thiếu:</strong> Các mặt hàng dưới đây cần được ưu tiên xuất bổ sung trong đợt giao hàng tiếp theo. Tổng giá trị còn nợ: <strong>${vnd(order.debtValue)}</strong>.
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;font-size:13px">
-              <div><strong>Dai ly nhan:</strong> ${esc(order.customer)}</div>
-              <div><strong>Kho xuat:</strong> ${esc(order.warehouse)}</div>
-              <div><strong>Dia chi giao:</strong> ${esc(order.address || '—')}</div>
-              <div><strong>Ngay xuat lan 1:</strong> ${esc(order.confirmedAt || '—')}</div>
+              <div><strong>Đại lý nhận:</strong> ${esc(order.customer)}</div>
+              <div><strong>Kho xuất:</strong> ${esc(order.warehouse)}</div>
+              <div><strong>Địa chỉ giao:</strong> ${esc(order.address || '—')}</div>
+              <div><strong>Ngày xuất lần 1:</strong> ${esc(order.confirmedAt || '—')}</div>
             </div>
             <div class="xk-table-wrap">
               <table class="xk-lines-table">
                 <thead><tr>
-                  <th>San pham</th>
-                  <th style="text-align:center">Da dat</th>
-                  <th style="text-align:center">Da giao</th>
-                  <th style="text-align:center">Con no</th>
-                  <th style="text-align:right">Gia tri no</th>
+                  <th>Sản phẩm</th>
+                  <th style="text-align:center">Đã đặt</th>
+                  <th style="text-align:center">Đã giao</th>
+                  <th style="text-align:center">Còn nợ</th>
+                  <th style="text-align:right">Giá trị nợ</th>
                 </tr></thead>
                 <tbody>${linesHtml}</tbody>
               </table>
             </div>
           </div>`;
-        openFormDialog(`Chi tiet no hang — ${order.orderCode}`, body, null);
+        openFormDialog(`Chi tiết nợ hàng — ${order.orderCode}`, body, null);
       }
 
       function renderPanel() {

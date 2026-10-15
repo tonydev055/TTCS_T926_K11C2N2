@@ -22,13 +22,16 @@ public class XuatKhoService {
                 o.put("hasShortfall",count>0);if(count>0)o.put("backorderCode",TruyVanDB.one(c,"SELECT (SELECT b.code FROM orders b WHERE b.backorder_of=? AND b.status<>'CANCELLED' LIMIT 1) code",o.get("id")).get("code"));o.put("debtValue",value.setScale(2,RoundingMode.HALF_UP));o.put("debtItems",count);
                 if(waiting)pending.add(o);else {shipped.add(o);if(count>0)debts.add(o);}
             }
-            return Map.of("pending",pending,"shipped",shipped,"shortfall",debts);
+            return Map.of("pending",pending,"shipped",shipped,"shortfall",debts,"canOverrideExpired",KhoService.manager(roles));
         }
     }
 
     public void confirm(long orderId,long user,Collection<String> roles,Map<String,Object> input)throws SQLException {
         if(!(input.get("lines") instanceof List<?> items)||items.isEmpty()||items.size()>2000)throw new IllegalArgumentException("Danh sách xuất kho không hợp lệ");
         String reason=KhoService.text(input.get("reason"),"Lý do giao thiếu",1000,false);
+        boolean expiredOverride=Boolean.TRUE.equals(input.get("expiredOverride"));
+        String expiryReason=KhoService.text(input.get("expiryReason"),"Lý do xuất lô hết hạn",1000,false);
+        if(expiredOverride&&(!KhoService.manager(roles)||expiryReason.isBlank()))throw new SecurityException("Chỉ quản lý kho được ghi đè xuất lô hết hạn và phải nhập lý do");
         Map<Long,BigDecimal> quantities=new LinkedHashMap<>();
         for(Object item:items){if(!(item instanceof Map<?,?> line))throw new IllegalArgumentException("Dòng xuất kho không hợp lệ");
             long id=KhoService.id(line.get("lineId"));if(quantities.putIfAbsent(id,PhieuNhapKhoService.quantity(line.get("actualQuantity"),true))!=null)throw new IllegalArgumentException("Dòng xuất bị trùng");}
@@ -68,9 +71,9 @@ public class XuatKhoService {
                     var used=TruyVanDB.one(c,"SELECT COALESCE(-SUM(m.delta),0) qty FROM stock_movements m JOIN stock_bins b ON b.id=m.bin_id JOIN pick_list_orders po ON po.order_id=m.document_id WHERE m.kind='SHIPMENT_OUT' AND po.pick_list_id=? AND m.product_id=? AND b.location_id IS NOT DISTINCT FROM ?",pickId,product,loc.get("location_id"));
                     BigDecimal allowance=((BigDecimal)loc.get("picked")).subtract((BigDecimal)used.get("qty")).max(BigDecimal.ZERO);
                     if(allowance.signum()==0)continue;
-                    var bins=TruyVanDB.rows(c,"SELECT id,on_hand FROM stock_bins WHERE warehouse_id=? AND product_id=? AND location_id IS NOT DISTINCT FROM ? AND on_hand>0 AND (expiry_date IS NULL OR expiry_date>=CURRENT_DATE) ORDER BY expiry_date NULLS LAST,id FOR UPDATE",wh,product,loc.get("location_id"));
+                    var bins=TruyVanDB.rows(c,"SELECT id,on_hand FROM stock_bins WHERE warehouse_id=? AND product_id=? AND location_id IS NOT DISTINCT FROM ? AND on_hand>0 AND (? OR expiry_date IS NULL OR expiry_date>=CURRENT_DATE) ORDER BY (expiry_date<CURRENT_DATE) NULLS FIRST,expiry_date NULLS LAST,id FOR UPDATE",wh,product,loc.get("location_id"),expiredOverride);
                     for(var b:bins){BigDecimal take=remaining.min(allowance).min((BigDecimal)b.get("on_hand"));if(take.signum()>0){
-                        StockLedgerDB.change(c,wh,product,TruyVanDB.id(b),take.negate(),"SHIPMENT_OUT",orderId,lineId,user,reason);
+                        StockLedgerDB.change(c,wh,product,TruyVanDB.id(b),take.negate(),"SHIPMENT_OUT",orderId,lineId,user,expiredOverride?"Ghi đè lô hết hạn: "+expiryReason+". "+reason:reason);
                         remaining=remaining.subtract(take);allowance=allowance.subtract(take);
                     }if(remaining.signum()==0||allowance.signum()==0)break;}
                     if(remaining.signum()==0)break;

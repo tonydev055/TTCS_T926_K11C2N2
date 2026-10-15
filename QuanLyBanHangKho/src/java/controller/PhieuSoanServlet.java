@@ -20,7 +20,7 @@ public class PhieuSoanServlet extends NghiepVuKhoServlet {
         catch(Exception e){fail(r,e);}
     }
     @Override protected void doPut(HttpServletRequest q,HttpServletResponse r)throws IOException {
-        try { String[] p=path(q).split("/"); if(p.length!=3||!p[2].equals("lines")) throw new NoSuchElementException("Không tìm thấy chức năng"); service.saveLines(id(p[1]),user(q),roles(q),XuLyJson.object(body(q))); send(r,XuLyJson.stringify(service.detail(id(p[1]),user(q),roles(q)))); }
+        try { String[] p=path(q).split("/"); if(p.length!=3||!p[2].equals("lines")) throw new NoSuchElementException("Không tìm thấy chức năng"); service.saveLines(id(p[1]),user(q),roles(q),XuLyJson.object(body(q))); send(r,service.detail(id(p[1]),user(q),roles(q))); }
         catch(Exception e){fail(r,e);}
     }
 }

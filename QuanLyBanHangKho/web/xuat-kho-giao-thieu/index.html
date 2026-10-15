@@ -64,11 +64,11 @@ window.sprint5Features = window.sprint5Features || {};
    =================================================================== */
 
 // Dữ liệu được nạp và ghi qua API shipments.
-window.sprint5Features['Xuat kho & Giao thieu'] = {
+window.sprint5Features['Xuất kho & giao thiếu'] = {
   path: 'xuat-kho-giao-thieu',
   permission: 'inventory.write',
   render: () => warehouseUi.screen(
-    'Xuat kho & Giao thieu',
+    'Xuất kho & giao thiếu',
     'Xac nhan chuyen ton giu cho thanh xuat thuc. Giao thieu se ghi nhan no hang de xu ly o luot giao sau.',
     () => apiRequest('shipments'),
     (host, data, revision) => {
@@ -344,7 +344,7 @@ window.sprint5Features['Xuat kho & Giao thieu'] = {
           try {
             await apiRequest('shipments/'+order.id, jsonRequestOptions('POST', {lines, reason: form.querySelector('#xkReason').value.trim(), expiredOverride: form.querySelector('#xkExpiredOverride')?.checked === true, expiryReason: form.querySelector('#xkExpiryReason')?.value.trim() || ''}));
             close(); showToast('Đã xác nhận xuất kho '+order.orderCode);
-            await window.sprint5Features['Xuat kho & Giao thieu'].render();
+            await window.sprint5Features['Xuất kho & giao thiếu'].render();
           } catch (err) { error.textContent = err.message || 'Không thể xác nhận xuất kho'; }
           finally { if (button.isConnected) button.disabled = false; }
         };

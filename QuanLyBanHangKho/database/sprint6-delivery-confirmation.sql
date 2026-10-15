@@ -35,6 +35,8 @@ ALTER TABLE delivery_confirmations ADD COLUMN IF NOT EXISTS created_at TIMESTAMP
 
 CREATE INDEX IF NOT EXISTS idx_delivery_confirmations_order
     ON delivery_confirmations(order_id, created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS delivery_confirmations_one_per_order
+    ON delivery_confirmations(order_id);
 CREATE INDEX IF NOT EXISTS idx_delivery_confirmations_recent
     ON delivery_confirmations(created_at DESC);
 

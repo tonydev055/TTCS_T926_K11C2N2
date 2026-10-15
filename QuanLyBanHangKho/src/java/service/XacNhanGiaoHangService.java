@@ -80,11 +80,6 @@ public final class XacNhanGiaoHangService {
 
         Path savedProof = null;
         String proofName = null;
-        if (SUCCESS.equals(outcome)) {
-            byte[] normalized = HinhAnhService.normalize(proofBytes, false).image();
-            savedProof = saveProof(normalized);
-            proofName = savedProof.getFileName().toString();
-        }
 
         try (Connection c = KetNoiDB.getConnection()) {
             c.setAutoCommit(false);
@@ -102,6 +97,11 @@ public final class XacNhanGiaoHangService {
                 if (TruyVanDB.one(c, "SELECT id FROM delivery_confirmations WHERE order_id=? LIMIT 1", orderId) != null)
                     throw new IllegalArgumentException("Đơn này đã có kết quả giao hàng; không thể xác nhận lần nữa");
 
+                if (SUCCESS.equals(outcome)) {
+                    byte[] normalized = HinhAnhService.normalize(proofBytes, false).image();
+                    savedProof = saveProof(normalized);
+                    proofName = savedProof.getFileName().toString();
+                }
                 boolean returned = false;
                 if (FAILED.equals(outcome)) {
                     returned = returnGoods(c, orderId, warehouse, actor, String.valueOf(order.get("code")), reason);
@@ -140,7 +140,7 @@ public final class XacNhanGiaoHangService {
                 c.rollback();
                 throw e;
             }
-        } catch (SQLException | RuntimeException e) {
+        } catch (SQLException | RuntimeException | IOException e) {
             if (savedProof != null) Files.deleteIfExists(savedProof);
             throw e;
         }
@@ -172,11 +172,7 @@ public final class XacNhanGiaoHangService {
         List<Map<String, Object>> lines = TruyVanDB.rows(c,
             "SELECT ol.id AS line_id,ol.product_id,"
             + "COALESCE(ol.delivered_base_quantity,ol.base_quantity,ol.quantity*ol.conversion_factor) AS return_quantity,"
-            + "p.lot_managed,"
-            + "(SELECT pl.location_id FROM pick_list_orders plo JOIN pick_lists plh ON plh.id=plo.pick_list_id "
-            + "JOIN pick_list_lines pl ON pl.pick_list_id=plh.id AND pl.product_id=ol.product_id "
-            + "WHERE plo.order_id=ol.order_id ORDER BY pl.id LIMIT 1) AS pick_location_id "
-            + "FROM order_lines ol JOIN products p ON p.id=ol.product_id WHERE ol.order_id=? ORDER BY ol.id", orderId);
+            + "p.lot_managed FROM order_lines ol JOIN products p ON p.id=ol.product_id WHERE ol.order_id=? ORDER BY ol.id", orderId);
         if (lines.isEmpty()) throw new IllegalArgumentException("Đơn hàng không có dòng hàng để hoàn kho");
         boolean returnedAny = false;
 
@@ -198,14 +194,7 @@ public final class XacNhanGiaoHangService {
                 BigDecimal dispatched = ((BigDecimal) shipment.get("delta")).abs();
                 if (dispatched.signum() > 0) returnQuantity = dispatched;
             } else {
-                if (Boolean.TRUE.equals(line.get("lot_managed")))
-                    throw new IllegalArgumentException("Không xác định được lô đã xuất cho sản phẩm " + productId + "; chưa thể hoàn kho an toàn");
-                Object location = line.get("pick_location_id");
-                var existingBin = TruyVanDB.one(c,
-                    "SELECT id FROM stock_bins WHERE warehouse_id=? AND product_id=? AND location_id IS NOT DISTINCT FROM ? "
-                    + "ORDER BY on_hand DESC,id LIMIT 1 FOR UPDATE", warehouse, productId, location);
-                if (existingBin != null) binId = ((Number) existingBin.get("id")).longValue();
-                else binId = StockLedgerDB.bin(c, warehouse, productId, location, "", null);
+                throw new IllegalArgumentException("Không có bút toán xuất kho gốc để hoàn hàng an toàn; cần hoàn thiện xác nhận xuất kho trước");
             }
             StockLedgerDB.change(c, warehouse, productId, binId, returnQuantity,
                 "DELIVERY_RETURN", orderId, lineId, actor,

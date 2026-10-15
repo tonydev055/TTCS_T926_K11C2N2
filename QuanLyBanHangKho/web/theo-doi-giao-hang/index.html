@@ -664,8 +664,15 @@
       grid-template-columns: 1fr;
       gap: 12px;
     }
+    /* 5 mốc vừa màn hình điện thoại, không phải cuộn ngang */
     #deliveryTracking .dt-stepper {
-      min-width: 480px;
+      min-width: 0;
+    }
+    #deliveryTracking .dt-step-name {
+      font-size: 11px;
+    }
+    #deliveryTracking .dt-step-time {
+      font-size: 10px;
     }
     #deliveryTracking .dt-totals-box {
       justify-content: space-between;
@@ -718,7 +725,7 @@ window.deliveryTrackingFeature = (() => {
   const STATUS_FLOW = ['APPROVED', 'PICKING', 'SHIPPED', 'IN_TRANSIT', 'DELIVERED'];
 
   const STATUS_LABELS = {
-    PENDING_CONFIRM: 'Chờ xác nhận', PENDING_APPROVAL: 'Chờ duyệt', REJECTED: 'Từ chối', CANCELLED: 'Đã hủy', CLOSED: 'Đã đóng',
+    DRAFT: 'Nháp', PENDING_CONFIRM: 'Chờ xác nhận', PENDING_APPROVAL: 'Chờ duyệt', REJECTED: 'Từ chối', CANCELLED: 'Đã hủy', CLOSED: 'Đã đóng',
     APPROVED: 'Đã duyệt',
     PICKING: 'Đang soạn',
     SHIPPED: 'Đã xuất',
@@ -820,7 +827,7 @@ window.deliveryTrackingFeature = (() => {
         </div>
         <div>
           <dt>Đơn vị vận chuyển</dt>
-          <dd>${esc(order.carrierName || 'Chưa ghi nhận')}</dd>
+          <dd>${esc(order.carrierName || (order.trip ? `Xe ${order.trip.vehiclePlate} · chuyến ${order.trip.code}` : 'Chưa ghi nhận'))}</dd>
         </div>
         <div>
           <dt>Tài xế & Phương tiện</dt>

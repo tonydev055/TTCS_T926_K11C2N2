@@ -63,86 +63,21 @@ window.sprint5Features = window.sprint5Features || {};
      4. Tab/bang rieng don con no hang
    =================================================================== */
 
-// Mock data
-function xkgt_mockData() {
-  const d = (days) => new Date(Date.now() + days * 864e5).toISOString().slice(0, 10);
-  return {
-    pending: [
-      { id: 1, orderCode: 'DH-261001', customer: 'Dai ly Minh Khoa', address: '123 Le Loi, Q1, TP.HCM',
-        warehouse: 'Kho chinh', desiredDate: d(0), payable: 48500000,
-        status: 'APPROVED',
-        lines: [
-          { id: 11, sku: 'IP15-128', name: 'iPhone 15 128GB Chinh hang', unit: 'Cai', orderedQty: 5, reservedQty: 5, unitPrice: 8500000 },
-          { id: 12, sku: 'SC-IPHONE15', name: 'Cap sac iPhone 20W', unit: 'Cai', orderedQty: 5, reservedQty: 5, unitPrice: 350000 },
-        ]},
-      { id: 2, orderCode: 'DH-261002', customer: 'Dai ly Thanh Tam', address: '45 Nguyen Hue, Bien Hoa',
-        warehouse: 'Kho mien Tay', desiredDate: d(1), payable: 27200000,
-        status: 'APPROVED',
-        lines: [
-          { id: 21, sku: 'SS-A55-256', name: 'Samsung Galaxy A55 256GB', unit: 'Cai', orderedQty: 4, reservedQty: 4, unitPrice: 6800000 },
-        ]},
-      { id: 3, orderCode: 'DH-261003', customer: 'Dai ly Hai Yen', address: '78 Tran Hung Dao, Da Nang',
-        warehouse: 'Kho chinh', desiredDate: d(0), payable: 15900000,
-        status: 'APPROVED',
-        lines: [
-          { id: 31, sku: 'MI-14T-256', name: 'Xiaomi 14T 256GB', unit: 'Cai', orderedQty: 3, reservedQty: 3, unitPrice: 4300000 },
-          { id: 32, sku: 'ANKER-65W', name: 'Cu sac Anker 65W GaN', unit: 'Cai', orderedQty: 5, reservedQty: 5, unitPrice: 420000 },
-          { id: 33, sku: 'UG-HUB-7', name: 'Hub Ugreen 7 cong USB-C', unit: 'Cai', orderedQty: 3, reservedQty: 3, unitPrice: 680000 },
-        ]},
-      { id: 4, orderCode: 'DH-261004', customer: 'Dai ly Phu Cuong', address: '12 Ly Tu Trong, Can Tho',
-        warehouse: 'Kho mien Tay', desiredDate: d(2), payable: 33600000,
-        status: 'APPROVED',
-        lines: [
-          { id: 41, sku: 'OPPO-R13-512', name: 'OPPO Reno13 512GB', unit: 'Cai', orderedQty: 6, reservedQty: 6, unitPrice: 5600000 },
-        ]},
-    ],
-    shipped: [
-      { id: 5, orderCode: 'DH-260928', customer: 'Dai ly Nam Cuong', address: '99 CMT8, TP.HCM',
-        warehouse: 'Kho chinh', confirmedAt: '2026-10-12 09:15', payable: 42000000,
-        status: 'SHIPPED', hasShortfall: false,
-        lines: [
-          { id: 51, sku: 'IP15-256', name: 'iPhone 15 256GB', unit: 'Cai', orderedQty: 4, reservedQty: 4, deliveredQty: 4, shortQty: 0, unitPrice: 8500000 },
-          { id: 52, sku: 'SC-IPHONE15', name: 'Cap sac iPhone 20W', unit: 'Cai', orderedQty: 8, reservedQty: 8, deliveredQty: 8, shortQty: 0, unitPrice: 350000 },
-        ]},
-      { id: 6, orderCode: 'DH-260929', customer: 'Dai ly Bao An', address: '55 Hai Ba Trung, HN',
-        warehouse: 'Kho mien Dong', confirmedAt: '2026-10-13 14:30', payable: 18200000,
-        status: 'SHIPPED', hasShortfall: true,
-        lines: [
-          { id: 61, sku: 'SS-A35-128', name: 'Samsung A35 128GB', unit: 'Cai', orderedQty: 5, reservedQty: 5, deliveredQty: 3, shortQty: 2, unitPrice: 3640000 },
-          { id: 62, sku: 'ANKER-65W', name: 'Cu sac Anker 65W', unit: 'Cai', orderedQty: 4, reservedQty: 4, deliveredQty: 4, shortQty: 0, unitPrice: 420000 },
-        ]},
-    ],
-    shortfall: [
-      { id: 7, orderCode: 'DH-260926', customer: 'Dai ly Bao An', address: '55 Hai Ba Trung, HN',
-        warehouse: 'Kho mien Dong', confirmedAt: '2026-10-13 14:30', payable: 7280000,
-        debtValue: 7280000, debtItems: 2,
-        lines: [
-          { id: 71, sku: 'SS-A35-128', name: 'Samsung A35 128GB', unit: 'Cai', orderedQty: 5, deliveredQty: 3, shortQty: 2, unitPrice: 3640000 },
-        ]},
-      { id: 8, orderCode: 'DH-260924', customer: 'Dai ly Phu My', address: '34 Nguyen Van Cu, Vung Tau',
-        warehouse: 'Kho chinh', confirmedAt: '2026-10-11 10:00', payable: 12900000,
-        debtValue: 12900000, debtItems: 3,
-        lines: [
-          { id: 81, sku: 'IP14-128', name: 'iPhone 14 128GB', unit: 'Cai', orderedQty: 6, deliveredQty: 3, shortQty: 3, unitPrice: 4300000 },
-        ]},
-    ]
-  };
-}
-
+// Dữ liệu được nạp và ghi qua API shipments.
 window.sprint5Features['Xuat kho & Giao thieu'] = {
   path: 'xuat-kho-giao-thieu',
   permission: 'inventory.write',
   render: () => warehouseUi.screen(
     'Xuat kho & Giao thieu',
     'Xac nhan chuyen ton giu cho thanh xuat thuc. Giao thieu se ghi nhan no hang de xu ly o luot giao sau.',
-    () => Promise.resolve(xkgt_mockData()),
+    () => apiRequest('shipments'),
     (host, data, revision) => {
       const ui = warehouseUi, esc = ui.esc;
       const vnd = (v) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(v || 0);
       let activeTab = 'pending';
 
-      // State cac don da xac nhan xuat trong phien
-      const confirmed = new Map(); // id -> { lines: [{...}], confirmedAt }
+      // Trạng thái nghiệp vụ lấy từ database.
+
 
       // Khoi tao shell
       host.innerHTML = `
@@ -182,7 +117,6 @@ window.sprint5Features['Xuat kho & Giao thieu'] = {
       function renderPending(q = '', wh = '') {
         const panel = document.getElementById('xkPanel');
         const rows = data.pending.filter(o => {
-          if (confirmed.has(o.id)) return false;
           const matchQ = !q || [o.orderCode, o.customer, o.warehouse].some(v => v.toLowerCase().includes(q.toLowerCase()));
           const matchWh = !wh || o.warehouse === wh;
           return matchQ && matchWh;
@@ -215,10 +149,10 @@ window.sprint5Features['Xuat kho & Giao thieu'] = {
                     <td>${esc(o.desiredDate)}</td>
                     <td>${o.lines.length} dong</td>
                     <td style="text-align:right;font-weight:700;color:#f47a00">${vnd(o.payable)}</td>
-                    <td><span class="xk-status pending">Da duyet</span></td>
+                    <td><span class="xk-status pending">Đã soạn xong</span></td>
                     <td><button class="xk-btn primary xk-confirm-btn" data-id="${o.id}">Xac nhan xuat</button></td>
                   </tr>`).join('') : `
-                  <tr><td colspan="8"><div class="xk-empty"><strong>Khong co don nao cho xuat.</strong>Cac don da duyet se xuat hien o day.</div></td></tr>`}
+                  <tr><td colspan="8"><div class="xk-empty"><strong>Khong co don nao cho xuat.</strong>Các đơn có phiếu soạn hoàn tất sẽ xuất hiện ở đây.</div></td></tr>`}
               </tbody>
             </table>
           </div>
@@ -238,20 +172,7 @@ window.sprint5Features['Xuat kho & Giao thieu'] = {
       // ─── TAB 2: DA XUAT KHO
       function renderShipped(q = '') {
         const panel = document.getElementById('xkPanel');
-        const sessionShipped = [...confirmed.entries()].map(([id, c]) => {
-          const o = data.pending.find(p => p.id === id);
-          return o ? {
-            ...o, status: 'SHIPPED', confirmedAt: c.confirmedAt,
-            hasShortfall: c.lines.some(l => l.actualQty < l.orderedQty),
-            lines: c.lines.map(l => ({
-              ...l,
-              deliveredQty: l.actualQty,
-              shortQty: Math.max(0, l.orderedQty - l.actualQty)
-            }))
-          } : null;
-        }).filter(Boolean);
-
-        const all = [...data.shipped, ...sessionShipped];
+        const all = data.shipped;
         const rows = all.filter(o => !q || [o.orderCode, o.customer, o.warehouse].some(v => v.toLowerCase().includes(q.toLowerCase())));
         panel.innerHTML = `
           <div class="xk-toolbar">
@@ -296,22 +217,7 @@ window.sprint5Features['Xuat kho & Giao thieu'] = {
       // ─── TAB 3: NO HANG (DANH SACH DON CON NO)
       function renderDebt(q = '') {
         const panel = document.getElementById('xkPanel');
-        const sessionDebts = [...confirmed.entries()].filter(([,c]) => c.lines.some(l => l.actualQty < l.orderedQty))
-          .map(([id, c]) => {
-            const o = data.pending.find(p => p.id === id);
-            if (!o) return null;
-            const shortLines = c.lines.filter(l => l.actualQty < l.orderedQty)
-              .map(l => ({ ...l, deliveredQty: l.actualQty, shortQty: l.orderedQty - l.actualQty }));
-            return {
-              id, orderCode: o.orderCode, customer: o.customer, address: o.address,
-              warehouse: o.warehouse, confirmedAt: c.confirmedAt,
-              debtItems: shortLines.reduce((s,l) => s + l.shortQty, 0),
-              debtValue: shortLines.reduce((s,l) => s + l.shortQty * (l.unitPrice||0), 0),
-              lines: shortLines
-            };
-          }).filter(Boolean);
-
-        const all = [...data.shortfall, ...sessionDebts];
+        const all = data.shortfall;
         const rows = all.filter(o => !q || [o.orderCode, o.customer, o.warehouse].some(v => v.toLowerCase().includes(q.toLowerCase())));
         const totalDebt = rows.reduce((s, o) => s + o.debtValue, 0);
 
@@ -388,6 +294,7 @@ window.sprint5Features['Xuat kho & Giao thieu'] = {
                 <tbody id="xkConfirmLines">${linesHtml}</tbody>
               </table>
             </div>
+            <label for="xkReason">Lý do giao thiếu (bắt buộc nếu xuất thiếu)</label><textarea id="xkReason" maxlength="1000"></textarea><p id="xkSubmitError" role="alert"></p>
             <div id="xkConfirmSummary" style="margin-top:14px;padding:12px 14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;font-size:13px"></div>
           </div>`;
 
@@ -419,28 +326,27 @@ window.sprint5Features['Xuat kho & Giao thieu'] = {
         });
         updateDiff();
 
-        form.onsubmit = (e) => {
+        form.onsubmit = async (e) => {
           e.preventDefault();
-          const lines = order.lines.map(l => {
-            const inp = form.querySelector(`[name="qty_${l.id}"]`);
-            const actualQty = Math.max(0, Math.min(l.reservedQty, Number(inp?.value) || 0));
-            return { ...l, actualQty };
-          });
-          const now = new Date().toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
-          confirmed.set(order.id, { lines, confirmedAt: now });
-
-          // Cap nhat cac counter badge tren tab
-          const pendingCount = data.pending.filter(o => !confirmed.has(o.id)).length;
-          document.getElementById('xkCntPending').textContent = pendingCount;
-          document.getElementById('xkCntShipped').textContent = data.shipped.length + confirmed.size;
-
-          const sessionDebtCount = [...confirmed.values()].filter(c => c.lines.some(l => l.actualQty < l.orderedQty)).length;
-          document.getElementById('xkCntDebt').textContent = data.shortfall.length + sessionDebtCount;
-
-          const hasShort = lines.some(l => l.actualQty < l.orderedQty);
-          showToast(`Da xac nhan xuat kho ${order.orderCode}` + (hasShort ? ' — Co giao thieu, da tu dong ghi nhan no hang' : ' — Giao du thanh cong!'));
-          close();
-          switchTab('shipped');
+          const button = form.querySelector('button[type="submit"]');
+          if (button.disabled) return;
+          const error = form.querySelector('#xkSubmitError');
+          const lines = [];
+          for (const line of order.lines) {
+            const input = form.querySelector('[name="qty_'+line.id+'"]');
+            const quantity = Number(input.value);
+            if (input.value === '' || !Number.isFinite(quantity) || quantity < 0 || quantity > line.orderedQty) {
+              error.textContent = 'Nhập số lượng hợp lệ, không vượt số lượng đặt.'; return;
+            }
+            lines.push({lineId: line.id, actualQuantity: quantity});
+          }
+          button.disabled = true; error.textContent = '';
+          try {
+            await apiRequest('shipments/'+order.id, jsonRequestOptions('POST', {lines, reason: form.querySelector('#xkReason').value.trim()}));
+            close(); showToast('Đã xác nhận xuất kho '+order.orderCode);
+            await window.sprint5Features['Xuat kho & Giao thieu'].render();
+          } catch (err) { error.textContent = err.message || 'Không thể xác nhận xuất kho'; }
+          finally { if (button.isConnected) button.disabled = false; }
         };
       }
 

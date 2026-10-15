@@ -22,7 +22,7 @@ public class XuatKhoService {
                 o.put("hasShortfall",count>0);o.put("debtValue",value.setScale(2,RoundingMode.HALF_UP));o.put("debtItems",count);
                 if(waiting)pending.add(o);else {shipped.add(o);if(count>0)debts.add(o);}
             }
-            return Map.of("pending",pending,"shipped",shipped,"shortfall",debts);
+            return Map.of("pending",pending,"shipped",shipped,"shortfall",debts,"canOverrideExpired",KhoService.manager(roles));
         }
     }
 

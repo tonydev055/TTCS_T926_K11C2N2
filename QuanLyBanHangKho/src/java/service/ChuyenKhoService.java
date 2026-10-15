@@ -71,7 +71,7 @@ public class ChuyenKhoService {
             var r=TruyVanDB.one(c,"SELECT * FROM stock_transfers WHERE id=? FOR UPDATE",id);if(r==null)throw new NoSuchElementException("Không tìm thấy phiếu");
             long wh=((Number)r.get("destination_warehouse_id")).longValue();KhoService.access(c,wh,user,roles);KhoService.actor(c,user);
             if(!"IN_TRANSIT".equals(r.get("status")))throw new IllegalArgumentException("Phiếu chưa xuất chuyển hoặc đã nhận");
-            var ls=TruyVanDB.rows(c,"SELECT l.*,b.lot_number,b.expiry_date FROM stock_transfer_lines l JOIN stock_bins b ON b.id=l.source_bin_id WHERE transfer_id=? ORDER BY l.product_id,l.id",id);
+            var ls=TruyVanDB.rows(c,"SELECT l.*,b.lot_number,b.expiry_date,b.manufactured_date FROM stock_transfer_lines l JOIN stock_bins b ON b.id=l.source_bin_id WHERE transfer_id=? ORDER BY l.product_id,l.id",id);
             if(ls.size()!=inputs.size())throw new IllegalArgumentException("Phải ghi nhận đủ mọi dòng của phiếu");
             for(var l:ls){var m=inputs.get(TruyVanDB.id(l));if(m==null)throw new IllegalArgumentException("Dòng nhận không thuộc phiếu");
                 BigDecimal qty=PhieuNhapKhoService.quantity(m.get("receivedQuantity"),true),base=qty.multiply((BigDecimal)l.get("factor"));long loc=KhoService.id(m.get("locationId"));
@@ -81,6 +81,7 @@ public class ChuyenKhoService {
                 if(TruyVanDB.one(c,"SELECT id FROM warehouse_locations WHERE id=? AND warehouse_id=? AND active",loc,wh)==null)throw new IllegalArgumentException("Vị trí không thuộc kho đến");
                 long product=((Number)l.get("product_id")).longValue();StockLedgerDB.lockStock(c,wh,product);
                 long bin=StockLedgerDB.bin(c,wh,product,loc,String.valueOf(l.get("lot_number")),l.get("expiry_date"));
+                if(l.get("manufactured_date")!=null){var target=TruyVanDB.one(c,"SELECT manufactured_date FROM stock_bins WHERE id=? FOR UPDATE",bin);if(target.get("manufactured_date")!=null&&!target.get("manufactured_date").equals(l.get("manufactured_date")))throw new IllegalArgumentException("Ngày sản xuất của lô tại kho nhận không khớp");TruyVanDB.update(c,"UPDATE stock_bins SET manufactured_date=? WHERE id=?",l.get("manufactured_date"),bin);}
                 StockLedgerDB.change(c,wh,product,bin,base,"TRANSFER_IN",id,TruyVanDB.id(l),user,reason);
                 TruyVanDB.update(c,"UPDATE stock_transfer_lines SET received_quantity=?,destination_location_id=? WHERE id=?",qty,loc,l.get("id"));
             }

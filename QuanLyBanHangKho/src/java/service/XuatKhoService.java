@@ -29,9 +29,13 @@ public class XuatKhoService {
     public void confirm(long orderId,long user,Collection<String> roles,Map<String,Object> input)throws SQLException {
         if(!(input.get("lines") instanceof List<?> items)||items.isEmpty()||items.size()>2000)throw new IllegalArgumentException("Danh sách xuất kho không hợp lệ");
         String reason=KhoService.text(input.get("reason"),"Lý do giao thiếu",1000,false);
-        Map<Long,BigDecimal> quantities=new LinkedHashMap<>();
+        Map<Long,BigDecimal> quantities=new LinkedHashMap<>();Map<Long,Map<Long,BigDecimal>> allocations=new HashMap<>();
+        String allocationReason=KhoService.text(input.get("allocationReason"),"Lý do chọn lô",1000,false);
         for(Object item:items){if(!(item instanceof Map<?,?> line))throw new IllegalArgumentException("Dòng xuất kho không hợp lệ");
-            long id=KhoService.id(line.get("lineId"));if(quantities.putIfAbsent(id,PhieuNhapKhoService.quantity(line.get("actualQuantity"),true))!=null)throw new IllegalArgumentException("Dòng xuất bị trùng");}
+            long id=KhoService.id(line.get("lineId"));if(quantities.putIfAbsent(id,PhieuNhapKhoService.quantity(line.get("actualQuantity"),true))!=null)throw new IllegalArgumentException("Dòng xuất bị trùng");
+            if(line.containsKey("allocations")){if(!(line.get("allocations") instanceof List<?> bins)||bins.size()>2000)throw new IllegalArgumentException("Phân bổ lô không hợp lệ");var selected=new LinkedHashMap<Long,BigDecimal>();for(Object raw:bins){if(!(raw instanceof Map<?,?> bin))throw new IllegalArgumentException("Lô không hợp lệ");if(selected.putIfAbsent(KhoService.id(bin.get("binId")),PhieuNhapKhoService.quantity(bin.get("quantity"),false))!=null)throw new IllegalArgumentException("Lô bị trùng");}allocations.put(id,selected);}
+        }
+        if(!allocations.isEmpty()&&allocationReason.isBlank())throw new IllegalArgumentException("Nhập lý do xác nhận hoặc thay đổi lô FEFO");
         try(Connection c=KetNoiDB.getConnection()){c.setAutoCommit(false);try{
             var head=TruyVanDB.one(c,"SELECT warehouse_id FROM orders WHERE id=?",orderId);
             if(head==null||head.get("warehouse_id")==null)throw new NoSuchElementException("Không tìm thấy đơn có kho phục vụ");
@@ -63,14 +67,15 @@ public class XuatKhoService {
             GiuChoTonDB.release(c,orderId);
             for(var l:lines){long lineId=TruyVanDB.id(l);long product=((Number)l.get("product_id")).longValue();
                 BigDecimal base=quantities.get(lineId).multiply((BigDecimal)l.get("conversion_factor"));BigDecimal remaining=base;
+                var selected=allocations.get(lineId);if(selected!=null&&selected.values().stream().reduce(BigDecimal.ZERO,BigDecimal::add).compareTo(base)!=0)throw new IllegalArgumentException("Tổng phân bổ lô phải bằng số lượng xuất quy đổi");
                 var locations=TruyVanDB.rows(c,"SELECT pl.location_id,SUM(pl.actual_quantity) picked FROM pick_list_lines pl WHERE pl.pick_list_id=? AND pl.product_id=? GROUP BY pl.location_id ORDER BY pl.location_id NULLS LAST",pickId,product);
                 for(var loc:locations){
                     var used=TruyVanDB.one(c,"SELECT COALESCE(-SUM(m.delta),0) qty FROM stock_movements m JOIN stock_bins b ON b.id=m.bin_id JOIN pick_list_orders po ON po.order_id=m.document_id WHERE m.kind='SHIPMENT_OUT' AND po.pick_list_id=? AND m.product_id=? AND b.location_id IS NOT DISTINCT FROM ?",pickId,product,loc.get("location_id"));
                     BigDecimal allowance=((BigDecimal)loc.get("picked")).subtract((BigDecimal)used.get("qty")).max(BigDecimal.ZERO);
                     if(allowance.signum()==0)continue;
                     var bins=TruyVanDB.rows(c,"SELECT id,on_hand FROM stock_bins WHERE warehouse_id=? AND product_id=? AND location_id IS NOT DISTINCT FROM ? AND on_hand>0 AND (expiry_date IS NULL OR expiry_date>=CURRENT_DATE) ORDER BY expiry_date NULLS LAST,id FOR UPDATE",wh,product,loc.get("location_id"));
-                    for(var b:bins){BigDecimal take=remaining.min(allowance).min((BigDecimal)b.get("on_hand"));if(take.signum()>0){
-                        StockLedgerDB.change(c,wh,product,TruyVanDB.id(b),take.negate(),"SHIPMENT_OUT",orderId,lineId,user,reason);
+                    for(var b:bins){BigDecimal chosen=selected==null?remaining:selected.getOrDefault(TruyVanDB.id(b),BigDecimal.ZERO);if(selected!=null&&(chosen.compareTo(allowance)>0||chosen.compareTo((BigDecimal)b.get("on_hand"))>0))throw new IllegalArgumentException("Lô chọn vượt tồn hoặc số lượng đã soạn tại vị trí");BigDecimal take=chosen.min(remaining).min(allowance).min((BigDecimal)b.get("on_hand"));if(take.signum()>0){
+                        StockLedgerDB.change(c,wh,product,TruyVanDB.id(b),take.negate(),"SHIPMENT_OUT",orderId,lineId,user,selected==null?reason:"Chọn lô: "+allocationReason+". "+reason);
                         remaining=remaining.subtract(take);allowance=allowance.subtract(take);
                     }if(remaining.signum()==0||allowance.signum()==0)break;}
                     if(remaining.signum()==0)break;

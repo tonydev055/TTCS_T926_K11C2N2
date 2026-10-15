@@ -85,12 +85,16 @@ public final class XacNhanGiaoHangService {
             c.setAutoCommit(false);
             try {
                 var order = TruyVanDB.one(c,
-                    "SELECT id,code,status,warehouse_id FROM orders WHERE id=? FOR UPDATE", orderId);
+                    "SELECT id,code,status,warehouse_id FROM orders WHERE id=?", orderId);
                 if (order == null) throw new NoSuchElementException("Không tìm thấy đơn hàng");
                 if (order.get("warehouse_id") == null)
                     throw new IllegalArgumentException("Đơn hàng chưa được gán kho xuất");
                 long warehouse = ((Number) order.get("warehouse_id")).longValue();
                 KhoService.access(c, warehouse, actor, roles);
+                TruyVanDB.one(c, "SELECT pg_advisory_xact_lock(?)", warehouse);
+                order = TruyVanDB.one(c, "SELECT id,code,status,warehouse_id FROM orders WHERE id=? FOR UPDATE", orderId);
+                if (order == null || order.get("warehouse_id") == null || ((Number)order.get("warehouse_id")).longValue() != warehouse)
+                    throw new IllegalArgumentException("Kho của đơn đã thay đổi, vui lòng tải lại");
                 KhoService.actor(c, actor);
                 if (!SHIPPED.equals(order.get("status")))
                     throw new IllegalArgumentException("Chỉ xác nhận giao cho đơn ở trạng thái Đã xuất");
@@ -182,23 +186,20 @@ public final class XacNhanGiaoHangService {
             long lineId = ((Number) line.get("line_id")).longValue();
             long productId = ((Number) line.get("product_id")).longValue();
 
-            // S6-05 chuẩn hóa bút toán xuất theo đơn/dòng hàng; nếu có thì hoàn đúng số lượng và vị trí đã xuất.
-            var shipment = TruyVanDB.one(c,
-                "SELECT bin_id,delta FROM stock_movements WHERE warehouse_id=? AND document_id=? AND line_id=? "
-                + "AND kind='SHIPMENT_OUT' AND delta<0 ORDER BY id DESC LIMIT 1 FOR UPDATE",
-                warehouse, orderId, lineId);
-            long binId;
-            BigDecimal returnQuantity = quantity;
-            if (shipment != null && shipment.get("bin_id") != null) {
-                binId = ((Number) shipment.get("bin_id")).longValue();
-                BigDecimal dispatched = ((BigDecimal) shipment.get("delta")).abs();
-                if (dispatched.signum() > 0) returnQuantity = dispatched;
-            } else {
-                throw new IllegalArgumentException("Không có bút toán xuất kho gốc để hoàn hàng an toàn; cần hoàn thiện xác nhận xuất kho trước");
+            // Hoàn toàn bộ lô đã xuất, không lấy một dòng đại diện.
+            var shipments = TruyVanDB.rows(c,
+                "SELECT bin_id,delta FROM stock_movements WHERE warehouse_id=? AND product_id=? AND document_id=? AND line_id=? "
+                + "AND kind='SHIPMENT_OUT' AND delta<0 ORDER BY bin_id,id FOR UPDATE", warehouse, productId, orderId, lineId);
+            BigDecimal dispatched = BigDecimal.ZERO;
+            for (var shipment : shipments) dispatched = dispatched.add(((BigDecimal)shipment.get("delta")).abs());
+            if (shipments.isEmpty() || dispatched.compareTo(quantity) != 0)
+                throw new IllegalArgumentException("Sổ xuất kho không khớp số lượng đã giao; chưa thể hoàn kho an toàn");
+            for (var shipment : shipments) {
+                if (shipment.get("bin_id") == null) throw new IllegalArgumentException("Bút toán xuất thiếu lô/vị trí");
+                StockLedgerDB.change(c, warehouse, productId, ((Number)shipment.get("bin_id")).longValue(),
+                    ((BigDecimal)shipment.get("delta")).abs(), "DELIVERY_RETURN", orderId, lineId, actor,
+                    "Hàng hoàn về kho từ đơn " + orderCode + ": " + reason);
             }
-            StockLedgerDB.change(c, warehouse, productId, binId, returnQuantity,
-                "DELIVERY_RETURN", orderId, lineId, actor,
-                "Hàng hoàn về kho từ đơn " + orderCode + ": " + reason);
             returnedAny = true;
         }
         return returnedAny;

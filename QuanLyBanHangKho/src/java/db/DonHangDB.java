@@ -115,6 +115,13 @@ public class DonHangDB extends CoSoDB {
             "WHERE l.order_id=? ORDER BY l.id", orderId);
     }
 
+    /** S6-05: đơn còn nợ hàng sau xuất kho và đơn giao bù (chưa huỷ) đã lập cho phần nợ đó. */
+    public Map<String, Object> backorderInfo(long orderId) throws SQLException {
+        return query("SELECT EXISTS(SELECT 1 FROM order_lines l WHERE l.order_id=? AND l.delivered_base_quantity IS NOT NULL " +
+            "AND l.delivered_base_quantity<l.base_quantity) AS \"hasShortfall\", " +
+            "(SELECT b.code FROM orders b WHERE b.backorder_of=? AND b.status<>'CANCELLED' LIMIT 1) AS \"backorderCode\"", orderId, orderId).get(0);
+    }
+
     public List<Map<String, Object>> history(long orderId) throws SQLException {
         var rows = query(
             "SELECT from_status AS \"fromStatus\", to_status AS \"toStatus\", reason, changed_by_name AS \"changedByName\", " +

@@ -388,6 +388,41 @@ public class DonHangNhapDB extends CoSoDB {
         return order;
     }
 
+    /**
+     * S6-05: phần còn nợ của đơn đã xuất. Số lượng thiếu tính theo đơn vị cơ sở; nếu không chia hết cho đơn vị
+     * đã đặt thì chuyển sang đơn vị cơ sở của sản phẩm (đơn vị có hệ số 1).
+     */
+    public Map<String, Object> backorderSource(long id, long userId) throws SQLException {
+        var rows = query(
+            "SELECT o.id, o.code, o.agent_id AS \"customerId\", " +
+            "(SELECT a.id FROM customer_addresses a WHERE a.id=o.delivery_address_id AND a.customer_id=o.agent_id AND a.active) AS \"deliveryPointId\", " +
+            "(SELECT b.code FROM orders b WHERE b.backorder_of=o.id AND b.status<>'CANCELLED' LIMIT 1) AS \"backorderCode\" " +
+            "FROM orders o JOIN customers k ON k.id=o.agent_id " +
+            "WHERE o.id=? AND k.sales_rep_id=? AND o.status IN ('SHIPPED','DELIVERED','CLOSED')", id, userId);
+        if (rows.isEmpty()) return null;
+        Map<String, Object> order = new LinkedHashMap<>(rows.get(0));
+        order.put("lines", query(
+            "SELECT s.product_id AS \"productId\", " +
+            "CASE WHEN mod(s.short_base, s.conversion_factor)=0 THEN s.unit_id ELSE " +
+            "(SELECT u.id FROM product_units u WHERE u.product_id=s.product_id AND u.factor=1 AND u.active ORDER BY u.id LIMIT 1) END AS \"unitId\", " +
+            "trim_scale(CASE WHEN mod(s.short_base, s.conversion_factor)=0 THEN s.short_base/s.conversion_factor ELSE s.short_base END) AS quantity, " +
+            "p.sku, p.name, p.active AS \"productActive\" FROM (SELECT l.id, l.product_id, l.unit_id, l.conversion_factor, " +
+            "l.base_quantity-l.delivered_base_quantity AS short_base FROM order_lines l WHERE l.order_id=? AND l.delivered_base_quantity IS NOT NULL) s " +
+            "JOIN products p ON p.id=s.product_id WHERE s.short_base>0 ORDER BY s.id", id));
+        return order;
+    }
+
+    /** Gắn đơn nháp vừa tạo làm đơn giao bù của đơn gốc; chỉ áp dụng cho nháp của chính người tạo. */
+    public void markBackorder(long draftId, long sourceId, long userId) throws SQLException {
+        try (Connection c = KetNoiDB.getConnection()) {
+            if (TruyVanDB.update(c, "UPDATE orders SET backorder_of=? WHERE id=? AND created_by=? AND status='DRAFT'", sourceId, draftId, userId) != 1)
+                throw new IllegalArgumentException("Không gắn được đơn giao bù");
+        } catch (SQLException e) {
+            if ("23505".equals(e.getSQLState())) throw new IllegalArgumentException("Đơn gốc đã có đơn giao bù khác");
+            throw e;
+        }
+    }
+
     /** Mở lại một đơn nháp của chính người dùng (kèm dòng hàng và các đơn vị tính để sửa tiếp). */
     public Map<String, Object> load(long id, long userId) throws SQLException {
         var rows = query(

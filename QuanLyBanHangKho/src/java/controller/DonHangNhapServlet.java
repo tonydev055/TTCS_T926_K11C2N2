@@ -22,6 +22,7 @@ import util.XuLyJson;
  *   PUT  /api/sales-orders/{id}         lưu nháp đang sửa
  *   POST /api/sales-orders/{id}/confirm  xác nhận đơn đại lý tự đặt trên cổng (S4-10)
  *   POST /api/sales-orders/{id}/copy   sao chép đơn cũ thành nháp mới, áp lại giá hiện hành (S4-09)
+ *   POST /api/sales-orders/{id}/backorder  lập nháp giao bù phần còn nợ của đơn đã xuất (S6-05)
  *   PUT  /api/sales-orders/{id}/complete hoàn tất với body như lưu nháp; máy chủ tính lại giá, kiểm tra điểm giao/ngày/dòng hàng
  */
 @WebServlet("/api/sales-orders/*")
@@ -104,6 +105,8 @@ public class DonHangNhapServlet extends CoSoServlet {
                 created(r, XuLyJson.stringify(dao.load(id, uid)));
             } else if (p.matches("/\\d+/confirm")) {
                 ok(r, XuLyJson.stringify(service.xacNhanDonDaiLy(parseId(p.split("/")[1]), uid)));
+            } else if (p.matches("/\\d+/backorder")) {
+                created(r, XuLyJson.stringify(service.taoDonBu(parseId(p.split("/")[1]), uid)));
             } else if (p.matches("/\\d+/copy")) {
                 created(r, XuLyJson.stringify(service.saoChep(parseId(p.split("/")[1]), uid)));
             } else {

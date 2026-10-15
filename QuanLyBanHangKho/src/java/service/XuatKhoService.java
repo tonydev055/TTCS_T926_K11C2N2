@@ -19,7 +19,7 @@ public class XuatKhoService {
                 var lines=TruyVanDB.rows(c,"SELECT l.id,p.sku,p.name,u.name AS unit,l.quantity AS \"orderedQty\",CASE WHEN o.status='PICKING' THEN l.quantity ELSE 0 END AS \"reservedQty\",CASE WHEN o.status='PICKING' THEN NULL ELSE l.delivered_base_quantity/l.conversion_factor END AS \"deliveredQty\",CASE WHEN o.status='PICKING' OR l.delivered_base_quantity IS NULL THEN 0 ELSE GREATEST(l.quantity-COALESCE(l.delivered_base_quantity,0)/l.conversion_factor,0) END AS \"shortQty\",l.line_total/l.quantity AS \"unitPrice\" FROM order_lines l JOIN products p ON p.id=l.product_id JOIN product_units u ON u.id=l.unit_id JOIN orders o ON o.id=l.order_id WHERE l.order_id=? ORDER BY l.id",o.get("id"));
                 o.put("lines",lines);BigDecimal value=BigDecimal.ZERO;int count=0;
                 for(var l:lines){BigDecimal shortQty=(BigDecimal)l.get("shortQty");if(shortQty.signum()>0){count++;value=value.add(shortQty.multiply((BigDecimal)l.get("unitPrice")));}}
-                o.put("hasShortfall",count>0);o.put("debtValue",value.setScale(2,RoundingMode.HALF_UP));o.put("debtItems",count);
+                o.put("hasShortfall",count>0);if(count>0)o.put("backorderCode",TruyVanDB.one(c,"SELECT (SELECT b.code FROM orders b WHERE b.backorder_of=? AND b.status<>'CANCELLED' LIMIT 1) code",o.get("id")).get("code"));o.put("debtValue",value.setScale(2,RoundingMode.HALF_UP));o.put("debtItems",count);
                 if(waiting)pending.add(o);else {shipped.add(o);if(count>0)debts.add(o);}
             }
             return Map.of("pending",pending,"shipped",shipped,"shortfall",debts);

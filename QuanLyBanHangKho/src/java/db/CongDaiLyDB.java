@@ -95,7 +95,7 @@ public class CongDaiLyDB extends CoSoDB {
     public List<Map<String, Object>> orders(long customerId) throws SQLException {
         var rows = query(
             "SELECT o.id, o.code, o.status, o.source, o.payable, " + DonHangDB.iso("o.created_at") + " AS \"createdAt\", " +
-            "o.desired_delivery_date::text AS \"desiredDate\", (SELECT count(*) FROM order_lines l WHERE l.order_id=o.id) AS \"lineCount\" " +
+            "o.delivery_address AS \"deliveryAddress\", o.desired_delivery_date::text AS \"desiredDate\", (SELECT count(*) FROM order_lines l WHERE l.order_id=o.id) AS \"lineCount\" " +
             "FROM orders o WHERE o.agent_id=? AND o.status<>'DRAFT' ORDER BY o.created_at DESC, o.id DESC LIMIT 100", customerId);
         for (var r : rows) r.put("statusLabel", TrangThaiDonHang.label(r.get("status")));
         return rows;
@@ -107,6 +107,10 @@ public class CongDaiLyDB extends CoSoDB {
         if (rows.isEmpty()) return null;
         Map<String, Object> order = new LinkedHashMap<>(rows.get(0));
         order.remove("approvalFlagsJson");
+        var points = query("SELECT a.recipient_name AS \"recipientName\", a.phone AS \"recipientPhone\" " +
+            "FROM orders o JOIN customer_addresses a ON a.id=o.delivery_address_id AND a.customer_id=o.agent_id " +
+            "WHERE o.id=? AND o.agent_id=?", id, customerId);
+        if (!points.isEmpty()) order.putAll(points.get(0));
         order.put("statusLabel", TrangThaiDonHang.label(order.get("status")));
         var lines = new DonHangDB().lines(id);
         for (var l : lines) { l.remove("floorPrice"); l.remove("listPrice"); l.remove("priceOverridden"); l.remove("basePrice"); }

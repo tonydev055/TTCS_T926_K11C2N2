@@ -6,7 +6,9 @@ import java.util.*;
 import util.KetNoiDB;
 /** S6-01: thông tin lô và ngưỡng cảnh báo theo SKU, trong phạm vi kho được phân công. */
 public class LoHangService {
- public Map<String,Object> list(long user,Collection<String> roles,String warehouse,String state)throws SQLException{
+ public Map<String,Object> list(long user,Collection<String> roles,String warehouse,String state)throws SQLException{return list(user,roles,warehouse,state,false);}
+ /** includeEmpty=false ẩn lô đã xuất hết (tồn 0) để danh sách chỉ còn hàng thực có. */
+ public Map<String,Object> list(long user,Collection<String> roles,String warehouse,String state,boolean includeEmpty)throws SQLException{
   if(!Set.of("","EXPIRED","SOON","VALID").contains(Objects.toString(state,"")))throw new IllegalArgumentException("Bộ lọc hạn dùng không hợp lệ");
   try(Connection c=KetNoiDB.getConnection()){
    String where=" WHERE true";var args=new ArrayList<Object>();
@@ -15,6 +17,7 @@ public class LoHangService {
    if("EXPIRED".equals(state))where+=" AND b.expiry_date<CURRENT_DATE AND b.on_hand>0";
    if("SOON".equals(state))where+=" AND b.expiry_date BETWEEN CURRENT_DATE AND CURRENT_DATE+p.expiry_alert_days AND b.on_hand>0";
    if("VALID".equals(state))where+=" AND (b.expiry_date IS NULL OR b.expiry_date>CURRENT_DATE+p.expiry_alert_days)";
+   if(!includeEmpty)where+=" AND b.on_hand>0";
    var items=TruyVanDB.rows(c,"SELECT b.id,b.warehouse_id,b.product_id,p.sku,p.name,p.lot_managed,p.expiry_alert_days,w.name warehouse_name,COALESCE(l.name,'Chưa phân vị trí') location_name,b.lot_number,b.manufactured_date::text manufactured_date,b.expiry_date::text expiry_date,b.on_hand,CASE WHEN b.expiry_date<CURRENT_DATE THEN 'EXPIRED' WHEN b.expiry_date<=CURRENT_DATE+p.expiry_alert_days THEN 'SOON' ELSE 'VALID' END expiry_state FROM stock_bins b JOIN products p ON p.id=b.product_id JOIN warehouses w ON w.id=b.warehouse_id LEFT JOIN warehouse_locations l ON l.id=b.location_id"+where+" ORDER BY b.expiry_date NULLS LAST,p.sku,b.id LIMIT 1000",args.toArray());
    return Map.of("items",items,"warehouses",new KhoService().list(user,roles).get("warehouses"),"canManage",KhoService.manager(roles),"products",TruyVanDB.rows(c,"SELECT id,sku,name,lot_managed,expiry_alert_days FROM products WHERE active ORDER BY sku"));
   }

@@ -1,0 +1,717 @@
+<style>
+/* ===== PHIẾU SOẠN HÀNG ===== */
+.pick-layout {
+    display: grid;
+    gap: 20px;
+    color: var(--text-color, #1e293b);
+}
+
+.pick-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    padding: 22px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 16px;
+    background: var(--card-bg, #fff);
+}
+
+.pick-heading {
+    margin: 0 0 6px;
+    font-size: 1.2rem;
+    font-weight: 750;
+    letter-spacing: -.025em;
+}
+
+.pick-muted {
+    color: var(--text-muted, #64748b);
+    font-size: .875rem;
+    line-height: 1.6;
+}
+
+.pick-primary,
+.pick-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font: inherit;
+    font-size: .9rem;
+    font-weight: 650;
+    cursor: pointer;
+    transition: background .18s, transform .18s;
+}
+
+.pick-primary {
+    color: #fff;
+    background: #ea580c;
+    border: 1px solid #ea580c;
+}
+
+.pick-primary:hover {
+    background: #c2410c;
+}
+
+.pick-secondary {
+    color: var(--text-color, #334155);
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #cbd5e1);
+}
+
+.pick-secondary:hover {
+    background: var(--hover-bg, #f8fafc);
+}
+
+.pick-primary:disabled,
+.pick-secondary:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+}
+
+.pick-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: 14px;
+}
+
+.pick-card {
+    min-width: 0;
+    padding: 18px;
+    text-align: left;
+    color: inherit;
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 15px;
+}
+
+button.pick-card {
+    width: 100%;
+    cursor: pointer;
+    transition: border-color .18s, box-shadow .18s, transform .18s;
+}
+
+button.pick-card:hover {
+    border-color: #fb923c;
+    box-shadow: 0 5px 18px rgba(234, 88, 12, .08);
+    transform: translateY(-2px);
+}
+
+.pick-line-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.pick-card h3,
+.pick-line h3 {
+    margin: 0;
+    font-size: .98rem;
+    font-weight: 750;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.pick-card h3 {
+    margin-bottom: 10px;
+}
+
+.pick-status {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: #fff7ed;
+    color: #c2410c;
+    font-size: .75rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.pick-status.done {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.pick-card-meta {
+    display: grid;
+    gap: 9px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-color, #f1f5f9);
+}
+
+.pick-progress {
+    height: 6px;
+    overflow: hidden;
+    background: var(--hover-bg, #f1f5f9);
+    border-radius: 99px;
+}
+
+.pick-progress > span {
+    display: block;
+    height: 100%;
+    background: #ea580c;
+    border-radius: inherit;
+}
+
+.pick-section-title {
+    margin: 22px 0 12px;
+    font-size: .95rem;
+    font-weight: 750;
+}
+
+.pick-select,
+.pick-line input,
+.pick-line textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 11px 12px;
+    border: 1px solid var(--border-color, #cbd5e1);
+    border-radius: 9px;
+    background: var(--input-bg, #fff);
+    color: inherit;
+    font: inherit;
+    font-size: .9rem;
+}
+
+.pick-select:focus,
+.pick-line input:focus,
+.pick-line textarea:focus {
+    outline: 3px solid rgba(234, 88, 12, .12);
+    border-color: #f97316;
+}
+
+.pick-field {
+    display: grid;
+    gap: 7px;
+}
+
+.pick-field > label,
+.pick-line label {
+    font-size: .85rem;
+    font-weight: 700;
+}
+
+.pick-order-list {
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.pick-order {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 13px;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 11px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+}
+
+.pick-order:has(input:checked) {
+    border-color: #fb923c;
+    background: #fff7ed;
+}
+
+.pick-order input {
+    width: 18px;
+    height: 18px;
+    margin: 2px 0 0;
+    accent-color: #ea580c;
+    flex-shrink: 0;
+}
+
+.pick-order span {
+    display: block;
+    line-height: 1.5;
+}
+
+.pick-lines {
+    display: grid;
+    gap: 12px;
+}
+
+.pick-line {
+    display: grid;
+    align-content: start;
+    gap: 14px;
+    min-width: 0;
+    padding: 17px;
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 14px;
+}
+
+.pick-line-info {
+    display: grid;
+    gap: 5px;
+}
+
+.pick-line-number {
+    color: #ea580c;
+    font-size: .75rem;
+    font-weight: 750;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.pick-line-field {
+    display: grid;
+    gap: 7px;
+}
+
+.pick-error {
+    color: #b91c1c;
+    font-size: .875rem;
+}
+
+.pick-empty {
+    padding: 28px 16px;
+    text-align: center;
+    border: 1px dashed var(--border-color, #cbd5e1);
+    border-radius: 13px;
+}
+
+.pick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+@media (min-width: 760px) {
+    .pick-lines {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 480px) {
+    .pick-toolbar {
+        align-items: stretch;
+        padding: 16px;
+    }
+
+    .pick-toolbar .pick-primary {
+        width: 100%;
+    }
+
+    .pick-line {
+        padding: 14px;
+    }
+
+    .pick-actions > button {
+        flex: 1;
+    }
+}
+</style>
+
+<script>
+window.sprint5Features = window.sprint5Features || {};
+
+window.sprint5Features['Phiếu soạn hàng'] = {
+    path: 'phieu-soan',
+    permission: 'inventory.write',
+
+    render: () => warehouseUi.screen(
+        'Phiếu soạn hàng',
+        'Gộp nhiều đơn đã duyệt cùng kho thành một lượt soạn. Đi theo vị trí lưu và cập nhật số lượng thực tế ngay trên điện thoại.',
+        async () => ({
+            rows: await apiRequest('pick-lists'),
+            masters: await apiRequest('pick-lists/orders')
+        }),
+        (host, data) => {
+            const ui = warehouseUi;
+            const esc = ui.esc;
+            let selected = new Set();
+
+            const reload = () =>
+                window.sprint5Features['Phiếu soạn hàng'].render();
+
+            const status = value =>
+                value === 'COMPLETED' ? 'Hoàn tất' : 'Đang soạn';
+
+            const progress = p => {
+                const total = Number(p.line_count || 0);
+                const done = Number(p.picked_count || 0);
+                return total > 0
+                    ? Math.min(100, Math.round(done / total * 100))
+                    : 0;
+            };
+
+            host.innerHTML = `
+                <div class="pick-layout">
+                    <section class="pick-toolbar">
+                        <div>
+                            <h3 class="pick-heading">Danh sách phiếu soạn</h3>
+                            <div class="pick-muted">
+                                Theo dõi tiến độ và tiếp tục các phiếu đang thực hiện.
+                            </div>
+                        </div>
+                        <button type="button" class="pick-primary" id="pickNew">
+                            <span aria-hidden="true">＋</span>
+                            Tạo phiếu soạn
+                        </button>
+                    </section>
+
+                    <div class="pick-list">
+                        ${data.rows.map(p => {
+                            const pct = progress(p);
+                            return `
+                                <button type="button"
+                                    class="pick-card"
+                                    data-open="${p.id}">
+                                    <div class="pick-line-top">
+                                        <h3>${esc(p.code)}</h3>
+                                        <span class="pick-status ${p.status === 'COMPLETED' ? 'done' : ''}">
+                                            ${status(p.status)}
+                                        </span>
+                                    </div>
+
+                                    <div class="pick-muted">
+                                        ${esc(p.warehouse_name)}
+                                    </div>
+
+                                    <div class="pick-card-meta">
+                                        <div class="pick-line-top">
+                                            <span class="pick-muted">Tiến độ soạn</span>
+                                            <strong>${Number(p.picked_count || 0)}/${Number(p.line_count || 0)} dòng</strong>
+                                        </div>
+                                        <div class="pick-progress">
+                                            <span style="width:${pct}%"></span>
+                                        </div>
+                                        <div class="pick-muted">
+                                            Ngày tạo: ${esc(p.created_at || '—')}
+                                        </div>
+                                    </div>
+                                </button>
+                            `;
+                        }).join('') || `
+                            <div class="pick-empty pick-muted">
+                                <div style="font-size:1.8rem;margin-bottom:8px">▤</div>
+                                <strong>Chưa có phiếu soạn hàng</strong>
+                                <div>Nhấn “Tạo phiếu soạn” để bắt đầu.</div>
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
+
+            host.querySelector('#pickNew').onclick = create;
+
+            host.querySelectorAll('[data-open]').forEach(button => {
+                button.onclick = () => detail(Number(button.dataset.open));
+            });
+
+            function create() {
+                selected = new Set();
+
+                const { form, close } = openFormDialog(
+                    'Tạo phiếu soạn hàng',
+                    `
+                        <div class="pick-layout">
+                            <div class="pick-field">
+                                <label for="pickWarehouse">Kho hàng</label>
+                                <select id="pickWarehouse" class="pick-select" required>
+                                    <option value="">Chọn kho cần soạn</option>
+                                    ${data.masters.warehouses.map(w => `
+                                        <option value="${w.id}">
+                                            ${esc(w.code + ' · ' + w.name)}
+                                        </option>
+                                    `).join('')}
+                                </select>
+                            </div>
+
+                            <div>
+                                <h4 class="pick-section-title">Đơn hàng cần soạn</h4>
+                                <div class="pick-muted">
+                                    Chỉ chọn các đơn đã duyệt và cùng kho.
+                                </div>
+                                <div id="pickOrderChoices" class="pick-order-list">
+                                    <div class="pick-empty pick-muted">
+                                        Vui lòng chọn kho trước.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p id="s2FormError" class="pick-error" role="alert"></p>
+                        </div>
+                    `,
+                    'Tạo phiếu'
+                );
+
+                const warehouse = form.querySelector('#pickWarehouse');
+                const choices = form.querySelector('#pickOrderChoices');
+
+                warehouse.onchange = () => {
+                    selected.clear();
+
+                    const orders = data.masters.orders.filter(order =>
+                        String(order.warehouse_id) === warehouse.value
+                    );
+
+                    choices.innerHTML = orders.map(order => `
+                        <label class="pick-order">
+                            <input type="checkbox" value="${order.id}">
+                            <span>
+                                <strong>${esc(order.code)}</strong>
+                                <span class="pick-muted">
+                                    ${esc(order.customer_name || 'Đại lý')}
+                                    · ${esc(order.warehouse_name)}
+                                </span>
+                            </span>
+                        </label>
+                    `).join('') || `
+                        <div class="pick-empty pick-muted">
+                            Không có đơn đã duyệt cần soạn trong kho này.
+                        </div>
+                    `;
+
+                    choices.querySelectorAll('input').forEach(input => {
+                        input.onchange = () => {
+                            const id = Number(input.value);
+                            if (input.checked) selected.add(id);
+                            else selected.delete(id);
+                        };
+                    });
+                };
+
+                form.onsubmit = async event => {
+                    event.preventDefault();
+
+                    const error = form.querySelector('#s2FormError');
+
+                    if (!warehouse.value) {
+                        error.textContent = 'Vui lòng chọn kho hàng.';
+                        return;
+                    }
+
+                    if (!selected.size) {
+                        error.textContent = 'Hãy chọn ít nhất một đơn hàng.';
+                        return;
+                    }
+
+                    const button = form.querySelector('button[type="submit"]');
+                    button.disabled = true;
+                    error.textContent = '';
+
+                    try {
+                        const result = await apiRequest(
+                            'pick-lists',
+                            jsonRequestOptions('POST', {
+                                warehouseId: Number(warehouse.value),
+                                orderIds: [...selected]
+                            })
+                        );
+
+                        close();
+                        showToast('Đã tạo phiếu soạn hàng');
+                        await reload();
+
+                        if (result && result.id) {
+                            await detail(result.id);
+                        }
+                    } catch (err) {
+                        error.textContent = err.message || 'Không thể tạo phiếu soạn.';
+                    } finally {
+                        if (button.isConnected) button.disabled = false;
+                    }
+                };
+            }
+
+            async function detail(id) {
+                const p = await apiRequest('pick-lists/' + id);
+                const draft = p.status === 'PICKING';
+                const lines = p.lines || [];
+
+                const orderHtml = (p.orders || []).map(order => `
+                    <span class="pick-status">${esc(order.code)}</span>
+                `).join(' ') || '<span class="pick-muted">Không có thông tin đơn hàng.</span>';
+
+                const lineHtml = lines.map((line, index) => `
+                    <article class="pick-line">
+                        <div class="pick-line-top">
+                            <div class="pick-line-info">
+                                <span class="pick-line-number">
+                                    Bước ${index + 1} · ${esc(line.location_name || 'Chưa xác định vị trí')}
+                                </span>
+                                <h3>${esc(line.sku + ' · ' + line.product_name)}</h3>
+                                <div class="pick-muted">
+                                    Số lượng yêu cầu:
+                                    <strong>${esc(line.requested_quantity)} ${esc(line.base_unit)}</strong>
+                                </div>
+                            </div>
+
+                            <span class="pick-status ${line.picked ? 'done' : ''}">
+                                ${line.picked ? 'Đã soạn' : 'Chưa soạn'}
+                            </span>
+                        </div>
+
+                        ${draft ? `
+                            <div class="pick-line-field">
+                                <label for="pickQty${line.id}">
+                                    Số lượng thực soạn (${esc(line.base_unit)})
+                                </label>
+                                <input
+                                    id="pickQty${line.id}"
+                                    type="number"
+                                    min="0"
+                                    step="0.000001"
+                                    required
+                                    value="${esc(line.actual_quantity ?? line.requested_quantity)}"
+                                    data-qty="${line.id}">
+                            </div>
+
+                            <div
+                                class="pick-line-field"
+                                data-reason-wrap="${line.id}"
+                                style="display:${Number(line.actual_quantity ?? line.requested_quantity) < Number(line.requested_quantity) ? 'grid' : 'none'}">
+                                <label for="pickReason${line.id}">
+                                    Lý do soạn thiếu <span style="color:#dc2626">*</span>
+                                </label>
+                                <textarea
+                                    id="pickReason${line.id}"
+                                    rows="3"
+                                    data-reason="${line.id}"
+                                    placeholder="Nhập lý do, ví dụ: tồn thực tế không đủ">${esc(line.shortage_reason || '')}</textarea>
+                            </div>
+                        ` : `
+                            <div class="pick-muted">
+                                Thực soạn:
+                                <strong>${esc(line.actual_quantity ?? '—')} ${esc(line.base_unit)}</strong>
+                                ${line.shortage_reason ? `
+                                    <div>Lý do: ${esc(line.shortage_reason)}</div>
+                                ` : ''}
+                            </div>
+                        `}
+                    </article>
+                `).join('') || `
+                    <div class="pick-empty pick-muted">
+                        Phiếu này chưa có dòng sản phẩm.
+                    </div>
+                `;
+
+                const { form, close } = openFormDialog(
+                    'Chi tiết ' + esc(p.code),
+                    `
+                        <div class="pick-layout">
+                            <div class="pick-toolbar">
+                                <div>
+                                    <div class="pick-muted">Kho thực hiện</div>
+                                    <strong>${esc(p.warehouse_name)}</strong>
+                                </div>
+                                <span class="pick-status ${p.status === 'COMPLETED' ? 'done' : ''}">
+                                    ${status(p.status)}
+                                </span>
+                            </div>
+
+                            <div>
+                                <h4 class="pick-section-title">Đơn hàng trong lượt soạn</h4>
+                                <div style="display:flex;flex-wrap:wrap;gap:8px">
+                                    ${orderHtml}
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 class="pick-section-title">Lộ trình soạn hàng</h4>
+                                <div class="pick-lines">${lineHtml}</div>
+                            </div>
+
+                            <p id="s2FormError" class="pick-error" role="alert"></p>
+                        </div>
+                    `,
+                    draft ? 'Lưu tiến độ' : null
+                );
+
+                lines.forEach(line => {
+                    const quantity = form.querySelector('[data-qty="' + line.id + '"]');
+                    const reasonWrap = form.querySelector('[data-reason-wrap="' + line.id + '"]');
+
+                    if (!quantity || !reasonWrap) return;
+
+                    quantity.oninput = () => {
+                        const shortage = Number(quantity.value) < Number(line.requested_quantity);
+                        reasonWrap.style.display = shortage ? 'grid' : 'none';
+                    };
+                });
+
+                if (!draft) {
+                    form.querySelector('button[type="submit"]')?.remove();
+
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'pick-secondary';
+                    button.textContent = 'Đóng';
+                    button.onclick = close;
+                    form.append(button);
+                    return;
+                }
+
+                form.onsubmit = async event => {
+                    event.preventDefault();
+
+                    const error = form.querySelector('#s2FormError');
+                    const payloadLines = [];
+
+                    for (const line of lines) {
+                        const quantityInput = form.querySelector('[data-qty="' + line.id + '"]');
+                        const reasonInput = form.querySelector('[data-reason="' + line.id + '"]');
+                        const quantity = Number(quantityInput.value);
+                        const reason = reasonInput?.value.trim() || '';
+
+                        if (quantityInput.value === '' || !Number.isFinite(quantity) || quantity < 0) {
+                            error.textContent = 'Vui lòng nhập số lượng thực soạn hợp lệ.';
+                            quantityInput.focus();
+                            return;
+                        }
+
+                        if (quantity < Number(line.requested_quantity) && !reason) {
+                            error.textContent = 'Vui lòng nhập lý do cho dòng soạn thiếu.';
+                            reasonInput.focus();
+                            return;
+                        }
+
+                        payloadLines.push({
+                            lineId: line.id,
+                            actualQuantity: quantity,
+                            shortageReason: reason
+                        });
+                    }
+
+                    const button = form.querySelector('button[type="submit"]');
+                    button.disabled = true;
+                    error.textContent = '';
+
+                    try {
+                        const updated = await apiRequest(
+                            'pick-lists/' + id + '/lines',
+                            jsonRequestOptions('PUT', { lines: payloadLines })
+                        );
+
+                        close();
+                        showToast(
+                            updated.status === 'COMPLETED'
+                                ? 'Đã hoàn tất soạn hàng'
+                                : 'Đã lưu tiến độ soạn'
+                        );
+
+                        await reload();
+                    } catch (err) {
+                        error.textContent = err.message || 'Không thể lưu tiến độ.';
+                    } finally {
+                        if (button.isConnected) button.disabled = false;
+                    }
+                };
+            }
+        }
+    )
+};
+</script>

@@ -1,0 +1,148 @@
+<!-- Loaded by the application shell: ../index.html -->
+<style>
+  #orderApprovalFeature { display: flex; flex-direction: column; gap: 18px; }
+  #orderApprovalFeature .oa-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+  #orderApprovalFeature .oa-count { margin: 0; color: #475569; font-size: 13px; }
+  #orderApprovalFeature .oa-count strong { color: #172033; }
+  #orderApprovalFeature .oa-list { display: flex; flex-direction: column; gap: 14px; }
+  #orderApprovalFeature .oa-card { overflow: hidden; border: 1px solid var(--app-border, #e4e9ef); border-radius: 16px; background: #fff; box-shadow: 0 8px 24px rgba(15, 23, 42, .04); }
+  #orderApprovalFeature .oa-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px 20px; padding: 18px 22px 14px; }
+  #orderApprovalFeature .oa-head h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 4px; color: #172033; font-size: 17px; }
+  #orderApprovalFeature .oa-head p { margin: 0; color: #64748b; font-size: 13px; }
+  #orderApprovalFeature .oa-amount { text-align: right; }
+  #orderApprovalFeature .oa-amount span { display: block; color: #7a8699; font-size: 12px; }
+  #orderApprovalFeature .oa-amount strong { color: var(--orange-dark, #d96500); font-size: 20px; }
+  #orderApprovalFeature .oa-source { padding: 2px 8px; border-radius: 999px; background: #eff8ff; color: #175cd3; font-size: 11px; font-weight: 700; }
+  #orderApprovalFeature .oa-violations { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0 22px 16px; list-style: none; }
+  #orderApprovalFeature .oa-violations li { display: grid; grid-template-columns: 170px 1fr; gap: 4px 14px; padding: 10px 12px; border: 1px solid #fedf89; border-radius: 10px; background: #fffcf5; font-size: 13px; }
+  #orderApprovalFeature .oa-violations li.OVERDUE { border-color: #fecdca; background: #fef3f2; }
+  #orderApprovalFeature .oa-violations strong { color: #93370d; }
+  #orderApprovalFeature .oa-violations li.OVERDUE strong { color: #b42318; }
+  #orderApprovalFeature .oa-violations span { color: #334155; }
+  #orderApprovalFeature .oa-resolved { margin: 0 22px 16px; padding: 10px 12px; border: 1px solid #c7e3d4; border-radius: 10px; background: #f3fbf6; color: #067647; font-size: 13px; }
+  #orderApprovalFeature .oa-submitted { margin: 0 22px 14px; color: #7a8699; font-size: 12px; }
+  #orderApprovalFeature .oa-actions { display: flex; flex-wrap: wrap; gap: 10px; padding: 14px 22px; border-top: 1px solid #edf1f5; background: #fbfcfd; }
+  #orderApprovalFeature .oa-actions .spacer { flex: 1 1 auto; }
+  #orderApprovalFeature .oa-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 0 16px; border: 1px solid #dce3ea; border-radius: 9px; background: #fff; color: #334155; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  #orderApprovalFeature .oa-btn:hover { background: #f8fafc; }
+  #orderApprovalFeature .oa-btn:focus-visible { outline: 3px solid rgba(244, 122, 0, .25); }
+  #orderApprovalFeature .oa-btn.primary { border-color: var(--orange); background: var(--orange); color: #fff; }
+  #orderApprovalFeature .oa-btn.primary:hover { background: var(--orange-dark); }
+  #orderApprovalFeature .oa-btn.danger { border-color: #f3c4c0; color: #b42318; }
+  #orderApprovalFeature .oa-btn.danger:hover { background: #fef3f2; }
+  #orderApprovalFeature .oa-btn:disabled { opacity: .55; cursor: not-allowed; }
+  #orderApprovalFeature .oa-empty { padding: 56px 20px; border: 1px dashed #d0d8e2; border-radius: 16px; background: #fff; text-align: center; color: #7a8699; }
+  #orderApprovalFeature .oa-empty strong { display: block; margin-bottom: 5px; color: #334155; font-size: 15px; }
+  #orderApprovalFeature .oa-error { margin: 0; padding: 16px; border-radius: 12px; background: #fef3f2; color: #b42318; text-align: center; }
+  @media (max-width: 720px) {
+    #orderApprovalFeature .oa-head,
+    #orderApprovalFeature .oa-actions { padding-left: 16px; padding-right: 16px; }
+    #orderApprovalFeature .oa-violations { padding: 0 16px 14px; }
+    #orderApprovalFeature .oa-violations li { grid-template-columns: 1fr; }
+    #orderApprovalFeature .oa-amount { text-align: left; }
+    #orderApprovalFeature .oa-actions .spacer { display: none; }
+  }
+</style>
+<script>
+window.orderApprovalFeature = (() => {
+  let generation = 0;
+  const esc = (value) => escapeHtml(value == null ? '' : String(value));
+  const money = (value) => value == null ? '—' : `${Number(value).toLocaleString('vi-VN', { maximumFractionDigits: 2 })} đ`;
+  const when = (value) => value ? new Date(value).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+  const alive = (revision) => revision === generation && !!document.getElementById('orderApprovalFeature');
+
+  const ACTIONS = {
+    approve: { title: 'Duyệt đơn', button: 'Duyệt đơn', done: 'Đã duyệt đơn', required: false,
+      label: 'Ý kiến (không bắt buộc)', hint: 'Đơn chuyển sang Đã duyệt và hàng được giữ chỗ tại kho phục vụ. Nếu kho không đủ hàng, hệ thống báo lỗi và đơn vẫn chờ duyệt.' },
+    return: { title: 'Trả lại để sửa', button: 'Trả lại nhân viên', done: 'Đã trả lại đơn', required: true,
+      label: 'Cần sửa gì *', hint: 'Đơn về trạng thái Nháp. Nhân viên phụ trách thấy ý kiến này khi mở lại đơn và có thể gửi lại.' },
+    reject: { title: 'Từ chối đơn', button: 'Từ chối đơn', done: 'Đã từ chối đơn', required: true,
+      label: 'Lý do từ chối *', hint: 'Từ chối là quyết định cuối, đơn không xử lý tiếp được.' }
+  };
+
+  /** Hộp thoại ghi quyết định; dùng chung cho màn hình Duyệt đơn và chi tiết đơn. */
+  function decide(order, action, onDone) {
+    const a = ACTIONS[action];
+    const { form, close } = openFormDialog(`${a.title} ${order.code}`,
+      `<div class="form-group full"><label>${esc(a.label)}<textarea name="comment" maxlength="1000" ${a.required ? 'required' : ''} placeholder="${action === 'return' ? 'Ví dụ: giá bán thấp hơn giá sàn, nâng lên tối thiểu bằng giá sàn' : action === 'reject' ? 'Ví dụ: đại lý chưa thanh toán khoản nợ cũ' : ''}"></textarea></label></div>
+       <p class="s2-hint" style="grid-column:1/-1">${esc(a.hint)}</p>`, a.button);
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      try {
+        const result = await apiRequest(`order-approvals/${order.id}/${action}`, jsonRequestOptions('POST', { comment: form.comment.value }));
+        close();
+        showToast(`${a.done} ${order.code} · ${result.statusLabel}`);
+        onDone?.(result);
+      } catch (error) {
+        document.getElementById('s2FormError').textContent = error.message;
+        submit.disabled = false;
+      }
+    });
+  }
+
+  async function render() {
+    const revision = ++generation;
+    moduleContent.innerHTML = `<section id="orderApprovalFeature">
+      <header class="module-head"><div><span class="eyebrow">KIỂM SOÁT BÁN HÀNG</span><h2>Duyệt đơn hàng</h2>
+        <p>Đơn vượt hạn mức công nợ hoặc bán dưới giá sàn chờ bạn quyết định. Mức vi phạm được tính lại theo số liệu hiện tại.</p></div></header>
+      <div class="oa-summary"><p class="oa-count" id="oaCount" aria-live="polite">Đang tải…</p>
+        <button type="button" class="oa-btn" id="oaReload">Tải lại</button></div>
+      <div class="oa-list" id="oaList"></div>
+    </section>`;
+    document.getElementById('oaReload').onclick = () => load(revision);
+    load(revision);
+  }
+
+  async function load(revision) {
+    const host = document.getElementById('oaList');
+    const count = document.getElementById('oaCount');
+    try {
+      const rows = await apiRequest('order-approvals/');
+      if (!alive(revision)) return;
+      count.innerHTML = rows.length ? `<strong>${esc(rows.length)}</strong> đơn chờ duyệt · cũ nhất ở trên` : 'Không có đơn nào chờ duyệt';
+      if (!rows.length) {
+        host.innerHTML = '<div class="oa-empty"><strong>Đã xử lý hết đơn chờ duyệt</strong><span>Đơn mới cần duyệt sẽ hiện ở đây.</span></div>';
+        return;
+      }
+      host.innerHTML = rows.map((o) => {
+        const violations = o.violations || [];
+        const blocking = violations.filter((v) => v.code !== 'OVERDUE');
+        return `<article class="oa-card" data-id="${esc(o.id)}">
+          <div class="oa-head">
+            <div><h3>${esc(o.code)}${o.source === 'PORTAL' ? '<span class="oa-source">Đại lý tự đặt</span>' : ''}</h3>
+              <p>${esc(o.customerName)} · ${esc(o.customerCode)}${o.region ? ' · ' + esc(o.region) : ''} · NV: ${esc(o.salesRepName || '—')}</p></div>
+            <div class="oa-amount"><span>Phải thu · ${esc(o.lineCount)} dòng</span><strong>${esc(money(o.payable))}</strong></div>
+          </div>
+          ${violations.length ? `<ul class="oa-violations">${violations.map((v) => `<li class="${esc(v.code)}"><strong>${esc(v.label)}</strong><span>${esc(v.detail)}</span></li>`).join('')}</ul>` : ''}
+          ${!blocking.length ? `<p class="oa-resolved">Theo số liệu hiện tại, đơn không còn vượt hạn mức hay dưới giá sàn. Lý do lúc gửi: ${esc((o.approvalFlags || []).map((f) => f.message).join('; ') || '—')}</p>` : ''}
+          <p class="oa-submitted">Gửi lúc ${esc(when(o.submittedAt))}</p>
+          <div class="oa-actions">
+            <button type="button" class="oa-btn" data-act="detail">Xem chi tiết đơn</button>
+            <span class="spacer"></span>
+            <button type="button" class="oa-btn danger" data-act="reject">Từ chối</button>
+            <button type="button" class="oa-btn" data-act="return">Trả lại sửa</button>
+            <button type="button" class="oa-btn primary" data-act="approve">Duyệt</button>
+          </div>
+        </article>`;
+      }).join('');
+      host.querySelectorAll('.oa-card').forEach((card) => {
+        const order = rows.find((o) => String(o.id) === card.dataset.id);
+        card.querySelectorAll('[data-act]').forEach((button) => button.addEventListener('click', () => {
+          if (button.dataset.act === 'detail') {
+            window.orderListSelectedId = order.id;
+            openView('Đơn hàng');
+          } else decide(order, button.dataset.act, () => { if (alive(revision)) load(revision); });
+        }));
+      });
+    } catch (error) {
+      if (!alive(revision)) return;
+      count.textContent = '';
+      host.innerHTML = `<p class="oa-error" role="alert">${esc(error.message)}</p>`;
+    }
+  }
+
+  return { render, decide };
+})();
+</script>

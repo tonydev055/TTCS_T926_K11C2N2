@@ -1,0 +1,126 @@
+<style>
+/* Giao diện xác nhận giao hàng */
+.delivery-page{--orange:#e85d0f;--orange-dark:#c94b0b;--ink:#1d2939;--muted:#667085;--border:#e4e7ec;display:grid;gap:16px;color:var(--ink)}
+.delivery-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.delivery-metric{display:flex;align-items:center;gap:12px;min-width:0;padding:15px 16px;border:1px solid var(--border);border-radius:12px;background:#fff}
+.delivery-metric-icon{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;border-radius:10px;background:#fff1e7;color:#c2410c;font-size:1.2rem;font-weight:800}
+.delivery-metric:nth-child(2) .delivery-metric-icon{background:#ecfdf3;color:#15803d}
+.delivery-metric:nth-child(3) .delivery-metric-icon{background:#fff1f0;color:#b42318}
+.delivery-metric-copy{min-width:0}.delivery-metric span{display:block;color:var(--muted);font-size:.8rem;line-height:1.4}.delivery-metric strong{display:block;margin-top:5px;color:var(--ink);font-size:1.45rem;line-height:1.1;font-weight:800}
+.delivery-panel{min-width:0;padding:18px;border:1px solid var(--border);border-radius:13px;background:#fff}
+.delivery-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.delivery-panel-title{display:flex;align-items:flex-start;gap:10px;min-width:0}
+.delivery-panel-icon{display:grid;place-items:center;flex:0 0 36px;width:36px;height:36px;border-radius:10px;background:#fff1e7;color:#c2410c;font-size:1rem}
+.delivery-panel-head h3{margin:1px 0 4px;color:var(--ink);font-size:1rem;line-height:1.4;font-weight:800}
+.delivery-muted{color:var(--muted);font-size:.82rem;line-height:1.5}
+.delivery-panel-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.delivery-search{display:flex;align-items:center;gap:8px;width:min(260px,100%);padding:0 10px;border:1px solid #d0d5dd;border-radius:9px;background:#fff;color:#98a2b3}
+.delivery-search:focus-within{border-color:#f59e62;box-shadow:0 0 0 3px #fb923c20}
+.delivery-search input{width:100%;min-width:0;height:38px;border:0;outline:0;background:transparent;color:var(--ink);font:inherit;font-size:.84rem}
+.delivery-search input::placeholder{color:#98a2b3}
+.delivery-orders{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.delivery-order[hidden],.delivery-empty[hidden]{display:none!important}
+.delivery-order{display:grid;align-content:start;gap:12px;min-width:0;padding:15px;border:1px solid var(--border);border-radius:11px;background:#fff;transition:border-color .15s,box-shadow .15s}
+.delivery-order:hover{border-color:#f5c19d;box-shadow:0 4px 14px #1018280a}
+.delivery-order-top{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;min-width:0}
+.delivery-order-identity{display:flex;gap:9px;align-items:flex-start;min-width:0}
+.delivery-order-symbol{display:grid;place-items:center;flex:0 0 36px;width:36px;height:36px;border-radius:9px;background:#fff1e7;color:#c2410c;font-weight:800;font-size:1rem}
+.delivery-order-code{color:var(--ink);font-size:.95rem;font-weight:800;overflow-wrap:anywhere}
+.delivery-order-customer{margin-top:4px;color:var(--muted);font-size:.82rem;line-height:1.4;overflow-wrap:anywhere}
+.delivery-chip{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;padding:5px 8px;border-radius:999px;background:#fff4e8;color:#9a3412;font-size:.72rem;font-weight:750;white-space:nowrap}
+.delivery-chip:before{content:"";width:6px;height:6px;border-radius:50%;background:#ea580c}
+.delivery-order-divider{height:1px;background:#eef0f3}
+.delivery-order-info{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.delivery-info-box{min-width:0;padding:9px 10px;border-radius:8px;background:#f8fafc}
+.delivery-info-label{display:block;margin-bottom:4px;color:#7b8494;font-size:.72rem;font-weight:600}
+.delivery-info-value{display:block;color:#344054;font-size:.82rem;font-weight:650;line-height:1.45;overflow-wrap:anywhere}
+.delivery-address{grid-column:1/-1}.delivery-address .delivery-info-value{font-weight:500}
+.delivery-order-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:2px}
+.delivery-order-footnote{color:#7b8494;font-size:.75rem;line-height:1.4}
+.delivery-primary{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:39px;padding:9px 12px;border:1px solid var(--orange);border-radius:9px;background:var(--orange);color:#fff;font:inherit;font-size:.82rem;font-weight:750;cursor:pointer;transition:background .15s,border-color .15s}
+.delivery-primary:hover{background:var(--orange-dark);border-color:var(--orange-dark)}
+.delivery-primary:focus-visible,.delivery-secondary:focus-visible{outline:3px solid #fdba7466;outline-offset:2px}
+.delivery-primary:disabled{opacity:.6;cursor:wait}
+.delivery-secondary{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:8px 11px;border:1px solid #d0d5dd;border-radius:9px;background:#fff;color:#344054;font:inherit;font-size:.81rem;font-weight:700;cursor:pointer}
+.delivery-secondary:hover{border-color:#f5b17f;background:#fffaf5}
+.delivery-count-badge{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 7px;border-radius:999px;background:#f2f4f7;color:#475467;font-size:.75rem;font-weight:800}
+.delivery-empty{display:grid;justify-items:center;gap:7px;grid-column:1/-1;padding:28px 16px;border:1px dashed #d0d5dd;border-radius:10px;background:#fafbfc;text-align:center;color:var(--muted);line-height:1.55}
+.delivery-empty-icon{display:grid;place-items:center;width:40px;height:40px;margin-bottom:2px;border-radius:11px;background:#fff1e7;color:#c2410c;font-size:1.2rem}
+.delivery-empty strong{color:#344054;font-size:.9rem}.delivery-empty span{max-width:420px;font-size:.81rem}
+.delivery-history-status{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;font-size:.73rem;font-weight:750;white-space:nowrap}
+.delivery-history-status:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.delivery-history-status.success{background:#ecfdf3;color:#157347}.delivery-history-status.failed{background:#fff1f0;color:#b42318}
+.delivery-table-wrap{overflow-x:auto;border:1px solid #eaecf0;border-radius:9px}
+.delivery-table{width:100%;border-collapse:collapse;min-width:760px}
+.delivery-table th,.delivery-table td{padding:11px 12px;text-align:left;border-bottom:1px solid #eaecf0;font-size:.81rem;vertical-align:middle}
+.delivery-table th{color:#667085;font-size:.72rem;font-weight:750;background:#f8fafc;white-space:nowrap}
+.delivery-table td{color:#344054;background:#fff}.delivery-table tbody tr:hover td{background:#fffdfa}.delivery-table tr:last-child td{border-bottom:0}.delivery-table td strong{color:var(--ink);font-weight:800}
+.delivery-proof-link{display:inline-flex;align-items:center;gap:5px;color:#c2410c;font-weight:750;text-decoration:none;white-space:nowrap}.delivery-proof-link:hover{text-decoration:underline}.delivery-table-empty{text-align:center!important;padding:24px 14px!important;color:#7b8494!important}
+.delivery-modal{display:grid;gap:14px}
+.delivery-modal-intro{display:flex;align-items:flex-start;gap:9px;padding:11px 12px;border-radius:9px;background:#fff7ed;color:#9a3412;font-size:.82rem;line-height:1.5}
+.delivery-modal-intro-icon{display:grid;place-items:center;flex:0 0 23px;width:23px;height:23px;border-radius:7px;background:#ffedd5;font-weight:800}
+.delivery-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.delivery-choice{display:flex;align-items:flex-start;gap:9px;min-width:0;padding:12px;border:1px solid #dce1e8;border-radius:10px;background:#fff;cursor:pointer}
+.delivery-choice:hover{border-color:#f5b17f}.delivery-choice:has(input:checked){border-color:var(--orange);background:#fff8f2;box-shadow:0 0 0 1px var(--orange) inset}
+.delivery-choice input{flex:0 0 auto;margin-top:3px;accent-color:var(--orange)}.delivery-choice strong{display:block;color:var(--ink);font-size:.86rem;font-weight:800}.delivery-choice small{display:block;margin-top:4px;color:var(--muted);font-size:.78rem;line-height:1.45}
+.delivery-fields[hidden]{display:none!important}.delivery-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.delivery-fields label{display:flex;flex-direction:column;gap:6px;min-width:0;color:#344054;font-size:.81rem;font-weight:700}.delivery-required{color:#dc2626}
+.delivery-fields input:not([type=file]),.delivery-fields textarea,.delivery-fields select{width:100%;box-sizing:border-box;min-height:41px;padding:9px 11px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:var(--ink);font:inherit;font-size:.84rem}
+.delivery-fields textarea{min-height:95px;resize:vertical;line-height:1.5}.delivery-fields input:focus,.delivery-fields textarea:focus,.delivery-fields select:focus{outline:0;border-color:#f59e62;box-shadow:0 0 0 3px #fb923c20}
+.delivery-fields input::placeholder,.delivery-fields textarea::placeholder{color:#98a2b3;font-weight:400}.delivery-full{grid-column:1/-1}
+.delivery-upload{width:100%;box-sizing:border-box;border:1px dashed #f0a36f!important;border-radius:9px!important;background:#fff8f3!important;padding:11px!important;color:#7c2d12!important;font-size:.8rem!important;cursor:pointer}
+.delivery-upload::file-selector-button{margin-right:9px;padding:7px 9px;border:0;border-radius:6px;background:#ffedd5;color:#9a3412;font:inherit;font-weight:750;cursor:pointer}
+.delivery-file-help{margin-top:-1px;color:#7b8494;font-size:.76rem;font-weight:400;line-height:1.45}.delivery-proof-preview{display:none;max-width:100%;max-height:240px;object-fit:contain;border:1px solid #e6eaf0;border-radius:9px;background:#f8fafc;margin-top:9px}
+.delivery-warning{padding:11px 12px;border:1px solid #fed7aa;border-radius:9px;background:#fff7ed;color:#9a3412;font-size:.81rem;line-height:1.5}
+.delivery-success-note{padding:11px 12px;border:1px solid #bbf7d0;border-radius:9px;background:#f0fdf4;color:#166534;font-size:.81rem;line-height:1.5}
+@media(max-width:850px){.delivery-orders{grid-template-columns:1fr}.delivery-panel{padding:15px}}
+@media(max-width:620px){.delivery-summary{grid-template-columns:1fr;gap:8px}.delivery-metric{padding:12px 13px}.delivery-metric-icon{flex-basis:36px;width:36px;height:36px}.delivery-metric strong{font-size:1.3rem}.delivery-panel{padding:12px}.delivery-panel-head{align-items:flex-start}.delivery-panel-tools{width:100%}.delivery-search{width:auto;flex:1}.delivery-order{padding:12px}.delivery-order-info{grid-template-columns:1fr 1fr}.delivery-fields,.delivery-choice-grid{grid-template-columns:1fr}.delivery-full{grid-column:auto}}
+@media(max-width:390px){.delivery-order-top{gap:7px}.delivery-chip{font-size:.68rem;padding:5px 7px}.delivery-order-footer{align-items:stretch;flex-direction:column}.delivery-order-footer .delivery-primary{width:100%}.delivery-order-info{grid-template-columns:1fr}.delivery-address{grid-column:auto}}
+@media(prefers-reduced-motion:reduce){.delivery-page *{transition:none!important}}
+</style>
+<script>
+window.sprint5Features=window.sprint5Features||{};
+window.sprint5Features['Xác nhận giao hàng']={path:'giao-hang',permission:'shipments.write',render:()=>warehouseUi.screen('Xác nhận giao hàng','Ghi nhận kết quả giao thực tế, lưu ảnh chứng từ đã ký hoặc lập biên bản giao thất bại và hoàn hàng về kho.',()=>apiRequest('delivery-confirmations'),(host,data)=>{
+ const ui=warehouseUi,e=ui.esc,reload=()=>sprint5Features['Xác nhận giao hàng'].render();
+ const orders=data.orders||[],history=data.history||[];
+ const succeeded=history.filter(x=>x.outcome==='SUCCESS').length,failed=history.filter(x=>x.outcome==='FAILED').length;
+ const fmtDate=v=>{if(!v)return '—';return e(String(v).replace('T',' ').replace(/\.\d+$/,'').slice(0,16));};
+ const safeText=v=>e(v==null?'':String(v));
+ host.innerHTML=`<div class="delivery-page">
+<div class="delivery-summary" aria-label="Tổng quan giao hàng">
+   <div class="delivery-metric"><div class="delivery-metric-icon" aria-hidden="true">◷</div><div class="delivery-metric-copy"><span>Đơn chờ xác nhận</span><strong>${orders.length}</strong></div></div>
+   <div class="delivery-metric"><div class="delivery-metric-icon" aria-hidden="true">✓</div><div class="delivery-metric-copy"><span>Giao thành công · 50 lần gần nhất</span><strong>${succeeded}</strong></div></div>
+   <div class="delivery-metric"><div class="delivery-metric-icon" aria-hidden="true">↺</div><div class="delivery-metric-copy"><span>Giao thất bại · 50 lần gần nhất</span><strong>${failed}</strong></div></div>
+  </div>
+  <section class="delivery-panel"><div class="delivery-panel-head"><div class="delivery-panel-title"><div class="delivery-panel-icon" aria-hidden="true">▣</div><div><h3>Đơn đã xuất chờ xác nhận</h3><div class="delivery-muted">Chỉ hiển thị đơn ở trạng thái SHIPPED thuộc kho được phân công.</div></div></div>
+   <div class="delivery-panel-tools"><label class="delivery-search"><span aria-hidden="true">⌕</span><input type="search" id="deliverySearch" placeholder="Tìm mã đơn, đại lý, địa chỉ…" aria-label="Tìm đơn giao hàng"></label><button class="delivery-secondary" id="deliveryReload" type="button"><span aria-hidden="true">↻</span> Làm mới</button></div></div>
+   <div class="delivery-muted" style="margin:-5px 0 13px">Đang theo dõi <strong id="deliveryVisibleCount" style="color:#344054">${orders.length}</strong> đơn hàng</div>
+   <div class="delivery-orders" id="deliveryOrdersGrid">${orders.map(o=>{const key=[o.code,o.customer_code,o.customer_name,o.warehouse_name,o.delivery_address].filter(Boolean).join(' ').toLocaleLowerCase('vi');return `<article class="delivery-order" data-search="${e(key)}"><div class="delivery-order-top"><div class="delivery-order-identity"><div class="delivery-order-symbol" aria-hidden="true">▤</div><div><div class="delivery-order-code">${safeText(o.code)}</div><div class="delivery-order-customer">${safeText(o.customer_code||'')}${o.customer_code&&o.customer_name?' · ':''}${safeText(o.customer_name||'Chưa xác định đại lý')}</div></div></div><span class="delivery-chip">Đã xuất kho</span></div>
+    <div class="delivery-order-divider"></div><div class="delivery-order-info"><div class="delivery-info-box"><span class="delivery-info-label">Kho xuất</span><span class="delivery-info-value">${safeText((o.warehouse_code?o.warehouse_code+' · ':'')+(o.warehouse_name||'—'))}</span></div><div class="delivery-info-box"><span class="delivery-info-label">Ngày xuất</span><span class="delivery-info-value">${fmtDate(o.shipped_at)}</span></div><div class="delivery-info-box delivery-address"><span class="delivery-info-label">Địa chỉ giao hàng</span><span class="delivery-info-value">${safeText(o.delivery_address||'Chưa có địa chỉ')}</span></div><div class="delivery-info-box"><span class="delivery-info-label">Số dòng hàng</span><span class="delivery-info-value">${safeText(o.line_count??0)} dòng</span></div><div class="delivery-info-box"><span class="delivery-info-label">Tổng số lượng cơ sở</span><span class="delivery-info-value">${safeText(o.shipped_quantity??'—')}</span></div></div>
+    <div class="delivery-order-footer"><span class="delivery-order-footnote">Kiểm tra thông tin trước khi xác nhận.</span><button type="button" class="delivery-primary" data-confirm="${safeText(o.id)}">Xác nhận giao hàng <span aria-hidden="true">→</span></button></div></article>`;}).join('')||`<div class="delivery-empty"><div class="delivery-empty-icon" aria-hidden="true">◷</div><strong>Chưa có đơn chờ xác nhận giao hàng</strong><span>Đơn sẽ xuất hiện tại đây sau khi hoàn tất xác nhận xuất kho.</span></div>`}</div>
+   <div class="delivery-empty" id="deliverySearchEmpty" hidden><div class="delivery-empty-icon" aria-hidden="true">⌕</div><strong>Không tìm thấy đơn phù hợp</strong><span>Thử tìm bằng mã đơn hàng, tên đại lý hoặc địa chỉ giao.</span></div>
+  </section>
+  <section class="delivery-panel"><div class="delivery-panel-head"><div class="delivery-panel-title"><div class="delivery-panel-icon" aria-hidden="true">▤</div><div><h3>Lịch sử giao hàng</h3><div class="delivery-muted">Theo dõi kết quả xác nhận, tình trạng hoàn kho và chứng từ liên quan.</div></div></div><span class="delivery-count-badge">${history.length} bản ghi</span></div>
+   <div class="delivery-table-wrap"><table class="delivery-table"><thead><tr><th>Đơn hàng / kho</th><th>Đại lý</th><th>Kết quả</th><th>Người nhận / lý do</th><th>Thời gian</th><th>Hoàn kho</th><th>Chứng từ</th></tr></thead><tbody>${history.map(h=>`<tr><td><strong>${safeText(h.order_code)}</strong><div class="delivery-muted">${safeText(h.warehouse_name)}</div></td><td>${safeText(h.customer_name||'—')}</td><td><span class="delivery-history-status ${h.outcome==='SUCCESS'?'success':'failed'}">${h.outcome==='SUCCESS'?'Giao thành công':'Giao thất bại'}</span></td><td>${h.outcome==='SUCCESS'?safeText(h.recipient_name||'—'):safeText(h.failure_reason||'—')}</td><td>${fmtDate(h.delivered_at||h.created_at)}</td><td>${h.returned_to_warehouse?'<span class="delivery-history-status success">Đã ghi nhận</span>':h.outcome==='FAILED'?'Chờ kết thúc chuyến':'—'}</td><td>${h.has_proof?`<a class="delivery-proof-link" href="api/delivery-confirmations/${encodeURIComponent(h.id)}/proof" target="_blank" rel="noopener">Xem ảnh <span aria-hidden="true">↗</span></a>`:'—'}</td></tr>`).join('')||'<tr><td colspan="7" class="delivery-table-empty">Chưa có lịch sử xác nhận giao hàng.</td></tr>'}</tbody></table></div>
+  </section>
+ </div>`;
+ host.querySelector('#deliveryReload').onclick=()=>reload();
+ const searchBox=host.querySelector('#deliverySearch'),orderCards=[...host.querySelectorAll('.delivery-order[data-search]')],searchEmpty=host.querySelector('#deliverySearchEmpty'),visibleCount=host.querySelector('#deliveryVisibleCount');
+ function filterOrders(){const q=searchBox.value.trim().toLocaleLowerCase('vi');let visible=0;orderCards.forEach(card=>{const match=!q||card.dataset.search.includes(q);card.hidden=!match;if(match)visible++;});visibleCount.textContent=String(visible);searchEmpty.hidden=!(orders.length&&visible===0);}
+ searchBox.addEventListener('input',filterOrders);
+ host.querySelectorAll('[data-confirm]').forEach(btn=>btn.onclick=()=>openConfirmation(orders.find(o=>String(o.id)===btn.dataset.confirm)));
+ function openConfirmation(order){if(!order)return;const localNow=()=>{const d=new Date(Date.now()-new Date().getTimezoneOffset()*60000);return d.toISOString().slice(0,16);};
+  const {form,close}=openFormDialog('Xác nhận giao hàng · '+e(order.code),`<div class="delivery-modal"><div class="delivery-modal-intro"><span class="delivery-modal-intro-icon" aria-hidden="true">!</span><span>Kiểm tra đúng đơn hàng trước khi lưu. Giao thành công sẽ chuyển đơn sang <strong>Đã giao</strong>. Giao thất bại sẽ ghi lý do và bút toán hàng hoàn về kho. Thao tác này chỉ ghi nhận kết quả giao hàng, không tạo hóa đơn.</span></div>
+   <div class="delivery-choice-grid"><label class="delivery-choice"><input type="radio" name="outcome" value="SUCCESS" checked><span><strong>✓ Giao hàng thành công</strong><small>Ghi nhận người nhận, thời gian giao và ảnh chứng từ đã ký.</small></span></label><label class="delivery-choice"><input type="radio" name="outcome" value="FAILED"><span><strong>↺ Giao hàng thất bại</strong><small>Bắt buộc nêu lý do; hàng ghi nhận quay về kho và đơn được huỷ (sao chép thành đơn mới để giao lại).</small></span></label></div>
+   <div id="deliverySuccessFields" class="delivery-fields"><label>Người nhận hàng <span class="delivery-required">*</span><input id="deliveryRecipient" maxlength="150" placeholder="Nhập họ tên người ký nhận" autocomplete="name"></label><label>Thời gian giao <span class="delivery-required">*</span><input id="deliveryTime" type="datetime-local" value="${localNow()}"></label><label class="delivery-full">Ảnh chứng từ giao hàng đã ký <span class="delivery-required">*</span><input id="deliveryProof" class="delivery-upload" type="file" accept="image/jpeg,image/png"><small class="delivery-file-help">Chọn ảnh JPG hoặc PNG, dung lượng tối đa 2 MB. Vui lòng tải ảnh rõ chữ ký hoặc biên nhận.</small><img id="deliveryProofPreview" class="delivery-proof-preview" alt="Xem trước ảnh chứng từ"></label></div>
+   <div id="deliveryFailureFields" class="delivery-fields" hidden><label class="delivery-full">Lý do giao thất bại <span class="delivery-required">*</span><textarea id="deliveryReason" maxlength="1000" rows="4" placeholder="Ví dụ: Đại lý đóng cửa, không có người nhận hoặc từ chối nhận hàng…"></textarea></label><div class="delivery-full delivery-warning"><strong>Lưu ý hoàn hàng:</strong> Sau khi xác nhận, hệ thống sẽ ghi nhận hàng đã xuất quay về kho. Đơn này không thể xác nhận giao thất bại lần thứ hai.</div></div>
+  </div>`,`Lưu xác nhận`);let objectUrl=null;
+  const successFields=form.querySelector('#deliverySuccessFields'),failureFields=form.querySelector('#deliveryFailureFields'),proof=form.querySelector('#deliveryProof'),preview=form.querySelector('#deliveryProofPreview'),recipient=form.querySelector('#deliveryRecipient'),time=form.querySelector('#deliveryTime'),reason=form.querySelector('#deliveryReason');
+  function switchOutcome(){const success=form.querySelector('input[name="outcome"]:checked').value==='SUCCESS';successFields.hidden=!success;failureFields.hidden=success;recipient.required=success;time.required=success;proof.required=success;reason.required=!success;}
+  form.querySelectorAll('input[name="outcome"]').forEach(x=>x.onchange=switchOutcome);switchOutcome();
+  proof.onchange=()=>{if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=null;preview.removeAttribute('src');preview.style.display='none';const file=proof.files?.[0];if(!file)return;if(!['image/png','image/jpeg'].includes(file.type)||file.size>2*1024*1024){proof.value='';form.querySelector('#s2FormError').textContent='Chỉ tải ảnh JPG/PNG có dung lượng tối đa 2 MB.';return;}objectUrl=URL.createObjectURL(file);preview.src=objectUrl;preview.style.display='block';form.querySelector('#s2FormError').textContent='';};
+  const originalClose=close;form.querySelector('#s2Cancel').onclick=()=>{if(objectUrl)URL.revokeObjectURL(objectUrl);originalClose();};document.getElementById('s2Close').onclick=()=>{if(objectUrl)URL.revokeObjectURL(objectUrl);originalClose();};
+  form.onsubmit=async ev=>{ev.preventDefault();const outcome=form.querySelector('input[name="outcome"]:checked').value;const fd=new FormData();fd.set('outcome',outcome);fd.set('recipientName',recipient.value.trim());fd.set('deliveredAt',time.value);fd.set('failureReason',reason.value.trim());if(outcome==='SUCCESS'&&proof.files?.[0])fd.set('proofImage',proof.files[0]);const submit=form.querySelector('button[type="submit"]');submit.disabled=true;form.querySelector('#s2FormError').textContent='';try{const response=await apiFetch('api/delivery-confirmations/'+order.id,{method:'POST',body:fd});const result=await response.json().catch(()=>({message:'Máy chủ trả về dữ liệu không hợp lệ'}));if(!response.ok)throw new Error(result.message||'Không thể lưu xác nhận giao hàng');if(objectUrl)URL.revokeObjectURL(objectUrl);close();showToast(result.message||'Đã lưu xác nhận giao hàng');await reload();}catch(err){form.querySelector('#s2FormError').textContent=err.message||'Không thể lưu xác nhận';}finally{if(submit.isConnected)submit.disabled=false;}};
+ }
+})};
+</script>

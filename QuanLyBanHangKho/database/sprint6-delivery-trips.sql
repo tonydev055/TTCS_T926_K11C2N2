@@ -1,0 +1,10 @@
+BEGIN;
+-- S6-06, sau sprint6-shipments.sql và sprint6-delivery-confirmation.sql.
+CREATE TABLE IF NOT EXISTS delivery_drivers(id BIGSERIAL PRIMARY KEY,name VARCHAR(150) NOT NULL CHECK(length(trim(name))>0),phone VARCHAR(20) NOT NULL CHECK(length(trim(phone))>0),active BOOLEAN NOT NULL DEFAULT TRUE);
+CREATE TABLE IF NOT EXISTS delivery_vehicles(id BIGSERIAL PRIMARY KEY,plate VARCHAR(30) NOT NULL UNIQUE CHECK(length(trim(plate))>0),active BOOLEAN NOT NULL DEFAULT TRUE);
+CREATE TABLE IF NOT EXISTS delivery_trips(id BIGSERIAL PRIMARY KEY,code VARCHAR(80) NOT NULL UNIQUE,warehouse_id BIGINT NOT NULL REFERENCES warehouses(id),region VARCHAR(150) NOT NULL,driver_id BIGINT NOT NULL REFERENCES delivery_drivers(id),vehicle_id BIGINT NOT NULL REFERENCES delivery_vehicles(id),status VARCHAR(20) NOT NULL DEFAULT 'DRAFT' CHECK(status IN('DRAFT','IN_TRANSIT','COMPLETED')),expected_at TIMESTAMP NOT NULL,departed_at TIMESTAMP,completed_at TIMESTAMP,created_by BIGINT NOT NULL REFERENCES users(id),created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,CHECK(departed_at IS NULL OR expected_at>departed_at));
+CREATE TABLE IF NOT EXISTS delivery_trip_stops(id BIGSERIAL PRIMARY KEY,trip_id BIGINT NOT NULL REFERENCES delivery_trips(id),order_id BIGINT NOT NULL UNIQUE REFERENCES orders(id),sequence INTEGER NOT NULL CHECK(sequence>0),address VARCHAR(1000) NOT NULL CHECK(length(trim(address))>0),recipient_name VARCHAR(150) NOT NULL,phone VARCHAR(20) NOT NULL CHECK(length(trim(phone))>0),UNIQUE(trip_id,sequence));
+CREATE UNIQUE INDEX IF NOT EXISTS delivery_trips_active_driver ON delivery_trips(driver_id) WHERE status='IN_TRANSIT';
+CREATE UNIQUE INDEX IF NOT EXISTS delivery_trips_active_vehicle ON delivery_trips(vehicle_id) WHERE status='IN_TRANSIT';
+DO $$ DECLARE t TEXT; BEGIN FOREACH t IN ARRAY ARRAY['delivery_drivers','delivery_vehicles','delivery_trips','delivery_trip_stops'] LOOP EXECUTE format('DROP TRIGGER IF EXISTS delivery_audit ON %I',t);EXECUTE format('CREATE TRIGGER delivery_audit AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION sprint2_audit()',t);END LOOP; END $$;
+COMMIT;

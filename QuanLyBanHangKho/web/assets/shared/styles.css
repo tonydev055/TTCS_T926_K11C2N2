@@ -2301,9 +2301,17 @@ td a {
 .app-view .sidebar-brand strong { color: #172033; font-size: 16px; }
 .app-view .sidebar-brand span:last-child { color: #8b7d72; font-size: 12px; }
 .app-view .nav-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   gap: 4px;
   padding: 0;
 }
+.app-view .sidebar-brand,
+.app-view .sidebar-help,
+.app-view .nav-item { flex-shrink: 0; }
+.app-view .sidebar-help { margin-top: 12px; }
 .app-view .nav-label {
   margin: 18px 12px 7px;
   color: #a08f81;

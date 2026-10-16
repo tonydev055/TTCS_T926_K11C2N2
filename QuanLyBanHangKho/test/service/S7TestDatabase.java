@@ -22,7 +22,7 @@ public final class S7TestDatabase {
         "sprint5-order-tracking.sql", "sprint5-stock-counts.sql", "sprint5-transfers.sql",
         "sprint5-low-stock.sql", "sprint6-pick-lists.sql", "sprint6-shipments.sql",
         "sprint6-delivery-confirmation.sql", "sprint6-delivery-trips.sql", "sprint6-lots.sql",
-        "sprint7-sales-invoices.sql", "sprint7-payments.sql"
+        "sprint7-sales-invoices.sql", "sprint7-payments.sql", "smtp.sql", "sprint7-payment-reminders.sql"
     );
 
     public static void main(String[] args) throws Exception {

@@ -28,11 +28,16 @@ public final class ThuDienTuService {
         enqueue(c,recipient,subject,body,actionUrl,System.getenv());
     }
     static void enqueue(Connection c,String recipient,String subject,String body,String actionUrl,Map<String,String> env) throws SQLException {
+        enqueueTracked(c,recipient,subject,body,actionUrl,env);
+    }
+    static Map<String,Object> enqueueTracked(Connection c,String recipient,String subject,String body,String actionUrl,Map<String,String> env) throws SQLException {
         if(mode(env).equals("dev")) {
-            TruyVanDB.update(c,"INSERT INTO dev_mailbox_messages(recipient,subject,body,action_url) VALUES(?,?,?,?)",recipient,subject,body,actionUrl);
+            var row=TruyVanDB.one(c,"INSERT INTO dev_mailbox_messages(recipient,subject,body,action_url) VALUES(?,?,?,?) RETURNING id",recipient,subject,body,actionUrl);
+            return Map.of("mode","DEV","id",row.get("id"));
         } else {
             SmtpService.settings(env);
-            TruyVanDB.update(c,"INSERT INTO mail_outbox(recipient,subject,body,action_url,expires_at) VALUES(?,?,?,?,CURRENT_TIMESTAMP+INTERVAL '25 minutes')",recipient,subject,body,actionUrl);
+            var row=TruyVanDB.one(c,"INSERT INTO mail_outbox(recipient,subject,body,action_url,expires_at) VALUES(?,?,?,?,CURRENT_TIMESTAMP+INTERVAL '25 minutes') RETURNING id",recipient,subject,body,actionUrl);
+            return Map.of("mode","SMTP","id",row.get("id"));
         }
     }
     static String passwordResetUrl(String applicationUrl,String token) {

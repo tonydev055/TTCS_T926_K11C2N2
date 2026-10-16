@@ -132,6 +132,7 @@ function buildNavigation(menu) {
     'Doanh số & chỉ tiêu': '◎',
     'Báo cáo kinh doanh': '▥',
     'Hóa đơn': '▤',
+    'Hóa đơn bán hàng': '▤',
     'Thanh toán': '₫',
     'Sổ công nợ': '▥',
     'Đối chiếu công nợ': '✓',

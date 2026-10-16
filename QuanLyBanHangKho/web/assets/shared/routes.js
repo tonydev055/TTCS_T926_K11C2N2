@@ -14,6 +14,7 @@ function getAvailableMenu() {
   if (hasPermission('orders.read') || hasPermission('orders.own')) menu.push('Đơn hàng');
   if (hasPermission('orders.approve')) menu.push('Duyệt đơn hàng');
   if (hasPermission('orders.self')) menu.push('Đặt hàng');
+  if (hasPermission('invoices.write')) menu.push('Hóa đơn bán hàng');
   for (const [name, feature] of Object.entries(window.sprint5Features || {})) {
     if (hasPermission(feature.permission)) menu.push(name);
   }

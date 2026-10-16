@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S7-06 · Lập biên bản đối chiếu công nợ định kỳ — KhoFlow</title>
+  <meta name="description" content="Lập biên bản đối chiếu công nợ định kỳ với đại lý - SCRUM-94">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════
+       Design Tokens KhoFlow
+       ═══════════════════════════════════════════════════════════════════ */
+    :root {
+      --orange: #f47a00;
+      --orange-dark: #d96500;
+      --orange-soft: #fff1df;
+      --orange-light: rgba(244, 122, 0, 0.12);
+      --ink: #17120e;
+      --ink-secondary: #334155;
+      --muted: #786d64;
+      --muted-light: #94a3b8;
+      --line: #eee4da;
+      --bg: #fffaf5;
+      --bg-surface: #ffffff;
+      --bg-alt: #f8fafc;
+      --shadow: 0 12px 32px rgba(83, 48, 17, 0.08);
+      --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.05);
+      --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.06);
+      --success: #067647;
+      --success-bg: #ecfdf3;
+      --warning: #b54708;
+      --warning-bg: #fffaeb;
+      --danger: #b42318;
+      --danger-bg: #fef3f2;
+      --info: #175cd3;
+      --info-bg: #eff8ff;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-full: 9999px;
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Be Vietnam Pro', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* Layout */
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 250px;
+      background: #ffffff;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 40;
+    }
+
+    .sidebar-brand {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 22px;
+      border-bottom: 1px solid var(--line);
+      text-decoration: none;
+      color: var(--ink);
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: var(--orange);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 18px;
+      box-shadow: 0 4px 12px rgba(244, 122, 0, 0.3);
+    }
+
+    .brand-title strong {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.2;
+      display: block;
+    }
+
+    .brand-title span {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .sidebar-nav {
+      padding: 20px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .nav-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--muted-light);
+      padding: 12px 10px 6px;
+      text-transform: uppercase;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      color: var(--ink-secondary);
+      font-size: 13.5px;
+      font-weight: 500;
+      text-decoration: none;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      transition: var(--transition);
+    }
+
+    .nav-item:hover {
+      background: var(--orange-soft);
+      color: var(--orange-dark);
+    }
+
+    .nav-item.active {
+      background: var(--orange);
+      color: #ffffff;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(244, 122, 0, 0.28);
+    }
+
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid var(--line);
+      background: #fdfaf6;
+    }
+
+    .role-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      font-size: 12px;
+    }
+
+    .role-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--orange);
+    }
+
+    /* Workspace */
+    .workspace {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow-y: auto;
+    }
+
+    .topbar {
+      height: 76px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    .topbar-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .topbar-breadcrumb {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .topbar-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    /* Role Switcher */
+    .role-switcher {
+      display: flex;
+      background: #f1f5f9;
+      padding: 3px;
+      border-radius: var(--radius-md);
+      gap: 2px;
+    }
+
+    .role-btn {
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 0;
+      background: transparent;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .role-btn.active {
+      background: #ffffff;
+      color: var(--orange-dark);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-full);
+      background: #ffffff;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--orange-soft);
+      color: var(--orange-dark);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    /* Main Container */
+    .main-container {
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      max-width: 1380px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Card */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      background: #ffffff;
+    }
+
+    .card-title-group h2 {
+      font-size: 16.5px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .card-title-group p {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .card-body {
+      padding: 24px;
+    }
+
+    /* Metrics Overview */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .metric-card {
+      padding: 20px;
+      border-radius: var(--radius-md);
+      background: #ffffff;
+      border: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition);
+    }
+
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--muted-light);
+    }
+
+    .metric-card.accent::before { background: var(--orange); }
+    .metric-card.success::before { background: #10b981; }
+    .metric-card.warning::before { background: #f59e0b; }
+    .metric-card.info::before { background: #3b82f6; }
+
+    .metric-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-val {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+
+    .metric-sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* Controls & Filters Strip */
+    .controls-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding: 16px 20px;
+      background: #fdfaf6;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      margin-bottom: 20px;
+    }
+
+    .form-group-inline {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .form-group-inline label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink-secondary);
+    }
+
+    .select-control, .input-control {
+      padding: 8px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius-sm);
+      font: inherit;
+      font-size: 13px;
+      background: #ffffff;
+      color: var(--ink);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 9px 18px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--orange);
+      color: #ffffff;
+      border-color: var(--orange-dark);
+      box-shadow: 0 2px 8px rgba(244, 122, 0, 0.28);
+    }
+
+    .btn-primary:hover {
+      background: var(--orange-dark);
+      transform: translateY(-1px);
+    }
+
+    .btn-success {
+      background: #10b981;
+      color: #ffffff;
+      border-color: #059669;
+    }
+
+    .btn-success:hover { background: #059669; }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #ffffff;
+      border-color: #991b1b;
+    }
+
+    .btn-danger:hover { background: #991b1b; }
+
+    .btn-outline {
+      background: #ffffff;
+      color: var(--ink-secondary);
+      border-color: #cbd5e1;
+    }
+
+    .btn-outline:hover {
+      background: var(--bg-alt);
+      border-color: #94a3b8;
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* Tables */
+    .table-responsive {
+      overflow-x: auto;
+      width: 100%;
+    }
+
+    .custom-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    .custom-table th {
+      padding: 12px 16px;
+      background: var(--bg-alt);
+      color: #475569;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--line);
+      white-space: nowrap;
+    }
+
+    .custom-table td {
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--line);
+      color: var(--ink-secondary);
+      font-size: 13px;
+      vertical-align: middle;
+    }
+
+    .custom-table tbody tr:hover {
+      background: #fffbf7;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      font-size: 11.5px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge-success { background: var(--success-bg); color: var(--success); }
+    .badge-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid #fedf89; }
+    .badge-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid #fecdca; }
+    .badge-info { background: var(--info-bg); color: var(--info); }
+
+    /* Modal Dialog */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: var(--transition);
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-box {
+      background: #ffffff;
+      border-radius: var(--radius-lg);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      width: 100%;
+      max-width: 620px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-header h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .modal-body {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal-footer {
+      padding: 16px 24px;
+      background: #f8fafc;
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* Print Preview Paper Styles */
+    .paper-sheet {
+      background: #ffffff;
+      width: 100%;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 48px;
+      border: 1px solid #dcd3ca;
+      border-radius: 4px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+      color: #111827;
+      line-height: 1.6;
+    }
+
+    .sheet-national-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .sheet-national-header h4 {
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .sheet-national-header p {
+      font-size: 12px;
+      font-weight: 600;
+      border-bottom: 1px solid #111827;
+      display: inline-block;
+      padding-bottom: 4px;
+      margin-top: 2px;
+    }
+
+    .sheet-title {
+      text-align: center;
+      margin: 20px 0 16px;
+    }
+
+    .sheet-title h1 {
+      font-size: 20px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #111827;
+    }
+
+    .sheet-title p {
+      font-size: 12px;
+      font-style: italic;
+      color: #4b5563;
+    }
+
+    .sheet-party-box {
+      margin-bottom: 18px;
+      font-size: 12.5px;
+    }
+
+    .sheet-party-box table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0;
+    }
+
+    .sheet-party-box td {
+      padding: 4px 0;
+      vertical-align: top;
+    }
+
+    .sheet-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 12px;
+    }
+
+    .sheet-table th, .sheet-table td {
+      border: 1px solid #9ca3af;
+      padding: 8px 10px;
+    }
+
+    .sheet-table th {
+      background: #f3f4f6;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .sheet-summary-box {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin: 16px 0;
+      font-size: 12.5px;
+    }
+
+    .sheet-signatures {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      text-align: center;
+      margin-top: 36px;
+      padding-top: 10px;
+    }
+
+    .signature-col strong {
+      font-size: 13px;
+      display: block;
+      text-transform: uppercase;
+    }
+
+    .signature-col span {
+      font-size: 11px;
+      color: #6b7280;
+      font-style: italic;
+    }
+
+    .signature-space {
+      height: 70px;
+    }
+
+    /* Print Viewport Media Query */
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+      }
+      .sidebar, .topbar, .card-header, .controls-strip, .screen-only, #toast, .modal-overlay {
+        display: none !important;
+      }
+      .workspace {
+        overflow: visible !important;
+      }
+      .main-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+      }
+      .card {
+        border: 0 !important;
+        box-shadow: none !important;
+      }
+      .card-body {
+        padding: 0 !important;
+      }
+      .paper-sheet {
+        border: 0 !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+      }
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      right: 28px;
+      bottom: 28px;
+      background: #1e1a17;
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: var(--transition);
+      z-index: 200;
+      pointer-events: none;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <a href="index.html" class="sidebar-brand">
+        <div class="brand-mark">KF</div>
+        <div class="brand-title">
+          <strong>KhoFlow</strong>
+          <span>Kế Toán & Công Nợ</span>
+        </div>
+      </a>
+      <nav class="sidebar-nav">
+        <span class="nav-label">Kế toán công nợ</span>
+        <a href="s7_06_reconciliation.html" class="nav-item active">
+          <span style="font-size:16px">📑</span> Biên bản đối chiếu nợ
+        </a>
+        <a href="s7_08_payment_reminder.html" class="nav-item">
+          <span style="font-size:16px">🔔</span> Nhắc hạn thanh toán
+        </a>
+        <a href="index.html#%C4%90%E1%BA%A1i%20l%C3%BD" class="nav-item">
+          <span style="font-size:16px">🏢</span> Quản lý Đại lý
+        </a>
+        <a href="index.html#%C4%90%C6%A1n%20h%C3%A0ng" class="nav-item">
+          <span style="font-size:16px">📦</span> Hóa đơn & Đơn hàng
+        </a>
+
+        <span class="nav-label">Hệ thống</span>
+        <a href="index.html" class="nav-item">
+          <span style="font-size:16px">🏠</span> Về trang chủ KhoFlow
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="role-badge">
+          <span class="dot"></span>
+          <div>
+            <strong id="sidebarRoleLabel">Kế toán công nợ</strong>
+            <div style="font-size:11px;color:var(--muted)">ACCOUNTANT / PORTAL</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Workspace -->
+    <main class="workspace">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="topbar-breadcrumb">
+            <span>KhoFlow</span> / <span>Công nợ</span> / <strong style="color:var(--orange)">S7-06 Đối chiếu công nợ</strong>
+          </div>
+          <h1 class="topbar-title">Lập biên bản đối chiếu công nợ định kỳ</h1>
+        </div>
+        <div class="topbar-actions screen-only">
+          <!-- Role Switcher để thử nghiệm cả 2 vai trò Kế toán và Đại lý -->
+          <div class="role-switcher" title="Chuyển đổi vai trò để kiểm thử">
+            <button class="role-btn active" id="btnRoleAccountant">💼 Kế toán</button>
+            <button class="role-btn" id="btnRoleDealer">🏪 Cổng đại lý</button>
+          </div>
+
+          <div class="user-chip">
+            <span class="avatar" id="userAvatar">KT</span>
+            <div class="user-info">
+              <strong id="userFullName">Trần Thị Bích Ngọc</strong>
+              <small id="userRoleTitle">Kế toán công nợ</small>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Container -->
+      <div class="main-container">
+        <!-- Banner thông báo vai trò Cổng Đại lý (chỉ hiện khi chuyển role) -->
+        <div id="dealerPortalBanner" style="display:none">
+          <div style="padding:16px 20px;background:#eff8ff;border:1px solid #b2ddff;border-radius:var(--radius-md);color:#175cd3;display:flex;align-items:center;justify-content:space-between;gap:16px">
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="font-size:24px">🏪</span>
+              <div>
+                <strong>Bạn đang thao tác tại CỔNG ĐẠI LÝ (Đại lý Kim Long - DL-00284)</strong>
+                <p style="font-size:12.5px;margin-top:2px;color:#1e40af">Xem biên bản đối chiếu từ kế toán gửi sang, bấm <strong>"Xác nhận số liệu"</strong> hoặc <strong>"Phản hồi số liệu bị lệch"</strong>.</p>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px" id="dealerActionButtons">
+              <!-- Render động theo trạng thái biên bản -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Metrics Overview: Đầu kỳ - Phát sinh - Cuối kỳ -->
+        <div class="metrics-grid screen-only">
+          <div class="metric-card">
+            <div class="metric-label">1. Số dư nợ đầu kỳ</div>
+            <div class="metric-val" id="valOpeningBalance">145.000.000 đ</div>
+            <div class="metric-sub">Dư nợ chuyển tiếp từ kỳ trước</div>
+          </div>
+          <div class="metric-card accent">
+            <div class="metric-label">2. Tổng phát sinh tăng (Mua hàng)</div>
+            <div class="metric-val" id="valTotalDebit" style="color:var(--orange-dark)">110.500.000 đ</div>
+            <div class="metric-sub">Hóa đơn xuất hàng trong kỳ</div>
+          </div>
+          <div class="metric-card success">
+            <div class="metric-label">3. Tổng phát sinh giảm (Thanh toán)</div>
+            <div class="metric-val" id="valTotalCredit" style="color:#059669">113.000.000 đ</div>
+            <div class="metric-sub">Đã thanh toán / cấn trừ trong kỳ</div>
+          </div>
+          <div class="metric-card warning">
+            <div class="metric-label">4. Số dư nợ cuối kỳ phải chốt</div>
+            <div class="metric-val" id="valClosingBalance" style="color:#b54708">142.500.000 đ</div>
+            <div class="metric-sub">Đầu kỳ + Phát sinh tăng - Giảm</div>
+          </div>
+        </div>
+
+        <!-- Bộ lọc và Điều khiển -->
+        <div class="card screen-only">
+          <div class="card-header">
+            <div class="card-title-group">
+              <h2>⚙️ Thiết lập kỳ đối chiếu công nợ</h2>
+              <p>Chọn đại lý và khoảng thời gian để tự động tính toán số dư và tổng hợp phát sinh chứng từ</p>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <button class="btn btn-primary btn-sm" id="btnGenerateRecon">
+                ⚡ Tự động tổng hợp số liệu
+              </button>
+              <button class="btn btn-outline btn-sm" id="btnPrintPdf">
+                🖨️ Xuất PDF / In biên bản
+              </button>
+            </div>
+          </div>
+          <div class="card-body" style="padding:20px 24px">
+            <div class="controls-strip" style="margin-bottom:0">
+              <div class="form-group-inline">
+                <label for="selectDealer">Đại lý đối chiếu:</label>
+                <select id="selectDealer" class="select-control" style="min-width:240px">
+                  <option value="DL-00284" selected>DL-00284 — Đại lý Thiết Bị Điện Kim Long</option>
+                  <option value="DL-00192">DL-00192 — Cửa hàng Vật liệu Xây dựng Toàn Thắng</option>
+                  <option value="DL-00305">DL-00305 — Nhà phân phối Điện cơ Hoàng Phát</option>
+                </select>
+              </div>
+
+              <div class="form-group-inline">
+                <label for="selectPeriod">Kỳ đối chiếu:</label>
+                <select id="selectPeriod" class="select-control">
+                  <option value="2026-10" selected>Tháng 10/2026 (01/10/2026 - 31/10/2026)</option>
+                  <option value="2026-09">Tháng 09/2026 (01/09/2026 - 30/09/2026)</option>
+                  <option value="2026-Q3">Quý III/2026 (01/07/2026 - 30/09/2026)</option>
+                </select>
+              </div>
+
+              <div class="form-group-inline">
+                <label>Trạng thái biên bản:</label>
+                <span id="reconStatusBadge" class="badge badge-warning">Chờ đại lý xác nhận</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mẫu Biên Bản Đối Chiếu Công Nợ (Chuẩn in ấn & ký kết) -->
+        <div class="card">
+          <div class="card-header screen-only">
+            <div class="card-title-group">
+              <h2>📄 Nội dung Biên bản đối chiếu công nợ (Kỳ tháng 10/2026)</h2>
+              <p>Mẫu biên bản kế toán theo quy chuẩn đối chiếu công nợ giữa Nhà phân phối và Đại lý</p>
+            </div>
+            <div style="display:flex;gap:10px" id="reconActionButtons">
+              <button class="btn btn-outline btn-sm" id="btnSendToDealer">
+                ✉️ Gửi sang Cổng đại lý
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <!-- Tờ giấy biên bản A4 -->
+            <div class="paper-sheet" id="printArea">
+              <!-- Tiêu ngữ Quốc gia -->
+              <div class="sheet-national-header">
+                <h4>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h4>
+                <p>Độc lập – Tự do – Hạnh phúc</p>
+              </div>
+
+              <!-- Tiêu đề biên bản -->
+              <div class="sheet-title">
+                <h1>BIÊN BẢN ĐỐI CHIẾU CÔNG NỢ</h1>
+                <p>Số: <strong id="sheetReconCode">BBĐC-2026/10-DL00284</strong> — Ngày lập: <span id="sheetCreatedDate">16/10/2026</span></p>
+                <p>Kỳ đối chiếu: Từ ngày <strong id="sheetFromDate">01/10/2026</strong> đến ngày <strong id="sheetToDate">31/10/2026</strong></p>
+              </div>
+
+              <!-- Căn cứ -->
+              <p style="font-size:12px;margin-bottom:12px;font-style:italic">
+                - Căn cứ Hợp đồng phân phối đại lý số: <strong>HĐ-2026/KF-DL00284</strong> đã ký kết giữa hai bên.<br>
+                - Căn cứ vào các hóa đơn bán hàng và chứng từ thanh toán phát sinh trong kỳ đối chiếu.
+              </p>
+
+              <!-- Hai bên đại diện -->
+              <div class="sheet-party-box">
+                <table style="width:100%">
+                  <tr>
+                    <td style="width:50%">
+                      <strong style="text-transform:uppercase">BÊN A (BÊN BÁN): CÔNG TY CỔ PHẦN PHÂN PHỐI KHOFLOW</strong><br>
+                      - Địa chỉ: Tầng 8, Tòa nhà KhoFlow Tower, Quận Cầu Giấy, Hà Nội<br>
+                      - Đại diện: <strong>Bà Trần Thị Bích Ngọc</strong> — Chức vụ: Kế toán công nợ<br>
+                      - Điện thoại: (024) 3888 9999 · Email: ketoan@khoflow.vn
+                    </td>
+                    <td style="width:50%">
+                      <strong style="text-transform:uppercase" id="sheetDealerName">BÊN B (ĐẠI LÝ): ĐẠI LÝ THIẾT BỊ ĐIỆN KIM LONG</strong><br>
+                      - Mã đại lý: <strong id="sheetDealerCode">DL-00284</strong><br>
+                      - Đại diện: <strong>Ông Nguyễn Kim Long</strong> — Chức vụ: Giám đốc đại lý<br>
+                      - Điện thoại: 0912 345 678 · Email: daily.kimlong@khoflow.vn
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <p style="font-size:12.5px;margin-bottom:8px">
+                Hôm nay, hai bên cùng tiến hành đối chiếu tình hình phát sinh và số dư công nợ trong kỳ như sau:
+              </p>
+
+              <!-- Bảng tóm tắt số dư -->
+              <div class="sheet-summary-box">
+                <table style="width:100%;font-size:12.5px">
+                  <tr>
+                    <td><strong>I. Số dư nợ đầu kỳ (01/10/2026):</strong></td>
+                    <td style="text-align:right"><strong id="sheetSummaryOpening">145.000.000 đ</strong></td>
+                  </tr>
+                  <tr>
+                    <td><strong>II. Tổng phát sinh Nợ trong kỳ (Mua hàng):</strong></td>
+                    <td style="text-align:right"><strong id="sheetSummaryDebit" style="color:var(--orange-dark)">+ 110.500.000 đ</strong></td>
+                  </tr>
+                  <tr>
+                    <td><strong>III. Tổng phát sinh Có trong kỳ (Thanh toán):</strong></td>
+                    <td style="text-align:right"><strong id="sheetSummaryCredit" style="color:#059669">- 113.000.000 đ</strong></td>
+                  </tr>
+                  <tr style="border-top:1px solid #d1d5db">
+                    <td style="padding-top:6px"><strong>IV. Số dư nợ cuối kỳ Bên B phải trả Bên A (31/10/2026):</strong></td>
+                    <td style="text-align:right;padding-top:6px"><strong id="sheetSummaryClosing" style="font-size:14px;color:#b54708">142.500.000 đ</strong></td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" style="font-style:italic;color:#4b5563;font-size:11.5px;padding-top:4px">
+                      (Bằng chữ: <span id="sheetClosingInWords">Một trăm bốn mươi hai triệu năm trăm nghìn đồng</span>)
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <!-- Bảng chi tiết chứng từ -->
+              <p style="font-size:12px;font-weight:700;margin:14px 0 6px">V. BẢNG KÊ CHI TIẾT CÁC CHỨNG TỪ PHÁT SINH TRONG KỲ:</p>
+              <table class="sheet-table" id="sheetDetailTable">
+                <thead>
+                  <tr>
+                    <th style="width:40px">STT</th>
+                    <th style="width:85px">Ngày</th>
+                    <th style="width:110px">Số chứng từ</th>
+                    <th>Nội dung diễn giải</th>
+                    <th style="width:110px">PS Nợ (Tăng)</th>
+                    <th style="width:110px">PS Có (Giảm)</th>
+                    <th style="width:110px">Số dư nợ</th>
+                  </tr>
+                </thead>
+                <tbody id="sheetDetailTableBody">
+                  <!-- Render từ JS -->
+                </tbody>
+              </table>
+
+              <!-- Kết luận & Ý kiến hai bên -->
+              <div style="font-size:12.5px;margin-top:14px">
+                <p><strong>VI. KẾT LUẬN & XÁC NHẬN:</strong></p>
+                <div id="sheetConclusionText" style="padding:8px 12px;background:#fdfaf6;border:1px dashed #d1c5b8;border-radius:4px;margin-top:4px">
+                  Tính đến hết ngày 31/10/2026, Bên B còn nợ Bên A số tiền là: <strong id="sheetFinalDebt">142.500.000 đ</strong>. Biên bản được lập thành 02 bản có giá trị pháp lý như nhau, mỗi bên giữ 01 bản để làm căn cứ thanh toán và hạch toán kế toán.
+                </div>
+              </div>
+
+              <!-- Khu vực chữ ký hai bên -->
+              <div class="sheet-signatures">
+                <div class="signature-col">
+                  <strong>ĐẠI DIỆN BÊN B (ĐẠI LÝ)</strong>
+                  <span>(Ký, đóng dấu hoặc xác nhận điện tử)</span>
+                  <div class="signature-space" id="signatureDealerBox" style="display:flex;align-items:center;justify-content:center">
+                    <span style="font-size:11.5px;color:#9ca3af;font-style:italic" id="dealerSignStatusText">[Chưa ký xác nhận]</span>
+                  </div>
+                  <strong id="signatureDealerName">Nguyễn Kim Long</strong>
+                </div>
+                <div class="signature-col">
+                  <strong>ĐẠI DIỆN BÊN A (KHOFLOW)</strong>
+                  <span>(Ký, ghi rõ họ tên và đóng dấu)</span>
+                  <div class="signature-space" style="display:flex;align-items:center;justify-content:center">
+                    <div style="border:2px dashed #10b981;padding:4px 12px;border-radius:6px;color:#059669;font-weight:700;font-size:11px">
+                      ✓ ĐÃ XÁC NHẬN KHOFLOW<br><small style="font-weight:normal">Kế toán công nợ</small>
+                    </div>
+                  </div>
+                  <strong>Trần Thị Bích Ngọc</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Phản Hồi Lệch Số Liệu Dành Cho Đại Lý -->
+  <div class="modal-overlay" id="disputeModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>⚠️ Phản hồi số liệu bị lệch — Đại lý Kim Long</h3>
+        <button class="btn btn-outline btn-sm" id="btnCloseDisputeModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:var(--muted)">
+          Vui lòng nêu rõ các chứng từ hoặc số dư chưa khớp với sổ kế toán nội bộ của Quý Đại lý để Kế toán KhoFlow rà soát và hiệu chỉnh:
+        </p>
+
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:13px;font-weight:600">Chứng từ bị lệch / chưa nhận được:</label>
+          <input type="text" id="disputeInvoiceCode" class="input-control" placeholder="Ví dụ: Hóa đơn HD-2026-092 hoặc Phiếu thu PT-2026-104">
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="font-size:13px;font-weight:600">Số dư theo KhoFlow:</label>
+            <input type="text" id="disputeSystemAmount" class="input-control" value="142.500.000 đ" readonly style="background:#f1f5f9">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="font-size:13px;font-weight:600">Số dư theo sổ Đại lý:</label>
+            <input type="number" id="disputeDealerAmount" class="input-control" placeholder="Nhập số tiền thực tế của đại lý">
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:13px;font-weight:600">Lý do chi tiết & Đề xuất xử lý:</label>
+          <textarea id="disputeReason" class="input-control" rows="4" placeholder="Ví dụ: Đại lý đã thanh toán 20.000.000 đ qua Vietcombank ngày 28/10 nhưng chưa thấy ghi giảm trên biên bản đối chiếu này..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline btn-sm" id="btnCancelDispute">Hủy bỏ</button>
+        <button class="btn btn-danger btn-sm" id="btnSubmitDispute">Gửi phản hồi cho Kế toán</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <script>
+    console.log("Khởi tạo khung giao diện biên bản đối chiếu công nợ S7-06");
+  </script>
+</body>
+</html>

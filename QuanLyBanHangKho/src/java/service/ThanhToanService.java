@@ -39,6 +39,11 @@ public final class ThanhToanService {
         row.put("allocations",TruyVanDB.rows(c,"SELECT a.invoice_id,i.invoice_number,a.amount FROM payment_allocations a JOIN invoices i ON i.id=a.invoice_id WHERE a.payment_id=? ORDER BY i.issued_at,i.id",id));return row;
     }
     public Map<String,Object> create(long actor,Map<String,Object> input)throws SQLException {
+        try(Connection c=KetNoiDB.getConnection()){c.setAutoCommit(false);try{var result=create(c,actor,input);c.commit();return result;}catch(SQLException|RuntimeException e){c.rollback();throw e;}}
+    }
+    /** Dùng khi xác nhận nộp tiền theo tuyến; caller sở hữu commit/rollback của toàn bộ nghiệp vụ. */
+    public Map<String,Object> create(Connection c,long actor,Map<String,Object> input)throws SQLException {
+        if(c.getAutoCommit())throw new IllegalStateException("Đối trừ phải nằm trong giao dịch");
         long customer=KhoService.id(input.get("customerId"));BigDecimal amount=money(input.get("amount"));
         if(amount.signum()<=0)throw new IllegalArgumentException("Số tiền phải lớn hơn 0");
         LocalDate date=date(input.get("receivedDate"));String method=KhoService.text(input.get("paymentMethod"),"Hình thức thu",20,true);
@@ -46,7 +51,6 @@ public final class ThanhToanService {
         String note=KhoService.text(input.get("note"),"Ghi chú",1000,false);UUID key;
         try{key=UUID.fromString(Objects.toString(input.get("requestKey"),""));}catch(RuntimeException e){throw new IllegalArgumentException("Mã yêu cầu không hợp lệ");}
         Long selected=input.get("invoiceId")==null?null:KhoService.id(input.get("invoiceId"));
-        try(Connection c=KetNoiDB.getConnection()){c.setAutoCommit(false);try{
             lockCustomer(c,customer);KhoService.actor(c,actor);
             var previous=TruyVanDB.one(c,"SELECT * FROM receivable_payments WHERE request_key=?",key);
             if(previous!=null){
@@ -54,7 +58,7 @@ public final class ThanhToanService {
                 if(!Objects.equals(previousTarget,selected))throw new IllegalArgumentException("Mã yêu cầu đã dùng với cách đối trừ khác");
                 if(((Number)previous.get("customer_id")).longValue()!=customer||((Number)previous.get("received_by")).longValue()!=actor||((BigDecimal)previous.get("amount")).compareTo(amount)!=0||!method.equals(previous.get("payment_method"))||!date.equals(((java.sql.Date)previous.get("received_date")).toLocalDate())||!note.equals(previous.get("note")))throw new IllegalArgumentException("Mã yêu cầu đã dùng cho khoản thu khác");
                 if(selected!=null){var allocations=TruyVanDB.rows(c,"SELECT invoice_id FROM payment_allocations WHERE payment_id=?",previous.get("id"));if(allocations.size()!=1||((Number)allocations.get(0).get("invoice_id")).longValue()!=selected)throw new IllegalArgumentException("Mã yêu cầu đã dùng với hóa đơn khác");}
-                var result=detail(c,TruyVanDB.id(previous));c.commit();return result;
+                return detail(c,TruyVanDB.id(previous));
             }
             var balances=TruyVanDB.rows(c,"SELECT * FROM receivable_invoice_balances WHERE customer_id=? AND outstanding>0 AND issued_at::date<=?"+(selected==null?"":" AND id=?")+" ORDER BY issued_at,id",selected==null?new Object[]{customer,date}:new Object[]{customer,date,selected});
             BigDecimal available=balances.stream().map(x->(BigDecimal)x.get("outstanding")).reduce(BigDecimal.ZERO,BigDecimal::add);
@@ -63,8 +67,7 @@ public final class ThanhToanService {
             TruyVanDB.update(c,"INSERT INTO receivable_payments(id,receipt_code,customer_id,amount,payment_method,received_date,received_by,note,request_key,target_invoice_id) VALUES(?,?,?,?,?,?,?,?,?,?)",id,"PT-"+String.format("%08d",id),customer,amount,method,date,actor,note,key,selected);
             BigDecimal remaining=amount;
             for(var balance:balances){if(remaining.signum()==0)break;BigDecimal applied=remaining.min((BigDecimal)balance.get("outstanding"));TruyVanDB.update(c,"INSERT INTO payment_allocations(payment_id,invoice_id,amount) VALUES(?,?,?)",id,balance.get("id"),applied);remaining=remaining.subtract(applied);}
-            var result=detail(c,id);c.commit();return result;
-        }catch(SQLException|RuntimeException e){c.rollback();throw e;}}
+            return detail(c,id);
     }
     public Map<String,Object> reverse(long payment,long actor,String reason)throws SQLException {
         reason=KhoService.text(reason,"Lý do điều chỉnh",1000,true);

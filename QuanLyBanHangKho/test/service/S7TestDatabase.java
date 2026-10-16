@@ -29,16 +29,20 @@ public final class S7TestDatabase {
         if(TEST_DB==null||!TEST_DB.matches("khoflow_s7_test_[0-9]{14}"))throw new IllegalStateException("Cần S7_TEST_DB riêng cho lượt chạy, dạng khoflow_s7_test_YYYYMMDDhhmmss");
         Class.forName("org.postgresql.Driver");
         String action = args.length == 0 ? "create" : args[0];
-        try (Connection connection = DriverManager.getConnection(ADMIN_URL, "postgres", "123456");
+        if(!List.of("create","drop").contains(action))throw new IllegalArgumentException("Chỉ nhận create hoặc drop");
+        String user=System.getenv("DB_USER"),password=System.getenv("DB_PASSWORD");
+        if(user==null||password==null)throw new IllegalStateException("Cần DB_USER và DB_PASSWORD trong môi trường kiểm thử");
+        try (Connection connection = DriverManager.getConnection(ADMIN_URL, user, password);
              Statement statement = connection.createStatement()) {
-            statement.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='" + TEST_DB + "' AND pid<>pg_backend_pid()");
-            statement.execute("DROP DATABASE IF EXISTS " + TEST_DB);
             if ("create".equals(action)) {
                 statement.execute("CREATE DATABASE " + TEST_DB);
+            } else {
+                statement.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='" + TEST_DB + "' AND pid<>pg_backend_pid()");
+                statement.execute("DROP DATABASE IF EXISTS " + TEST_DB);
             }
         }
         if ("create".equals(action)) {
-            try (Connection connection = DriverManager.getConnection(ADMIN_URL.substring(0,ADMIN_URL.lastIndexOf('/')+1) + TEST_DB, "postgres", "123456");
+            try (Connection connection = DriverManager.getConnection(ADMIN_URL.substring(0,ADMIN_URL.lastIndexOf('/')+1) + TEST_DB, user, password);
                  Statement statement = connection.createStatement()) {
                 for (String migration : MIGRATIONS) {
                     statement.execute(Files.readString(Path.of("database", migration)));

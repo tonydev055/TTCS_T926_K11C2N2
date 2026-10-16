@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S7-08 · Nhắc hạn thanh toán tự động — KhoFlow</title>
+  <meta name="description" content="Tự động nhận nhắc hạn thanh toán trước hạn 3 ngày và khi quá hạn cho Đại lý - SCRUM-96">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════
+       KhoFlow Design Tokens (Đồng bộ với styles.css & Design System)
+       ═══════════════════════════════════════════════════════════════════ */
+    :root {
+      --orange: #f47a00;
+      --orange-dark: #d96500;
+      --orange-soft: #fff1df;
+      --orange-light: rgba(244, 122, 0, 0.12);
+      --ink: #17120e;
+      --ink-secondary: #334155;
+      --muted: #786d64;
+      --muted-light: #94a3b8;
+      --line: #eee4da;
+      --line-subtle: #f1f5f9;
+      --bg: #fffaf5;
+      --bg-surface: #ffffff;
+      --bg-alt: #f8fafc;
+      --shadow: 0 12px 32px rgba(83, 48, 17, 0.08);
+      --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.05);
+      --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.06);
+      --success: #067647;
+      --success-bg: #ecfdf3;
+      --warning: #b54708;
+      --warning-bg: #fffaeb;
+      --danger: #b42318;
+      --danger-bg: #fef3f2;
+      --info: #175cd3;
+      --info-bg: #eff8ff;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-full: 9999px;
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Be Vietnam Pro', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       Layout
+       ═══════════════════════════════════════════════════════════════════ */
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 250px;
+      background: #ffffff;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 40;
+    }
+
+    .sidebar-brand {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 22px;
+      border-bottom: 1px solid var(--line);
+      text-decoration: none;
+      color: var(--ink);
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: var(--orange);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 18px;
+      box-shadow: 0 4px 12px rgba(244, 122, 0, 0.3);
+    }
+
+    .brand-title {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title strong {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .brand-title span {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .sidebar-nav {
+      padding: 20px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .nav-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--muted-light);
+      padding: 12px 10px 6px;
+      text-transform: uppercase;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      color: var(--ink-secondary);
+      font-size: 13.5px;
+      font-weight: 500;
+      text-decoration: none;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      transition: var(--transition);
+    }
+
+    .nav-item:hover {
+      background: var(--orange-soft);
+      color: var(--orange-dark);
+    }
+
+    .nav-item.active {
+      background: var(--orange);
+      color: #ffffff;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(244, 122, 0, 0.28);
+    }
+
+    .nav-item .icon {
+      font-size: 16px;
+      display: inline-block;
+      width: 20px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid var(--line);
+      background: #fdfaf6;
+    }
+
+    .role-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      font-size: 12px;
+    }
+
+    .role-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+
+    /* Main Content */
+    .workspace {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow-y: auto;
+    }
+
+    /* Topbar */
+    .topbar {
+      height: 76px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    .topbar-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .topbar-breadcrumb {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .topbar-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    /* Notification Bell */
+    .notif-bell-btn {
+      position: relative;
+      width: 42px;
+      height: 42px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      background: #ffffff;
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      font-size: 18px;
+      transition: var(--transition);
+    }
+
+    .notif-bell-btn:hover {
+      background: var(--bg-alt);
+      border-color: #cbd5e1;
+    }
+
+    .notif-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: var(--danger);
+      color: #ffffff;
+      font-size: 10.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(180, 35, 24, 0.4);
+      animation: pulseAlert 2s infinite;
+    }
+
+    @keyframes pulseAlert {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-full);
+      background: #ffffff;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--orange-soft);
+      color: var(--orange-dark);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    .user-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-info strong {
+      font-size: 12.5px;
+      line-height: 1.2;
+    }
+
+    .user-info small {
+      font-size: 10.5px;
+      color: var(--muted);
+    }
+
+    /* Main Container */
+    .main-container {
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      max-width: 1380px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       Card & Metrics
+       ═══════════════════════════════════════════════════════════════════ */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      background: #ffffff;
+    }
+
+    .card-title-group h2 {
+      font-size: 16.5px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .card-title-group p {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .card-body {
+      padding: 24px;
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .metric-card {
+      padding: 20px;
+      border-radius: var(--radius-md);
+      background: #ffffff;
+      border: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition);
+    }
+
+    .metric-card:hover {
+      box-shadow: var(--shadow-card);
+      transform: translateY(-2px);
+    }
+
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--muted-light);
+    }
+
+    .metric-card.accent::before { background: var(--orange); }
+    .metric-card.warning::before { background: #f59e0b; }
+    .metric-card.danger::before { background: var(--danger); }
+    .metric-card.success::before { background: #10b981; }
+
+    .metric-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-val {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--ink);
+      line-height: 1.1;
+    }
+
+    .metric-sub {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Lock Risk Alert Banner */
+    .alert-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px 20px;
+      border-radius: var(--radius-md);
+      font-size: 13.5px;
+    }
+
+    .alert-banner.danger {
+      background: var(--danger-bg);
+      border: 1px solid #fecdca;
+      color: #912018;
+    }
+
+    .alert-banner.warning {
+      background: var(--warning-bg);
+      border: 1px solid #fedf89;
+      color: #b54708;
+    }
+
+    .alert-banner.info {
+      background: var(--info-bg);
+      border: 1px solid #b2ddff;
+      color: #175cd3;
+    }
+
+    .alert-banner .icon {
+      font-size: 20px;
+      flex-shrink: 0;
+      margin-top: -1px;
+    }
+
+    .alert-banner strong {
+      font-weight: 700;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 9px 18px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--orange);
+      color: #ffffff;
+      border-color: var(--orange-dark);
+      box-shadow: 0 2px 8px rgba(244, 122, 0, 0.28);
+    }
+
+    .btn-primary:hover {
+      background: var(--orange-dark);
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: #ffffff;
+      color: var(--ink-secondary);
+      border-color: #cbd5e1;
+    }
+
+    .btn-outline:hover {
+      background: var(--bg-alt);
+      border-color: #94a3b8;
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* Tables */
+    .table-responsive {
+      overflow-x: auto;
+      width: 100%;
+    }
+
+    .custom-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    .custom-table th {
+      padding: 12px 16px;
+      background: var(--bg-alt);
+      color: #475569;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--line);
+      white-space: nowrap;
+    }
+
+    .custom-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      color: var(--ink-secondary);
+      font-size: 13.5px;
+      vertical-align: middle;
+    }
+
+    .custom-table tbody tr:hover {
+      background: #fffbf7;
+    }
+
+    /* Status Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      font-size: 11.5px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge-success { background: var(--success-bg); color: var(--success); }
+    .badge-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid #fedf89; }
+    .badge-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid #fecdca; }
+    .badge-info { background: var(--info-bg); color: var(--info); }
+    .badge-neutral { background: #f1f5f9; color: #475569; }
+
+    /* Scheduler Control Panel */
+    .scheduler-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding: 16px 20px;
+      background: #faf7f2;
+      border: 1px dashed #d1c5b8;
+      border-radius: var(--radius-md);
+      margin-bottom: 20px;
+    }
+
+    .scheduler-status {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .scheduler-pulse {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulseGreen 1.8s infinite;
+    }
+
+    @keyframes pulseGreen {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    /* Notification Drawer (Sidebar Popup) */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(4px);
+      z-index: 90;
+      opacity: 0;
+      pointer-events: none;
+      transition: var(--transition);
+    }
+
+    .drawer-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .notif-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 440px;
+      max-width: 90vw;
+      background: #ffffff;
+      box-shadow: -8px 0 32px rgba(0, 0, 0, 0.15);
+      z-index: 100;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .notif-drawer.open {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .drawer-header h3 {
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .drawer-close-btn {
+      background: transparent;
+      border: 0;
+      font-size: 20px;
+      color: var(--muted);
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius-sm);
+    }
+
+    .drawer-close-btn:hover {
+      background: var(--bg-alt);
+      color: var(--ink);
+    }
+
+    .drawer-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .notif-card {
+      padding: 14px 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      background: #ffffff;
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .notif-card.urgent {
+      border-color: #fecdca;
+      background: #fffaf9;
+    }
+
+    .notif-card.warning {
+      border-color: #fedf89;
+      background: #fffdf5;
+    }
+
+    .notif-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .notif-card-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .notif-card-time {
+      font-size: 11px;
+      color: var(--muted-light);
+    }
+
+    .notif-card-body {
+      font-size: 12.5px;
+      color: var(--ink-secondary);
+      line-height: 1.45;
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: fixed;
+      right: 28px;
+      bottom: 28px;
+      background: #1e1a17;
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: var(--transition);
+      z-index: 200;
+      pointer-events: none;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .main-container { padding: 20px 16px; }
+      .topbar { padding: 0 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <a href="index.html" class="sidebar-brand">
+        <div class="brand-mark">KF</div>
+        <div class="brand-title">
+          <strong>KhoFlow</strong>
+          <span>Cổng Đại Lý & Công Nợ</span>
+        </div>
+      </a>
+      <nav class="sidebar-nav">
+        <span class="nav-label">Nghiệp vụ đại lý</span>
+        <a href="index.html#%C4%90%E1%BA%B7t%20h%C3%A0ng" class="nav-item">
+          <span class="icon">🛒</span> Đặt hàng trực tuyến
+        </a>
+        <a href="index.html#%C4%90%C6%A1n%20h%C3%A0ng" class="nav-item">
+          <span class="icon">📦</span> Lịch sử đơn hàng
+        </a>
+        <a href="s7_08_payment_reminder.html" class="nav-item active">
+          <span class="icon">🔔</span> Nhắc hạn thanh toán
+        </a>
+        <a href="mailbox.html" target="_blank" class="nav-item">
+          <span class="icon">✉️</span> Hộp thư nhắc nợ <small style="color:var(--orange);font-weight:700">(Mailbox)</small>
+        </a>
+
+        <span class="nav-label">Hệ thống</span>
+        <a href="index.html" class="nav-item">
+          <span class="icon">🏠</span> Về trang chủ KhoFlow
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="role-badge">
+          <span class="dot"></span>
+          <div>
+            <strong>Đại lý trực tuyến</strong>
+            <div style="font-size:11px;color:var(--muted)">Vai trò: CUSTOMER</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Workspace -->
+    <main class="workspace">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="topbar-breadcrumb">
+            <span>KhoFlow</span> / <span>Cổng Đại lý</span> / <strong style="color:var(--orange)">S7-08 Nhắc hạn thanh toán</strong>
+          </div>
+          <h1 class="topbar-title">Nhận nhắc hạn thanh toán tự động</h1>
+        </div>
+        <div class="topbar-actions">
+          <button class="notif-bell-btn" id="notifBellBtn" title="Xem thông báo nhắc nợ">
+            🔔
+            <span class="notif-badge" id="notifCountBadge">0</span>
+          </button>
+          <div class="user-chip">
+            <span class="avatar" id="userAvatar">ĐL</span>
+            <div class="user-info">
+              <strong id="userFullName">Đại lý Kim Long</strong>
+              <small id="userCode">DL-00284 · Hạn mức 500tr</small>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Container -->
+      <div class="main-container">
+        <!-- Banner cảnh báo rủi ro khóa đơn -->
+        <div id="riskBannerContainer"></div>
+
+        <!-- Metrics Overview -->
+        <div class="metrics-grid">
+          <div class="metric-card accent">
+            <div class="metric-label">Hạn mức công nợ</div>
+            <div class="metric-val" id="valCreditLimit">500.000.000 đ</div>
+            <div class="metric-sub">Số ngày nợ tối đa: <strong id="valCreditDays">30 ngày</strong></div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Công nợ hiện tại</div>
+            <div class="metric-val" id="valOutstanding" style="color:var(--ink-secondary)">142.500.000 đ</div>
+            <div class="metric-sub">Khả dụng còn: <strong id="valAvailable">357.500.000 đ</strong></div>
+          </div>
+          <div class="metric-card warning">
+            <div class="metric-label">Sắp đến hạn (trong 3 ngày)</div>
+            <div class="metric-val" id="valDueSoonCount" style="color:#b54708">1 hóa đơn</div>
+            <div class="metric-sub">Cần thanh toán để giữ uy tín</div>
+          </div>
+          <div class="metric-card danger">
+            <div class="metric-label">Khoản nợ quá hạn</div>
+            <div class="metric-val" id="valOverdueCount" style="color:var(--danger)">1 hóa đơn</div>
+            <div class="metric-sub" style="color:var(--danger)">Nguy cơ bị khóa tạo đơn mới</div>
+          </div>
+        </div>
+
+        <!-- Bảng điều khiển tác vụ định kỳ & Chống gửi trùng -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <h2>⚙️ Tác vụ định kỳ kiểm tra & Nhắc hạn thanh toán (Job 1 lần/ngày)</h2>
+              <p>Hệ thống tự động quét mỗi ngày 1 lần vào đầu giờ sáng để gửi email và tạo thông báo in-app cho đại lý</p>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <button class="btn btn-primary btn-sm" id="btnRunJobNow">
+                ⚡ Chạy quét định kỳ ngay
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="scheduler-strip">
+              <div class="scheduler-status">
+                <div class="scheduler-pulse"></div>
+                <div>
+                  <strong style="font-size:13.5px;color:var(--ink)">Trạng thái Job: Đang tự động quét hàng ngày</strong>
+                  <div style="font-size:12px;color:var(--muted);margin-top:2px">
+                    Lần quét gần nhất: <span id="lblLastRun">Hôm nay 08:00</span> · Lần quét tiếp theo: <span id="lblNextRun">Ngày mai 08:00</span>
+                  </div>
+                </div>
+              </div>
+              <div style="font-size:12.5px;color:var(--ink-secondary);display:flex;align-items:center;gap:16px;">
+                <span>🛡️ Chống gửi trùng: <strong style="color:var(--success)">Kích hoạt (1 lần/hóa đơn/ngày)</strong></span>
+                <span>📅 Ngày hệ thống mô phỏng: <input type="date" id="simDateInput" style="padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px"></span>
+              </div>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+              <h3 style="font-size:15px;font-weight:700">📋 Danh sách Hóa đơn & Công nợ cần theo dõi</h3>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-outline btn-sm" id="btnFilterAll">Tất cả</button>
+                <button class="btn btn-outline btn-sm" id="btnFilterDueSoon" style="color:#b54708">Sắp đến hạn (3 ngày)</button>
+                <button class="btn btn-outline btn-sm" id="btnFilterOverdue" style="color:var(--danger)">Quá hạn</button>
+              </div>
+            </div>
+
+            <!-- Bảng Hóa Đơn -->
+            <div class="table-responsive">
+              <table class="custom-table" id="invoicesTable">
+                <thead>
+                  <tr>
+                    <th>Mã hóa đơn</th>
+                    <th>Ngày lập / Giao</th>
+                    <th>Hạn thanh toán</th>
+                    <th>Còn lại / Quá hạn</th>
+                    <th>Số tiền phải trả</th>
+                    <th>Trạng thái hạn nợ</th>
+                    <th>Nhắc nhở hôm nay</th>
+                    <th>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody id="invoicesTableBody">
+                  <!-- Dữ liệu render bằng JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nhật ký quét & Lịch sử gửi nhắc nhở (Kiểm tra chống trùng) -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <h2>📜 Nhật ký gửi thông báo & Kiểm tra chống trùng lặp</h2>
+              <p>Lưu vết chi tiết các lần gửi email & thông báo in-app để đảm bảo không gửi trùng cho cùng hóa đơn trong ngày</p>
+            </div>
+            <button class="btn btn-outline btn-sm" id="btnClearLog">Xóa lịch sử gửi</button>
+          </div>
+          <div class="card-body" style="padding:0">
+            <div class="table-responsive">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Thời điểm</th>
+                    <th>Mã hóa đơn</th>
+                    <th>Kênh thông báo</th>
+                    <th>Tiêu đề / Nội dung</th>
+                    <th>Người nhận</th>
+                    <th>Kết quả gửi</th>
+                    <th>Chống trùng lặp</th>
+                  </tr>
+                </thead>
+                <tbody id="auditTableBody">
+                  <!-- Dữ liệu render bằng JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Drawer Thông báo In-App -->
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="notif-drawer" id="notifDrawer">
+    <div class="drawer-header">
+      <div>
+        <h3>🔔 Thông báo nhắc nợ trong ứng dụng</h3>
+        <p style="font-size:12px;color:var(--muted)">Nhận thông báo trước hạn 3 ngày & khi quá hạn</p>
+      </div>
+      <button class="drawer-close-btn" id="drawerCloseBtn">&times;</button>
+    </div>
+    <div class="drawer-body" id="notifDrawerBody">
+      <!-- Render danh sách thông báo in-app -->
+    </div>
+    <div style="padding:16px;border-top:1px solid var(--line);background:#faf7f2;display:flex;justify-content:space-between;align-items:center">
+      <button class="btn btn-outline btn-sm" id="btnMarkAllRead">Đánh dấu đã đọc tất cả</button>
+      <a href="mailbox.html" target="_blank" class="btn btn-primary btn-sm">Mở Hộp thư Email ↗</a>
+    </div>
+  </aside>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <script>
+    // Sẽ bổ sung chi tiết logic xử lý ở các commit tiếp theo
+    console.log("Khởi tạo trang nhắc hạn thanh toán tự động S7-08");
+  </script>
+</body>
+</html>

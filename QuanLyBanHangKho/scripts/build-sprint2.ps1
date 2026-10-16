@@ -9,6 +9,11 @@ $projectRoot=Split-Path -Parent $PSScriptRoot
 if($LASTEXITCODE -ne 0){throw 'Frontend asset versioning failed'}
 $classes=Join-Path $projectRoot 'build/web/WEB-INF/classes'
 $testClasses=Join-Path $projectRoot 'build/test-classes'
+$buildWeb=[IO.Path]::GetFullPath((Join-Path $projectRoot 'build/web'))
+$buildRoot=[IO.Path]::GetFullPath((Join-Path $projectRoot 'build'))+[IO.Path]::DirectorySeparatorChar
+if(-not $buildWeb.StartsWith($buildRoot,[StringComparison]::OrdinalIgnoreCase)){throw 'Build output must remain inside project build directory'}
+# Không giữ lại class/module của nhánh vừa build trước đó trong WAR của nhánh hiện tại.
+if(Test-Path -LiteralPath $buildWeb){Remove-Item -LiteralPath $buildWeb -Recurse -Force}
 New-Item -ItemType Directory -Force $classes,$testClasses,(Join-Path $projectRoot 'dist') | Out-Null
 $sources=Get-ChildItem (Join-Path $projectRoot 'src/java') -Recurse -Filter '*.java' | ForEach-Object FullName
 & "$JavaHome/bin/javac.exe" -encoding UTF-8 -cp "$TomcatHome/lib/servlet-api.jar;$(Join-Path $projectRoot 'web/WEB-INF/lib/*')" -d $classes $sources

@@ -1117,7 +1117,310 @@
   <div id="toast"></div>
 
   <script>
-    console.log("Khởi tạo khung giao diện biên bản đối chiếu công nợ S7-06");
+    // ═══════════════════════════════════════════════════════════════════
+    // Quản Lý Trạng Thái & Dữ Liệu Công Nợ (State Management)
+    // ═══════════════════════════════════════════════════════════════════
+    const ReconState = {
+      activeRole: 'ACCOUNTANT', // 'ACCOUNTANT' | 'DEALER'
+      currentDealerCode: 'DL-00284',
+      currentPeriod: '2026-10',
+      dealers: {
+        'DL-00284': {
+          code: 'DL-00284',
+          name: 'Đại lý Thiết Bị Điện Kim Long',
+          contractNo: 'HĐ-2026/KF-DL00284',
+          representative: 'Nguyễn Kim Long',
+          roleTitle: 'Giám đốc đại lý',
+          phone: '0912 345 678',
+          email: 'daily.kimlong@khoflow.vn',
+          address: 'Số 142 đường Quang Trung, Quận Hà Đông, TP. Hà Nội',
+          openingBalance: 145000000,
+          vouchers: [
+            { date: '2026-10-03', code: 'HD-2026-081', type: 'INVOICE', desc: 'Xuất kho máy khoan bê tông & phụ kiện Bosch theo đơn DH-000398', debit: 45000000, credit: 0 },
+            { date: '2026-10-08', code: 'PT-2026-092', type: 'PAYMENT', desc: 'Thanh toán tiền hàng qua Vietcombank đợt 1', debit: 0, credit: 50000000 },
+            { date: '2026-10-15', code: 'HD-2026-088', type: 'INVOICE', desc: 'Xuất kho thiết bị điện & cáp điện Cadivi theo đơn DH-000412', debit: 48500000, credit: 0 },
+            { date: '2026-10-20', code: 'PT-2026-104', type: 'PAYMENT', desc: 'Chuyển khoản thanh toán tiền hàng đợt 2', debit: 0, credit: 63000000 },
+            { date: '2026-10-26', code: 'HD-2026-095', type: 'INVOICE', desc: 'Xuất lô đèn LED chiếu sáng Philips & công tắc theo đơn DH-000428', debit: 17000000, credit: 0 }
+          ],
+          status: 'PENDING_DEALER', // 'PENDING_DEALER' | 'CONFIRMED' | 'DISPUTED'
+          confirmedAt: null,
+          disputeDetails: null
+        },
+        'DL-00192': {
+          code: 'DL-00192',
+          name: 'Cửa hàng Vật liệu Xây dựng Toàn Thắng',
+          contractNo: 'HĐ-2026/KF-DL00192',
+          representative: 'Phạm Toàn Thắng',
+          roleTitle: 'Chủ hộ kinh doanh',
+          phone: '0988 777 666',
+          email: 'vlxd.toanthang@khoflow.vn',
+          address: 'Số 88 đường Giải Phóng, TP. Nam Định',
+          openingBalance: 80000000,
+          vouchers: [
+            { date: '2026-10-05', code: 'HD-2026-083', type: 'INVOICE', desc: 'Xuất kho gạch men & sơn Dulux theo đơn DH-000401', debit: 60000000, credit: 0 },
+            { date: '2026-10-14', code: 'PT-2026-099', type: 'PAYMENT', desc: 'Chuyển khoản thanh toán qua BIDV', debit: 0, credit: 80000000 }
+          ],
+          status: 'CONFIRMED',
+          confirmedAt: '2026-10-15T09:30:00',
+          disputeDetails: null
+        },
+        'DL-00305': {
+          code: 'DL-00305',
+          name: 'Nhà phân phối Điện cơ Hoàng Phát',
+          contractNo: 'HĐ-2026/KF-DL00305',
+          representative: 'Hoàng Quốc Việt',
+          roleTitle: 'Giám đốc',
+          phone: '0903 111 222',
+          email: 'dienco.hoangphat@khoflow.vn',
+          address: 'Số 25 đường Hùng Vương, TP. Việt Trì, Phú Thọ',
+          openingBalance: 210000000,
+          vouchers: [
+            { date: '2026-10-02', code: 'HD-2026-079', type: 'INVOICE', desc: 'Xuất máy phát điện & động cơ bơm nước', debit: 95000000, credit: 0 },
+            { date: '2026-10-18', code: 'PT-2026-102', type: 'PAYMENT', desc: 'Thanh toán ủy nhiệm chi qua Techcombank', debit: 0, credit: 150000000 }
+          ],
+          status: 'PENDING_DEALER',
+          confirmedAt: null,
+          disputeDetails: null
+        }
+      }
+    };
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Tiện Ích Format Tiền Tệ & Đọc Số Tiền Bằng Chữ
+    // ═══════════════════════════════════════════════════════════════════
+    function formatMoney(amount) {
+      if (amount == null) return '0 đ';
+      return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount).replace('₫', 'đ');
+    }
+
+    function formatDateVN(dateStr) {
+      if (!dateStr) return '—';
+      const parts = String(dateStr).slice(0, 10).split('-');
+      return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2800);
+    }
+
+    // Hàm chuyển số thành chữ tiếng Việt chuẩn kế toán
+    function numberToWordsVN(number) {
+      if (number === 0) return 'Không đồng';
+      if (!number || isNaN(number)) return '';
+      const textDigits = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
+      const textScale = ['', 'nghìn', 'triệu', 'tỷ', 'nghìn tỷ', 'triệu tỷ'];
+
+      let numStr = Math.round(Math.abs(number)).toString();
+      while (numStr.length % 3 !== 0) numStr = '0' + numStr;
+
+      const groups = [];
+      for (let i = 0; i < numStr.length; i += 3) {
+        groups.push(numStr.substr(i, 3));
+      }
+
+      function readGroup(g, hasHigher) {
+        const h = parseInt(g[0], 10);
+        const t = parseInt(g[1], 10);
+        const u = parseInt(g[2], 10);
+        let res = '';
+        if (h !== 0 || hasHigher) {
+          res += textDigits[h] + ' trăm ';
+        }
+        if (t === 0) {
+          if (u !== 0 && (h !== 0 || hasHigher)) res += 'lẻ ';
+        } else if (t === 1) {
+          res += 'mười ';
+        } else {
+          res += textDigits[t] + ' mươi ';
+        }
+
+        if (u === 1) {
+          res += (t > 1) ? 'mốt' : 'một';
+        } else if (u === 5) {
+          res += (t > 0) ? 'lăm' : 'năm';
+        } else if (u !== 0) {
+          res += textDigits[u];
+        }
+        return res.trim();
+      }
+
+      let words = '';
+      const totalGroups = groups.length;
+      for (let i = 0; i < totalGroups; i++) {
+        const g = groups[i];
+        if (parseInt(g, 10) !== 0) {
+          const groupWord = readGroup(g, i > 0);
+          const scaleIndex = totalGroups - 1 - i;
+          words += groupWord + ' ' + textScale[scaleIndex] + ' ';
+        }
+      }
+
+      words = words.trim().replace(/\s+/g, ' ');
+      if (number < 0) words = 'Âm ' + words;
+      return words.charAt(0).toUpperCase() + words.slice(1) + ' đồng chẵn';
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Logic Tính Toán Biên Bản Đối Chiếu (AC1)
+    // ═══════════════════════════════════════════════════════════════════
+    function calculateReconciliation(dealerCode) {
+      const dealer = ReconState.dealers[dealerCode];
+      if (!dealer) return null;
+
+      const opening = dealer.openingBalance;
+      let totalDebit = 0;   // Tổng phát sinh tăng
+      let totalCredit = 0;  // Tổng phát sinh giảm
+      let runningBalance = opening;
+
+      const rows = dealer.vouchers.map((v, idx) => {
+        totalDebit += v.debit;
+        totalCredit += v.credit;
+        runningBalance = runningBalance + v.debit - v.credit;
+        return {
+          stt: idx + 1,
+          date: v.date,
+          code: v.code,
+          desc: v.desc,
+          debit: v.debit,
+          credit: v.credit,
+          balance: runningBalance
+        };
+      });
+
+      const closing = opening + totalDebit - totalCredit;
+
+      return {
+        dealer,
+        openingBalance: opening,
+        totalDebit,
+        totalCredit,
+        closingBalance: closing,
+        rows
+      };
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Render Giao Diện Biên Bản & Thẻ Metrics
+    // ═══════════════════════════════════════════════════════════════════
+    function renderReconciliation() {
+      const data = calculateReconciliation(ReconState.currentDealerCode);
+      if (!data) return;
+
+      const { dealer, openingBalance, totalDebit, totalCredit, closingBalance, rows } = data;
+
+      // 1. Cập nhật Thẻ Metrics Overview (Đầu kỳ - Phát sinh - Cuối kỳ)
+      document.getElementById('valOpeningBalance').textContent = formatMoney(openingBalance);
+      document.getElementById('valTotalDebit').textContent = formatMoney(totalDebit);
+      document.getElementById('valTotalCredit').textContent = formatMoney(totalCredit);
+      document.getElementById('valClosingBalance').textContent = formatMoney(closingBalance);
+
+      // 2. Cập nhật Badge Trạng thái
+      const badge = document.getElementById('reconStatusBadge');
+      if (dealer.status === 'CONFIRMED') {
+        badge.className = 'badge badge-success';
+        badge.innerHTML = '✓ Đại lý đã ký xác nhận';
+      } else if (dealer.status === 'DISPUTED') {
+        badge.className = 'badge badge-danger';
+        badge.innerHTML = '⚠️ Đại lý phản hồi lệch số liệu';
+      } else {
+        badge.className = 'badge badge-warning';
+        badge.innerHTML = '⏳ Chờ đại lý xác nhận';
+      }
+
+      // 3. Cập nhật Thông tin Tờ Biên Bản In
+      document.getElementById('sheetReconCode').textContent = `BBĐC-2026/10-${dealer.code.replace('-', '')}`;
+      document.getElementById('sheetDealerName').textContent = `BÊN B (ĐẠI LÝ): ${dealer.name.toUpperCase()}`;
+      document.getElementById('sheetDealerCode').textContent = dealer.code;
+      document.getElementById('signatureDealerName').textContent = dealer.representative;
+
+      document.getElementById('sheetSummaryOpening').textContent = formatMoney(openingBalance);
+      document.getElementById('sheetSummaryDebit').textContent = `+ ${formatMoney(totalDebit)}`;
+      document.getElementById('sheetSummaryCredit').textContent = `- ${formatMoney(totalCredit)}`;
+      document.getElementById('sheetSummaryClosing').textContent = formatMoney(closingBalance);
+      document.getElementById('sheetFinalDebt').textContent = formatMoney(closingBalance);
+      document.getElementById('sheetClosingInWords').textContent = numberToWordsVN(closingBalance);
+
+      // 4. Render Bảng chi tiết chứng từ
+      const tbody = document.getElementById('sheetDetailTableBody');
+      tbody.innerHTML = '';
+
+      // Dòng số dư đầu kỳ
+      const trOpen = document.createElement('tr');
+      trOpen.style.background = '#f9fafb';
+      trOpen.innerHTML = `
+        <td style="text-align:center;font-weight:700">-</td>
+        <td style="text-align:center">01/10/2026</td>
+        <td style="text-align:center;font-weight:700">ĐẦU KỲ</td>
+        <td><strong>Số dư nợ đầu kỳ chuyển tiếp sang</strong></td>
+        <td style="text-align:right">-</td>
+        <td style="text-align:right">-</td>
+        <td style="text-align:right"><strong>${formatMoney(openingBalance)}</strong></td>
+      `;
+      tbody.appendChild(trOpen);
+
+      // Các dòng chứng từ phát sinh
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="text-align:center">${r.stt}</td>
+          <td style="text-align:center">${formatDateVN(r.date)}</td>
+          <td style="text-align:center"><strong style="color:var(--ink)">${r.code}</strong></td>
+          <td>${r.desc}</td>
+          <td style="text-align:right;color:var(--orange-dark);font-weight:600">
+            ${r.debit > 0 ? formatMoney(r.debit) : '—'}
+          </td>
+          <td style="text-align:right;color:#059669;font-weight:600">
+            ${r.credit > 0 ? formatMoney(r.credit) : '—'}
+          </td>
+          <td style="text-align:right;font-weight:700">
+            ${formatMoney(r.balance)}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Dòng tổng cộng phát sinh & số dư cuối kỳ
+      const trClose = document.createElement('tr');
+      trClose.style.background = '#fff8f0';
+      trClose.style.fontWeight = '700';
+      trClose.innerHTML = `
+        <td colspan="4" style="text-align:right;text-transform:uppercase;color:var(--ink)">
+          Cộng phát sinh & Số dư nợ cuối kỳ:
+        </td>
+        <td style="text-align:right;color:var(--orange-dark)">+ ${formatMoney(totalDebit)}</td>
+        <td style="text-align:right;color:#059669">- ${formatMoney(totalCredit)}</td>
+        <td style="text-align:right;color:#b54708;font-size:13px">${formatMoney(closingBalance)}</td>
+      `;
+      tbody.appendChild(trClose);
+
+      // 5. Cập nhật phần chữ ký Đại lý
+      const signText = document.getElementById('dealerSignStatusText');
+      if (dealer.status === 'CONFIRMED') {
+        signText.outerHTML = `
+          <div style="border:2px dashed #059669;padding:6px 14px;border-radius:6px;color:#059669;font-weight:700;font-size:11.5px;background:#ecfdf3" id="dealerSignStatusText">
+            ✓ ĐÃ XÁC NHẬN ĐIỆN TỬ<br>
+            <small style="font-weight:normal;color:#047857">${formatDateVN(dealer.confirmedAt || '2026-10-16')} · Khớp số dư 100%</small>
+          </div>
+        `;
+      } else if (dealer.status === 'DISPUTED') {
+        signText.outerHTML = `
+          <div style="border:2px dashed #b42318;padding:6px 14px;border-radius:6px;color:#b42318;font-weight:700;font-size:11.5px;background:#fef3f2" id="dealerSignStatusText">
+            ⚠️ ĐÃ PHẢN HỒI LỆCH SỐ LIỆU<br>
+            <small style="font-weight:normal;color:#991b1b">Đại lý ghi nhận chênh lệch</small>
+          </div>
+        `;
+      } else {
+        signText.outerHTML = `<span style="font-size:11.5px;color:#9ca3af;font-style:italic" id="dealerSignStatusText">[Đại lý chưa ký xác nhận]</span>`;
+      }
+
+      // Cập nhật giao diện theo Vai trò (Accountant hoặc Dealer Portal)
+      updateRoleUI();
+    }
+
+    console.log("Đã cài đặt xong logic tính toán số dư đầu/cuối kỳ và phát sinh.");
   </script>
 </body>
 </html>

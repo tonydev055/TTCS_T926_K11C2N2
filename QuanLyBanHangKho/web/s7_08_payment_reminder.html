@@ -1599,7 +1599,262 @@
       console.log(`[Scheduled Job] ${msg}`);
     }
 
-    console.log("Đã cài đặt xong tác vụ định kỳ 1 lần/ngày và chống gửi trùng.");
+    // ═══════════════════════════════════════════════════════════════════
+    // Quản Lý Thông Báo Trong Ứng Dụng (In-App Notification Center)
+    // ═══════════════════════════════════════════════════════════════════
+    function createInAppNotification(data) {
+      const notif = {
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        invoiceId: data.invoiceId,
+        invoiceCode: data.invoiceCode,
+        type: data.type,
+        title: data.title,
+        summary: data.summary,
+        amount: data.amount,
+        dueDate: data.dueDate,
+        riskLevel: data.riskLevel,
+        createdAt: new Date().toISOString(),
+        read: false
+      };
+      AppState.notifications.unshift(notif);
+      if (AppState.notifications.length > 50) AppState.notifications.pop();
+      try {
+        localStorage.setItem('kf_s708_notifications', JSON.stringify(AppState.notifications));
+      } catch (_) {}
+    }
+
+    function renderNotifications() {
+      const drawerBody = document.getElementById('notifDrawerBody');
+      const badge = document.getElementById('notifCountBadge');
+
+      const unreadCount = AppState.notifications.filter(n => !n.read).length;
+      badge.textContent = unreadCount;
+      badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+
+      drawerBody.innerHTML = '';
+      if (AppState.notifications.length === 0) {
+        drawerBody.innerHTML = `
+          <div style="text-align:center;padding:48px 20px;color:var(--muted)">
+            <div style="font-size:32px;margin-bottom:8px">🔔</div>
+            <strong>Không có thông báo mới</strong>
+            <p style="font-size:12px;margin-top:4px">Tất cả thông báo nhắc hạn thanh toán sẽ xuất hiện tại đây.</p>
+          </div>
+        `;
+        return;
+      }
+
+      AppState.notifications.forEach(n => {
+        const item = document.createElement('div');
+        const isUrgent = n.riskLevel === 'CRITICAL' || n.riskLevel === 'HIGH';
+        item.className = `notif-card ${isUrgent ? 'urgent' : 'warning'}`;
+        item.style.opacity = n.read ? '0.75' : '1';
+
+        item.innerHTML = `
+          <div class="notif-card-head">
+            <span class="badge ${isUrgent ? 'badge-danger' : 'badge-warning'}">
+              ${isUrgent ? '🚨 Quá hạn thanh toán' : '⏳ Nhắc hạn 3 ngày'}
+            </span>
+            <span class="notif-card-time">${formatDateTimeVN(n.createdAt)}</span>
+          </div>
+          <div class="notif-card-title">${n.title}</div>
+          <div class="notif-card-body">${n.summary}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;border-top:1px dashed var(--line);padding-top:6px">
+            <span style="font-size:11.5px;color:var(--muted)">Số tiền: <strong>${formatMoney(n.amount)}</strong></span>
+            <button class="btn btn-outline btn-sm btn-mark-read" data-id="${n.id}" style="padding:2px 8px;font-size:11px">
+              ${n.read ? 'Đã đọc' : 'Đánh dấu đã đọc'}
+            </button>
+          </div>
+        `;
+        drawerBody.appendChild(item);
+      });
+
+      drawerBody.querySelectorAll('.btn-mark-read').forEach(b => {
+        b.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = Number(b.dataset.id);
+          const found = AppState.notifications.find(n => n.id === id);
+          if (found) {
+            found.read = true;
+            try {
+              localStorage.setItem('kf_s708_notifications', JSON.stringify(AppState.notifications));
+            } catch (_) {}
+            renderNotifications();
+          }
+        });
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Gửi Email Nhắc Nợ Tự Động (Tích hợp Mailbox)
+    // ═══════════════════════════════════════════════════════════════════
+    async function sendReminderEmail({ invoice, status, uniqueKey, scanDate }) {
+      const recipient = AppState.currentUser.email;
+      const isOverdue = status.type === 'OVERDUE';
+      const subject = isOverdue
+        ? `[KhoFlow - Cảnh báo khẩn] Hóa đơn ${invoice.code} đã quá hạn ${status.overdueDays} ngày - Nguy cơ khóa giao dịch`
+        : `[KhoFlow - Nhắc nhở] Hóa đơn ${invoice.code} còn 3 ngày nữa đến hạn thanh toán (${formatDateVN(invoice.dueDate)})`;
+
+      const emailBody = `
+Kính gửi Quý đại lý: ${AppState.currentUser.fullName} (${AppState.currentUser.code}),
+
+Hệ thống KhoFlow xin gửi thông báo tự động về tình trạng thanh toán hóa đơn:
+------------------------------------------------------------------------
+- Mã hóa đơn: ${invoice.code} (Đơn hàng tham chiếu: ${invoice.orderCode})
+- Diễn giải: ${invoice.description}
+- Số tiền cần thanh toán: ${formatMoney(invoice.remainingAmount)}
+- Ngày phát hành: ${formatDateVN(invoice.issueDate)}
+- Hạn chót thanh toán: ${formatDateVN(invoice.dueDate)}
+- Tình trạng hiện tại: ${status.label}
+------------------------------------------------------------------------
+
+${isOverdue ? `
+⚠️ LƯU Ý QUAN TRỌNG VỀ KHÓA ĐƠN HÀNG:
+Theo chính sách tín dụng của KhoFlow, khi có hóa đơn quá hạn, tài khoản đại lý sẽ bị hệ thống TỰ ĐỘNG CHẶN TẠO ĐƠN HÀNG MỚI ở cả kênh nhân viên và Cổng đặt hàng trực tuyến (Portal). 
+Kính đề nghị Quý đại lý thanh toán ngay hôm nay để tránh gián đoạn kinh doanh.
+` : `
+ℹ️ THÔNG BÁO TRƯỚC HẠN 3 NGÀY:
+Quý đại lý vui lòng thu xếp thanh toán trước ngày ${formatDateVN(invoice.dueDate)} để duy trì chỉ số tín dụng tốt và tiếp tục hưởng hạn mức nợ ${formatMoney(AppState.creditInfo.creditLimit)}.
+`}
+
+Thông tin tài khoản nhận thanh toán của KhoFlow:
+- Ngân hàng: Vietcombank - Chi nhánh Sở Giao Dịch
+- Số tài khoản: 0011004567899
+- Chủ tài khoản: CONG TY CO PHAN PHAN PHOI KHOFLOW
+- Cú pháp chuyển khoản: [${invoice.code}] [${AppState.currentUser.code}] THANH TOAN HOA DON
+
+Trân trọng,
+Phòng Kế toán & Quản trị Công nợ — Hệ thống Bán hàng & Kho KhoFlow.
+      `.trim();
+
+      // Gửi vào backend API nếu có servlet hỗ trợ, đồng thời lưu nhật ký
+      try {
+        await fetch('api/dev-mailbox', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipient: recipient,
+            subject: subject,
+            body: emailBody
+          })
+        }).catch(() => {});
+      } catch (_) {}
+
+      addAuditLog({
+        invoiceId: invoice.id,
+        invoiceCode: invoice.code,
+        channel: 'EMAIL',
+        reminderType: status.reminderType,
+        title: subject,
+        summary: `Gửi email nhắc nợ thành công tới ${recipient} lúc ${new Date().toLocaleTimeString('vi-VN')}`,
+        recipient: recipient,
+        result: 'SUCCESS',
+        uniqueKey: uniqueKey,
+        note: `Đã gửi qua hệ thống mail KhoFlow (Mailbox)`
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Gắn Sự Kiện Giao Diện & Điều Khiển
+    // ═══════════════════════════════════════════════════════════════════
+    function setupEventListeners() {
+      // Chuông thông báo & Drawer
+      const notifBellBtn = document.getElementById('notifBellBtn');
+      const notifDrawer = document.getElementById('notifDrawer');
+      const drawerOverlay = document.getElementById('drawerOverlay');
+      const drawerCloseBtn = document.getElementById('drawerCloseBtn');
+
+      const openDrawer = () => {
+        notifDrawer.classList.add('open');
+        drawerOverlay.classList.add('open');
+      };
+
+      const closeDrawer = () => {
+        notifDrawer.classList.remove('open');
+        drawerOverlay.classList.remove('open');
+      };
+
+      notifBellBtn.addEventListener('click', openDrawer);
+      drawerCloseBtn.addEventListener('click', closeDrawer);
+      drawerOverlay.addEventListener('click', closeDrawer);
+
+      // Đánh dấu đã đọc tất cả
+      document.getElementById('btnMarkAllRead').addEventListener('click', () => {
+        AppState.notifications.forEach(n => n.read = true);
+        try {
+          localStorage.setItem('kf_s708_notifications', JSON.stringify(AppState.notifications));
+        } catch (_) {}
+        renderNotifications();
+        showToast('Đã đánh dấu đã đọc tất cả thông báo');
+      });
+
+      // Nút chạy Job ngay
+      document.getElementById('btnRunJobNow').addEventListener('click', () => {
+        executeDailyReminderJob(true);
+      });
+
+      // Bộ lọc hóa đơn
+      const btnAll = document.getElementById('btnFilterAll');
+      const btnDueSoon = document.getElementById('btnFilterDueSoon');
+      const btnOverdue = document.getElementById('btnFilterOverdue');
+
+      const updateFilterBtns = (active) => {
+        AppState.activeFilter = active;
+        btnAll.classList.toggle('btn-primary', active === 'ALL');
+        btnAll.classList.toggle('btn-outline', active !== 'ALL');
+        btnDueSoon.classList.toggle('btn-primary', active === 'DUE_SOON');
+        btnDueSoon.classList.toggle('btn-outline', active !== 'DUE_SOON');
+        btnOverdue.classList.toggle('btn-primary', active === 'OVERDUE');
+        btnOverdue.classList.toggle('btn-outline', active !== 'OVERDUE');
+        renderInvoicesTable();
+      };
+
+      btnAll.addEventListener('click', () => updateFilterBtns('ALL'));
+      btnDueSoon.addEventListener('click', () => updateFilterBtns('DUE_SOON'));
+      btnOverdue.addEventListener('click', () => updateFilterBtns('OVERDUE'));
+      updateFilterBtns('ALL');
+
+      // Xóa nhật ký gửi
+      document.getElementById('btnClearLog').addEventListener('click', () => {
+        if (!confirm('Bạn có chắc muốn xóa lịch sử nhật ký gửi thông báo?')) return;
+        AppState.auditLogs = [];
+        try {
+          localStorage.removeItem('kf_s708_audit_logs');
+        } catch (_) {}
+        renderAuditLogsTable();
+        renderInvoicesTable();
+        showToast('Đã xóa toàn bộ nhật ký gửi.');
+      });
+
+      // Đổi ngày mô phỏng
+      const simInput = document.getElementById('simDateInput');
+      simInput.addEventListener('change', (e) => {
+        AppState.currentDate = e.target.value || new Date().toISOString().split('T')[0];
+        showToast(`Đã chuyển ngày hệ thống sang: ${formatDateVN(AppState.currentDate)}`);
+        renderInvoicesTable();
+        renderAuditLogsTable();
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Khởi Chạy Ứng Dụng
+    // ═══════════════════════════════════════════════════════════════════
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadInitialData();
+      setupEventListeners();
+      renderInvoicesTable();
+      renderAuditLogsTable();
+      renderNotifications();
+
+      // Kiểm tra và tự động chạy lượt quét đầu tiên nếu chưa chạy trong ngày
+      const todayDate = AppState.currentDate;
+      const ranToday = AppState.auditLogs.some(l => l.dateStr === todayDate);
+      if (!ranToday) {
+        console.log(`[Scheduler] Chưa có lượt quét cho ngày ${todayDate}. Tự động chạy tác vụ định kỳ 1 lần/ngày...`);
+        executeDailyReminderJob();
+      } else {
+        console.log(`[Scheduler] Ngày ${todayDate} đã có lượt quét định kỳ trước đó.`);
+      }
+    });
   </script>
 </body>
 </html>

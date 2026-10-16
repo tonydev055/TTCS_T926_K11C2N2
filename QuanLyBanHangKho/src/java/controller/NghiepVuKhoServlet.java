@@ -15,6 +15,7 @@ public abstract class NghiepVuKhoServlet extends CoSoServlet {
         if(e instanceof SecurityException)error(r,403,e.getMessage());
         else if(e instanceof NoSuchElementException)error(r,404,e.getMessage());
         else if(e instanceof IllegalArgumentException||e instanceof IOException)error(r,400,e.getMessage());
+        else if(e instanceof SQLException s&&"P0001".equals(s.getSQLState()))error(r,400,"Thao tác không thỏa điều kiện nghiệp vụ; kiểm tra số dư và trạng thái chứng từ");
         else if(e instanceof SQLException s&&("23505".equals(s.getSQLState())||"23503".equals(s.getSQLState())))error(r,409,"Mã bị trùng hoặc dữ liệu đang được sử dụng");
         else{log("Lỗi nghiệp vụ kho",e);error(r,500,"Không thể xử lý nghiệp vụ kho, vui lòng thử lại");}
     }

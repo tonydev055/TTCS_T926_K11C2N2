@@ -17,7 +17,7 @@ public final class HoaDonService {
             out.put("candidates",TruyVanDB.rows(c,
                 "SELECT o.id AS order_id,o.code AS order_code,o.agent_id AS customer_id,k.code AS customer_code,k.name AS customer_name,"+
                 "k.tax_code,dc.id AS confirmation_id,dc.delivered_at::text AS delivered_at,"+
-                "round(COALESCE(SUM(ol.delivered_base_quantity/ol.conversion_factor*ol.line_total/ol.quantity),0),2) AS delivered_total,"+
+                "COALESCE(SUM(round(ol.delivered_base_quantity/ol.conversion_factor*ol.line_total/ol.quantity,2)),0) AS delivered_total,"+
                 "count(*) FILTER (WHERE ol.delivered_base_quantity>0) AS delivered_line_count " +
                 "FROM orders o JOIN customers k ON k.id=o.agent_id JOIN delivery_confirmations dc ON dc.order_id=o.id AND dc.outcome='SUCCESS' " +
                 "JOIN order_lines ol ON ol.order_id=o.id WHERE o.status IN ('DELIVERED','CLOSED') " +
@@ -85,7 +85,7 @@ public final class HoaDonService {
                     if(!Set.of("DELIVERED","CLOSED").contains(String.valueOf(order.get("status"))))throw new IllegalArgumentException("Đơn "+order.get("code")+" chưa ở trạng thái Đã giao");
                     if(order.get("agent_id")==null)throw new IllegalArgumentException("Đơn "+order.get("code")+" chưa gắn đại lý");
                     long current=((Number)order.get("agent_id")).longValue();
-                    if(customer==null)customer=current;else if(customer!=current)throw new IllegalArgumentException("Chỉ được gộp phiếu giao của cùng một đại lý");
+                    if(customer==null){customer=current;ThanhToanService.lockCustomer(c,customer);}else if(customer!=current)throw new IllegalArgumentException("Chỉ được gộp phiếu giao của cùng một đại lý");
                     LocalDate delivered=((java.sql.Date)order.get("delivered_date")).toLocalDate();
                     if(delivered.isBefore(from)||delivered.isAfter(to))throw new IllegalArgumentException("Phiếu "+order.get("code")+" nằm ngoài kỳ hóa đơn");
                     if(TruyVanDB.one(c,"SELECT 1 FROM invoice_deliveries WHERE order_id=?",order.get("id"))!=null)throw new IllegalArgumentException("Phiếu "+order.get("code")+" đã được xuất hóa đơn");
@@ -104,7 +104,7 @@ public final class HoaDonService {
                 for(Map<String,Object> order:orders)TruyVanDB.update(c,"INSERT INTO invoice_deliveries(invoice_id,order_id,delivery_confirmation_id) VALUES(?,?,?)",invoiceId,order.get("id"),order.get("confirmation_id"));
                 int inserted=TruyVanDB.update(c,
                     "INSERT INTO invoice_lines(invoice_id,order_id,order_line_id,product_id,unit_id,delivered_quantity,unit_price,subtotal,discount_amount,line_total) " +
-                    "SELECT ?,ol.order_id,ol.id,ol.product_id,ol.unit_id,ol.delivered_base_quantity/ol.conversion_factor,round(ol.line_total/ol.quantity,2),"+
+                    "SELECT ?,ol.order_id,ol.id,ol.product_id,ol.unit_id,ol.delivered_base_quantity/ol.conversion_factor,round((ol.line_total+ol.discount_amount)/ol.quantity,2),"+
                     "round((ol.line_total+ol.discount_amount)/ol.quantity*(ol.delivered_base_quantity/ol.conversion_factor),2),"+
                     "round((ol.line_total+ol.discount_amount)/ol.quantity*(ol.delivered_base_quantity/ol.conversion_factor),2)-round(ol.line_total/ol.quantity*(ol.delivered_base_quantity/ol.conversion_factor),2),"+
                     "round(ol.line_total/ol.quantity*(ol.delivered_base_quantity/ol.conversion_factor),2) FROM order_lines ol " +
@@ -121,6 +121,11 @@ public final class HoaDonService {
         String reason=KhoService.text(input.get("reason"),"Lý do điều chỉnh",1000,true);
         try(Connection c=KetNoiDB.getConnection()){c.setAutoCommit(false);try{
             KhoService.actor(c,actor);
+            var invoice=TruyVanDB.one(c,"SELECT customer_id FROM invoices WHERE id=?",invoiceId);
+            if(invoice==null)throw new NoSuchElementException("Không tìm thấy hóa đơn");
+            ThanhToanService.lockCustomer(c,((Number)invoice.get("customer_id")).longValue());
+            var balance=TruyVanDB.one(c,"SELECT outstanding FROM receivable_invoice_balances WHERE id=?",invoiceId);
+            if(((BigDecimal)balance.get("outstanding")).add(amount).signum()<0)throw new IllegalArgumentException("Không thể giảm hóa đơn dưới số tiền đã thu; hoàn tác khoản thu trước khi điều chỉnh");
             if(TruyVanDB.one(c,"SELECT id FROM invoices WHERE id=? FOR SHARE",invoiceId)==null)throw new NoSuchElementException("Không tìm thấy hóa đơn");
             long serial=((Number)TruyVanDB.one(c,"UPDATE invoice_number_counters SET last_number=last_number+1 WHERE document_type='ADJUSTMENT' RETURNING last_number").get("last_number")).longValue();
             String number=String.format("DC-%06d",serial);

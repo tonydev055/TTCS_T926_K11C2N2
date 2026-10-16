@@ -1438,7 +1438,190 @@
       }, 350);
     }
 
-    console.log("Đã bổ sung chức năng xuất PDF / In biên bản chuẩn A4.");
+    // ═══════════════════════════════════════════════════════════════════
+    // Tính Năng Cổng Đại Lý: Xác Nhận & Phản Hồi Lệch Số Liệu (AC3)
+    // ═══════════════════════════════════════════════════════════════════
+    function switchRole(role) {
+      ReconState.activeRole = role;
+      document.getElementById('btnRoleAccountant').classList.toggle('active', role === 'ACCOUNTANT');
+      document.getElementById('btnRoleDealer').classList.toggle('active', role === 'DEALER');
+
+      const isDealer = role === 'DEALER';
+      document.getElementById('sidebarRoleLabel').textContent = isDealer ? 'Đại lý Kim Long' : 'Kế toán công nợ';
+      document.getElementById('userFullName').textContent = isDealer ? 'Nguyễn Kim Long' : 'Trần Thị Bích Ngọc';
+      document.getElementById('userRoleTitle').textContent = isDealer ? 'Đại lý (CUSTOMER)' : 'Kế toán công nợ (ACCOUNTANT)';
+      document.getElementById('userAvatar').textContent = isDealer ? 'KL' : 'KT';
+
+      document.getElementById('dealerPortalBanner').style.display = isDealer ? 'block' : 'none';
+
+      updateRoleUI();
+      showToast(`Đã chuyển sang góc nhìn: ${isDealer ? 'CỔNG ĐẠI LÝ' : 'KẾ TOÁN CÔNG NỢ'}`);
+    }
+
+    function updateRoleUI() {
+      const isDealer = ReconState.activeRole === 'DEALER';
+      const dealer = ReconState.dealers[ReconState.currentDealerCode];
+      const actionBox = document.getElementById('dealerActionButtons');
+      const reconActions = document.getElementById('reconActionButtons');
+
+      // 1. Nút hành động phía Cổng Đại Lý (AC3)
+      if (dealer.status === 'CONFIRMED') {
+        actionBox.innerHTML = `
+          <span class="badge badge-success" style="font-size:12.5px;padding:6px 12px">
+            ✓ Quý Đại lý đã xác nhận số dư
+          </span>
+          <button class="btn btn-outline btn-sm" id="btnDealerReopen" style="font-size:11.5px">
+            Yêu cầu đối chiếu lại
+          </button>
+        `;
+        document.getElementById('btnDealerReopen')?.addEventListener('click', () => {
+          dealer.status = 'PENDING_DEALER';
+          showToast('Đã mở lại trạng thái chờ đối chiếu.');
+          renderReconciliation();
+        });
+      } else if (dealer.status === 'DISPUTED') {
+        actionBox.innerHTML = `
+          <span class="badge badge-danger" style="font-size:12.5px;padding:6px 12px">
+            ⚠️ Đã gửi phản hồi lệch số liệu
+          </span>
+          <button class="btn btn-primary btn-sm" id="btnDealerConfirmAfter">
+            ✓ Đồng ý & Xác nhận lại
+          </button>
+        `;
+        document.getElementById('btnDealerConfirmAfter')?.addEventListener('click', () => {
+          dealerConfirmReconciliation();
+        });
+      } else {
+        actionBox.innerHTML = `
+          <button class="btn btn-success btn-sm" id="btnDealerConfirm">
+            ✓ Xác nhận số liệu đúng
+          </button>
+          <button class="btn btn-danger btn-sm" id="btnDealerDispute">
+            ⚠️ Phản hồi số liệu bị lệch
+          </button>
+        `;
+
+        document.getElementById('btnDealerConfirm')?.addEventListener('click', () => {
+          dealerConfirmReconciliation();
+        });
+
+        document.getElementById('btnDealerDispute')?.addEventListener('click', () => {
+          openDisputeModal();
+        });
+      }
+
+      // 2. Nút hành động phía Kế toán
+      if (isDealer) {
+        reconActions.style.display = 'none';
+      } else {
+        reconActions.style.display = 'flex';
+        reconActions.innerHTML = `
+          <button class="btn btn-outline btn-sm" id="btnSendToDealer">
+            ✉️ Gửi sang Cổng đại lý
+          </button>
+        `;
+        document.getElementById('btnSendToDealer')?.addEventListener('click', () => {
+          showToast(`Đã gửi thông báo đối chiếu công nợ kỳ ${ReconState.currentPeriod} sang Cổng Đại lý ${dealer.name}!`);
+        });
+      }
+    }
+
+    // Đại lý bấm Xác nhận số liệu đúng (AC3)
+    function dealerConfirmReconciliation() {
+      const dealer = ReconState.dealers[ReconState.currentDealerCode];
+      const data = calculateReconciliation(ReconState.currentDealerCode);
+      const confirmMsg = `Quý đại lý xác nhận chốt số dư nợ cuối kỳ là ${formatMoney(data.closingBalance)}?\nSau khi xác nhận, biên bản sẽ được hoàn tất với chữ ký điện tử hai bên.`;
+
+      if (!confirm(confirmMsg)) return;
+
+      dealer.status = 'CONFIRMED';
+      dealer.confirmedAt = new Date().toISOString();
+      dealer.disputeDetails = null;
+
+      showToast(`Đại lý ${dealer.representative} đã xác nhận thành công biên bản đối chiếu công nợ!`);
+      renderReconciliation();
+    }
+
+    // Đại lý mở Modal phản hồi số liệu bị lệch (AC3)
+    function openDisputeModal() {
+      const modal = document.getElementById('disputeModal');
+      const data = calculateReconciliation(ReconState.currentDealerCode);
+      document.getElementById('disputeSystemAmount').value = formatMoney(data.closingBalance);
+      document.getElementById('disputeDealerAmount').value = '';
+      document.getElementById('disputeReason').value = '';
+      modal.classList.add('open');
+    }
+
+    function closeDisputeModal() {
+      document.getElementById('disputeModal').classList.remove('open');
+    }
+
+    function submitDispute() {
+      const dealer = ReconState.dealers[ReconState.currentDealerCode];
+      const invCode = document.getElementById('disputeInvoiceCode').value.trim();
+      const dealerAmt = document.getElementById('disputeDealerAmount').value;
+      const reason = document.getElementById('disputeReason').value.trim();
+
+      if (!reason) {
+        alert('Vui lòng nhập lý do chi tiết số liệu bị lệch.');
+        return;
+      }
+
+      dealer.status = 'DISPUTED';
+      dealer.disputeDetails = {
+        invoiceCode: invCode || 'Nhiều chứng từ',
+        dealerAmount: Number(dealerAmt) || 0,
+        reason: reason,
+        createdAt: new Date().toISOString()
+      };
+
+      closeDisputeModal();
+      showToast('Đã gửi phản hồi lệch số liệu tới Kế toán KhoFlow. Kế toán sẽ liên hệ đối soát lại.');
+      renderReconciliation();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Gắn Sự Kiện Giao Diện
+    // ═══════════════════════════════════════════════════════════════════
+    function setupEventListeners() {
+      // Chuyển đổi vai trò Kế toán / Cổng Đại lý
+      document.getElementById('btnRoleAccountant').addEventListener('click', () => switchRole('ACCOUNTANT'));
+      document.getElementById('btnRoleDealer').addEventListener('click', () => switchRole('DEALER'));
+
+      // Nút xuất PDF / In
+      document.getElementById('btnPrintPdf').addEventListener('click', exportReconciliationPDF);
+
+      // Nút tự động tổng hợp số liệu
+      document.getElementById('btnGenerateRecon').addEventListener('click', () => {
+        showToast('Đã tính toán & cập nhật số liệu mới nhất từ hóa đơn và thanh toán!');
+        renderReconciliation();
+      });
+
+      // Thay đổi đại lý
+      document.getElementById('selectDealer').addEventListener('change', (e) => {
+        ReconState.currentDealerCode = e.target.value;
+        renderReconciliation();
+      });
+
+      // Thay đổi kỳ đối chiếu
+      document.getElementById('selectPeriod').addEventListener('change', (e) => {
+        ReconState.currentPeriod = e.target.value;
+        const text = e.target.options[e.target.selectedIndex].text;
+        showToast(`Đã chuyển kỳ đối chiếu sang: ${text}`);
+        renderReconciliation();
+      });
+
+      // Modal phản hồi lệch
+      document.getElementById('btnCloseDisputeModal').addEventListener('click', closeDisputeModal);
+      document.getElementById('btnCancelDispute').addEventListener('click', closeDisputeModal);
+      document.getElementById('btnSubmitDispute').addEventListener('click', submitDispute);
+    }
+
+    // Khởi chạy khi load trang
+    document.addEventListener('DOMContentLoaded', () => {
+      setupEventListeners();
+      renderReconciliation();
+    });
   </script>
 </body>
 </html>

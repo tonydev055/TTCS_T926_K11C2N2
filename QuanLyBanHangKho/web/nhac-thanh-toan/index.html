@@ -7,7 +7,7 @@
   body.onclick=async event=>{const button=event.target.closest('[data-read]');if(!button)return;button.disabled=true;try{await apiRequest(endpoint+'/'+button.dataset.read+'/read',jsonRequestOptions('POST',{}));if(revision===viewRevision)render(true);}catch(error){showRequestError(error);}finally{button.disabled=false;}};
  });}
  window.sprint5Features=window.sprint5Features||{};
- sprint5Features['Nhật ký nhắc công nợ']={path:'nhac-thanh-toan',permission:'receivables.read',render:()=>render(false)};
- sprint5Features['Nhắc hạn thanh toán']={path:'nhac-thanh-toan',permission:'invoices.self',render:()=>render(true)};
+ window.sprint5Features['Nhật ký nhắc công nợ']={path:'nhac-thanh-toan',permission:'receivables.read',render:()=>render(false)};
+ window.sprint5Features['Nhắc hạn thanh toán']={path:'nhac-thanh-toan',permission:'invoices.self',render:()=>render(true)};
 })();
 </script>

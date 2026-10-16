@@ -1,41 +1,25 @@
 package controller;
 
-import db.HoaDonDB;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-import java.io.*;
+import java.io.IOException;
+import java.util.*;
+import service.HoaDonService;
+import util.XuLyJson;
 
+/** S7-01: danh sách, phát hành, xem/in và lập chứng từ điều chỉnh hóa đơn. */
 @WebServlet("/api/invoices/*")
-public class HoaDonServlet extends CoSoServlet {
-
-    private final HoaDonDB db = new HoaDonDB();
-
-    protected void doGet(HttpServletRequest q, HttpServletResponse r) throws IOException {
-        try {
-            String p = q.getPathInfo();
-            if (p == null || p.equals("/")) {
-                ok(r, jsonRows(db.findAll()));
-                return;
-            }
-            long id = Long.parseLong(p.substring(1));
-            var row = db.findById(id);
-            if (row == null) {
-                error(r, 404, "Không tìm thấy dữ liệu");
-                return;
-            }
-            ok(r, jsonRows(java.util.List.of(row)));
-        } catch (Exception e) {
-            error(r, 500, e.getMessage());
-        }
+public final class HoaDonServlet extends NghiepVuKhoServlet {
+    private final HoaDonService service=new HoaDonService();
+    @Override protected void doGet(HttpServletRequest q,HttpServletResponse r)throws IOException{
+        try{String p=path(q);if(p.equals("/")||p.isBlank())send(r,service.list());else send(r,service.detail(id(p.substring(1))));}
+        catch(Exception e){fail(r,e);}
     }
-
-    protected void doDelete(HttpServletRequest q, HttpServletResponse r) throws IOException {
-        try {
-            long id = Long.parseLong(q.getPathInfo().substring(1));
-            db.delete(id);
-            ok(r, "{\"deleted\":true}");
-        } catch (Exception e) {
-            error(r, 400, e.getMessage());
-        }
+    @Override protected void doPost(HttpServletRequest q,HttpServletResponse r)throws IOException{
+        try{
+            String p=path(q);Map<String,Object> in=XuLyJson.object(body(q));
+            if(p.equals("/")||p.isBlank())created(r,XuLyJson.stringify(service.issue(user(q),in)));
+            else{String[] parts=p.split("/");if(parts.length!=3||!parts[2].equals("adjustments"))throw new NoSuchElementException("Không tìm thấy chức năng");created(r,XuLyJson.stringify(service.adjust(id(parts[1]),user(q),in)));}
+        }catch(Exception e){fail(r,e);}
     }
 }

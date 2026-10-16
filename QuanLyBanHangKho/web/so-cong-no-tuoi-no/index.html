@@ -1,0 +1,477 @@
+<!-- Loaded by the application shell: ../index.html -->
+<!-- S7-03 – So cong no theo dai ly voi phan tich tuoi no (Ke toan cong no) -->
+<style>
+  #arFeature {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--ink, #17120e);
+  }
+
+  #arFeature .ar-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 24px;
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid var(--app-border, #e4e9ef);
+    box-shadow: 0 4px 16px rgba(15, 23, 42, .03);
+  }
+
+  #arFeature .ar-eyebrow {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    color: var(--orange-dark, #d96500);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  #arFeature .ar-title {
+    margin: 0 0 6px;
+    font-size: 22px;
+    font-weight: 700;
+    color: #172033;
+    line-height: 1.25;
+  }
+
+  #arFeature .ar-desc {
+    margin: 0;
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.5;
+  }
+
+  #arFeature .ar-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  #arFeature .ar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 38px;
+    padding: 0 16px;
+    border: 1px solid #dce3ea;
+    border-radius: 9px;
+    background: #fff;
+    color: #334155;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s ease;
+    white-space: nowrap;
+  }
+
+  #arFeature .ar-btn:hover:not(:disabled) { border-color: #cbd5e1; background: #f8fafc; }
+  #arFeature .ar-btn.primary { border-color: var(--orange, #f47a00); background: var(--orange, #f47a00); color: #fff; }
+  #arFeature .ar-btn.primary:hover:not(:disabled) { background: var(--orange-dark, #d96500); }
+  #arFeature .ar-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  #arFeature .ar-card {
+    border: 1px solid var(--app-border, #e4e9ef);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, .03);
+    overflow: hidden;
+  }
+
+  /* KPI */
+  #arFeature .ar-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+  }
+
+  #arFeature .ar-kpi-card {
+    padding: 18px 20px;
+    border-radius: 14px;
+    border: 1px solid var(--app-border, #e4e9ef);
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform .18s, box-shadow .18s;
+  }
+
+  #arFeature .ar-kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(15,23,42,.07); }
+  #arFeature .ar-kpi-head { display: flex; align-items: center; justify-content: space-between; }
+  #arFeature .ar-kpi-label { font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .05em; }
+  #arFeature .ar-kpi-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; }
+  #arFeature .ar-kpi-val { font-size: 22px; font-weight: 800; line-height: 1.2; letter-spacing: -.02em; color: #172033; }
+  #arFeature .ar-kpi-sub { font-size: 12px; color: #64748b; }
+  #arFeature .kpi-ar .ar-kpi-icon { background: #eff8ff; color: #175cd3; }
+  #arFeature .kpi-ar .ar-kpi-val { color: #1e40af; }
+  #arFeature .kpi-collected .ar-kpi-icon { background: #ecfdf3; color: #027a48; }
+  #arFeature .kpi-collected .ar-kpi-val { color: #027a48; }
+  #arFeature .kpi-outstanding .ar-kpi-icon { background: #fef3f2; color: #d92d20; }
+  #arFeature .kpi-outstanding .ar-kpi-val { color: #b42318; }
+  #arFeature .kpi-overdue .ar-kpi-icon { background: #fff4ed; color: #c4320a; }
+  #arFeature .kpi-overdue .ar-kpi-val { color: #b42318; }
+  #arFeature .kpi-dealers .ar-kpi-icon { background: #f5f3ff; color: #6941c6; }
+  #arFeature .kpi-dealers .ar-kpi-val { color: #5b21b6; }
+
+  /* Toolbar */
+  #arFeature .ar-toolbar {
+    padding: 14px 20px;
+    border-bottom: 1px solid #edf1f5;
+    background: #fbfcfd;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  #arFeature .ar-search-wrap { position: relative; flex: 1 1 220px; }
+  #arFeature .ar-search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 14px; pointer-events: none; }
+
+  #arFeature .ar-input {
+    width: 100%;
+    min-height: 38px;
+    padding: 7px 12px 7px 32px;
+    border: 1px solid #dce3ea;
+    border-radius: 8px;
+    background: #fff;
+    font: inherit;
+    font-size: 13px;
+    color: #1e293b;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+
+  #arFeature .ar-input:focus { border-color: var(--orange, #f47a00); box-shadow: 0 0 0 3px rgba(244,122,0,.12); }
+
+  #arFeature .ar-select {
+    min-height: 38px;
+    padding: 7px 12px;
+    border: 1px solid #dce3ea;
+    border-radius: 8px;
+    background: #fff;
+    font: inherit;
+    font-size: 13px;
+    color: #1e293b;
+    outline: none;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+
+  #arFeature .ar-select:focus { border-color: var(--orange, #f47a00); }
+  #arFeature .ar-filter-summary { margin-left: auto; font-size: 12px; color: #64748b; white-space: nowrap; }
+
+  /* Table */
+  #arFeature .ar-table-wrap { overflow-x: auto; }
+
+  #arFeature .ar-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+    min-width: 960px;
+  }
+
+  #arFeature .ar-table th {
+    padding: 11px 14px;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+
+  #arFeature .ar-table th.num-col { text-align: right; }
+  #arFeature .ar-table th.aging-col { text-align: right; font-size: 11px; }
+
+  #arFeature .ar-table td {
+    padding: 13px 14px;
+    border-bottom: 1px solid #edf2f7;
+    vertical-align: middle;
+    color: #334155;
+  }
+
+  #arFeature .ar-table td.num-col { text-align: right; font-weight: 600; }
+  #arFeature .ar-table td.aging-col { text-align: right; }
+  #arFeature .ar-table tbody tr:hover td { background: #fffcf8; }
+
+  /* Footer tổng cộng */
+  #arFeature .ar-table tfoot td {
+    padding: 12px 14px;
+    background: #f1f5f9;
+    font-weight: 700;
+    font-size: 13px;
+    border-top: 2px solid #cbd5e1;
+    color: #1e293b;
+  }
+
+  #arFeature .ar-table tfoot td.num-col { text-align: right; }
+  #arFeature .ar-table tfoot td.aging-col { text-align: right; }
+
+  /* Dealer info */
+  #arFeature .ar-dealer-name { font-weight: 700; color: #1e293b; display: block; }
+  #arFeature .ar-dealer-code { font-size: 11px; font-weight: 600; color: #94a3b8; font-family: ui-monospace, SFMono-Regular, monospace; display: block; margin-top: 2px; }
+
+  /* Aging cells */
+  #arFeature .aging-bar { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+  #arFeature .aging-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  #arFeature .aging-dot.a0 { background: #12b76a; }
+  #arFeature .aging-dot.a31 { background: #f79009; }
+  #arFeature .aging-dot.a61 { background: #ef6820; }
+  #arFeature .aging-dot.a91 { background: #f04438; }
+  #arFeature .aging-val { font-size: 12.5px; font-weight: 700; }
+  #arFeature .aging-val.a0 { color: #027a48; }
+  #arFeature .aging-val.a31 { color: #b54708; }
+  #arFeature .aging-val.a61 { color: #c4320a; }
+  #arFeature .aging-val.a91 { color: #b42318; }
+  #arFeature .aging-val.zero { color: #cbd5e1; font-weight: 400; }
+
+  /* Status badge */
+  #arFeature .ar-status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  #arFeature .ar-status-badge.overdue91 { background: #fef3f2; color: #b42318; border: 1px solid #fecdca; }
+  #arFeature .ar-status-badge.overdue61 { background: #fff4ed; color: #c4320a; border: 1px solid #fddcab; }
+  #arFeature .ar-status-badge.overdue31 { background: #fffcf5; color: #b54708; border: 1px solid #fedf89; }
+  #arFeature .ar-status-badge.current   { background: #ecfdf3; color: #027a48; border: 1px solid #a6f4c5; }
+  #arFeature .ar-status-badge.clear     { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+
+  /* Empty state */
+  #arFeature .ar-empty { padding: 56px 20px; text-align: center; color: #64748b; }
+  #arFeature .ar-empty strong { display: block; font-size: 15px; color: #334155; margin-bottom: 6px; }
+
+  /* Collect bar */
+  #arFeature .ar-collect-bar { height: 6px; border-radius: 99px; background: #e2e8f0; overflow: hidden; margin-top: 4px; }
+  #arFeature .ar-collect-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #f79009, #12b76a); transition: width .5s ease; }
+
+  @media (max-width: 900px) {
+    #arFeature .ar-toolbar { flex-direction: column; align-items: stretch; }
+    #arFeature .ar-filter-summary { margin-left: 0; }
+  }
+</style>
+
+<div id="arFeature"></div>
+
+<script>
+'use strict';
+/* S7-03: So cong no theo dai ly – phan tich tuoi no | permission: receivables.read */
+window.sprint5Features = window.sprint5Features || {};
+
+window.sprint5Features['So cong no'] = {
+  path: 'so-cong-no-tuoi-no',
+  permission: 'receivables.read',
+  render: () => window.arFeature.render()
+};
+
+/* ── Helpers ── */
+const _arH = {
+  money: v => (Number(v)||0).toLocaleString('vi-VN') + ' d',
+  esc:   s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+};
+
+/* ── Mock data ── */
+function arMockData() {
+  return {
+    summary: {
+      totalAr: 2845200000,
+      totalCollected: 1520000000,
+      totalOutstanding: 1325200000,
+      totalOverdue: 845700000,
+      dealerCount: 12
+    },
+    dealers: [
+      { id:1,  code:'DL-001', name:'Dai ly An Binh',       region:'TP.HCM',      ar:420000000, collected:250000000, outstanding:170000000, aging:{d0:80000000,  d31:50000000, d61:25000000, d91:15000000} },
+      { id:2,  code:'DL-002', name:'Dai ly Minh Phat',     region:'Ha Noi',       ar:380000000, collected:200000000, outstanding:180000000, aging:{d0:40000000,  d31:60000000, d61:50000000, d91:30000000} },
+      { id:3,  code:'DL-003', name:'Dai ly Thien Long',    region:'Da Nang',      ar:290000000, collected:190000000, outstanding:100000000, aging:{d0:100000000, d31:0,        d61:0,        d91:0}        },
+      { id:4,  code:'DL-004', name:'Dai ly Kim Thanh',     region:'Can Tho',      ar:315000000, collected:150000000, outstanding:165000000, aging:{d0:65000000,  d31:70000000, d61:30000000, d91:0}        },
+      { id:5,  code:'DL-005', name:'Dai ly Phu Hung',      region:'Binh Duong',   ar:250000000, collected:220000000, outstanding:30000000,  aging:{d0:30000000,  d31:0,        d61:0,        d91:0}        },
+      { id:6,  code:'DL-006', name:'Dai ly Dong Bac',      region:'Bac Ninh',     ar:200000000, collected:80000000,  outstanding:120000000, aging:{d0:10000000,  d31:20000000, d61:30000000, d91:60000000} },
+      { id:7,  code:'DL-007', name:'Dai ly An Khang',      region:'TP.HCM',       ar:480000000, collected:320000000, outstanding:160000000, aging:{d0:110000000, d31:30000000, d61:15000000, d91:5000000}  },
+      { id:8,  code:'DL-008', name:'Dai ly Tay Nam',       region:'Vinh Long',    ar:170000000, collected:80000000,  outstanding:90000000,  aging:{d0:20000000,  d31:30000000, d61:20000000, d91:20000000} },
+      { id:9,  code:'DL-009', name:'Dai ly Hung Vuong',    region:'Phu Tho',      ar:145000000, collected:145000000, outstanding:0,          aging:{d0:0,         d31:0,        d61:0,        d91:0}        },
+      { id:10, code:'DL-010', name:'Dai ly Mekong',        region:'Tien Giang',   ar:95000000,  collected:55000000,  outstanding:40000000,  aging:{d0:40000000,  d31:0,        d61:0,        d91:0}        },
+      { id:11, code:'DL-011', name:'Dai ly Truong Phat',   region:'Long An',      ar:60000000,  collected:20000000,  outstanding:40000000,  aging:{d0:0,         d31:5000000,  d61:15000000, d91:20000000} },
+      { id:12, code:'DL-012', name:'Dai ly Phuoc Loc',     region:'Ba Ria-VT',    ar:40000000,  collected:10000000,  outstanding:30000000,  aging:{d0:10000000,  d31:10000000, d61:10000000, d91:0}        }
+    ]
+  };
+}
+
+window.arFeature = (() => {
+  let _data = null;
+  let _filtered = [];
+  let _fs = { keyword:'', ageGroup:'', region:'' };
+  const ROOT = 'arFeature';
+
+  async function loadData() {
+    try {
+      if (typeof window.apiRequest === 'function') {
+        const res = await window.apiRequest('receivables/aging');
+        if (res && res.dealers) { _data = res; return; }
+      }
+    } catch(e) { console.warn('S7-03: API fallback to mock.', e); }
+    _data = arMockData();
+  }
+
+  function agingStatusClass(d) {
+    if (!d || d.outstanding <= 0) return 'clear';
+    if ((d.aging.d91||0) > 0) return 'overdue91';
+    if ((d.aging.d61||0) > 0) return 'overdue61';
+    if ((d.aging.d31||0) > 0) return 'overdue31';
+    return 'current';
+  }
+
+  function agingStatusLabel(cls) {
+    return {overdue91:'Qua han >90 ngay',overdue61:'Qua han 61-90 ngay',overdue31:'Qua han 31-60 ngay',current:'Trong han',clear:'Khong con no'}[cls]||'';
+  }
+
+  function agingCell(val, cls) {
+    if (!val || val <= 0) return '<span class="aging-val zero">-</span>';
+    return '<div class="aging-bar"><span class="aging-dot '+cls+'"></span><span class="aging-val '+cls+'">' + _arH.money(val) + '</span></div>';
+  }
+
+  function renderKpi() {
+    const s = _data?.summary;
+    const host = document.getElementById('arKpiSection');
+    if (!host || !s) return;
+    const pct = s.totalAr > 0 ? (s.totalCollected/s.totalAr*100).toFixed(1) : 0;
+    host.innerHTML = '<div class="ar-kpi-grid">'
+      + '<div class="ar-kpi-card kpi-ar"><div class="ar-kpi-head"><span class="ar-kpi-label">Tong phai thu</span><span class="ar-kpi-icon">📋</span></div><div class="ar-kpi-val">' + _arH.money(s.totalAr) + '</div><div class="ar-kpi-sub">' + s.dealerCount + ' dai ly co giao dich</div></div>'
+      + '<div class="ar-kpi-card kpi-collected"><div class="ar-kpi-head"><span class="ar-kpi-label">Da thu duoc</span><span class="ar-kpi-icon">✓</span></div><div class="ar-kpi-val">' + _arH.money(s.totalCollected) + '</div><div class="ar-kpi-sub">Ti le thu hoi: ' + pct + '%<div class="ar-collect-bar"><div class="ar-collect-fill" style="width:' + pct + '%"></div></div></div></div>'
+      + '<div class="ar-kpi-card kpi-outstanding"><div class="ar-kpi-head"><span class="ar-kpi-label">Tong con no</span><span class="ar-kpi-icon">₫</span></div><div class="ar-kpi-val">' + _arH.money(s.totalOutstanding) + '</div><div class="ar-kpi-sub">' + (s.totalOutstanding/s.totalAr*100).toFixed(1) + '% chua thu hoi</div></div>'
+      + '<div class="ar-kpi-card kpi-overdue"><div class="ar-kpi-head"><span class="ar-kpi-label">No qua han</span><span class="ar-kpi-icon">⚠</span></div><div class="ar-kpi-val">' + _arH.money(s.totalOverdue) + '</div><div class="ar-kpi-sub" style="color:#b42318;font-weight:600">Uu tien don doc thu hoi</div></div>'
+      + '<div class="ar-kpi-card kpi-dealers"><div class="ar-kpi-head"><span class="ar-kpi-label">Dai ly con no</span><span class="ar-kpi-icon">👥</span></div><div class="ar-kpi-val">' + _data.dealers.filter(d=>d.outstanding>0).length + '</div><div class="ar-kpi-sub">/' + s.dealerCount + ' dai ly tong cong</div></div>'
+      + '</div>';
+  }
+
+  function populateRegions() {
+    const sel = document.getElementById('arRegionFilter');
+    if (!sel || !_data) return;
+    const regions = [...new Set(_data.dealers.map(d=>d.region))].sort();
+    regions.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; sel.appendChild(o); });
+  }
+
+  function applyFilterAndRender() {
+    if (!_data) return;
+    const kw = (_fs.keyword||'').trim().toLowerCase();
+    const age = _fs.ageGroup;
+    const region = _fs.region;
+    _filtered = _data.dealers.filter(d => {
+      if (kw && !`${d.name} ${d.code} ${d.region}`.toLowerCase().includes(kw)) return false;
+      if (region && d.region !== region) return false;
+      if (age==='31' && !(d.aging.d31>0)) return false;
+      if (age==='61' && !(d.aging.d61>0)) return false;
+      if (age==='91' && !(d.aging.d91>0)) return false;
+      if (age==='any' && !((d.aging.d31||0)+(d.aging.d61||0)+(d.aging.d91||0)>0)) return false;
+      if (age==='clear' && d.outstanding>0) return false;
+      return true;
+    });
+    const sumEl = document.getElementById('arFilterSummary');
+    if (sumEl) sumEl.textContent = 'Hien thi ' + _filtered.length + '/' + _data.dealers.length + ' dai ly';
+    renderTable(_filtered);
+  }
+
+  function renderTable(list) {
+    const wrap = document.getElementById('arTableWrap');
+    if (!wrap) return;
+    if (!list.length) {
+      wrap.innerHTML = '<div class="ar-empty"><strong>Khong tim thay dai ly nao</strong>Thu dieu chinh bo loc hoac tu khoa tim kiem.</div>';
+      return;
+    }
+    const tot = list.reduce((a,d) => ({ ar:a.ar+(d.ar||0), collected:a.collected+(d.collected||0), outstanding:a.outstanding+(d.outstanding||0), d0:a.d0+(d.aging.d0||0), d31:a.d31+(d.aging.d31||0), d61:a.d61+(d.aging.d61||0), d91:a.d91+(d.aging.d91||0) }), {ar:0,collected:0,outstanding:0,d0:0,d31:0,d61:0,d91:0});
+    const rows = list.map(d => {
+      const sc = agingStatusClass(d);
+      return '<tr><td><span class="ar-dealer-name">' + _arH.esc(d.name) + '</span><span class="ar-dealer-code">' + _arH.esc(d.code) + ' · ' + _arH.esc(d.region) + '</span></td>'
+        + '<td class="num-col">' + _arH.money(d.ar) + '</td>'
+        + '<td class="num-col" style="color:#027a48">' + _arH.money(d.collected) + '</td>'
+        + '<td class="num-col" style="color:' + (d.outstanding>0?'#b42318':'#64748b') + '">' + _arH.money(d.outstanding) + '</td>'
+        + '<td class="aging-col">' + agingCell(d.aging.d0,'a0') + '</td>'
+        + '<td class="aging-col">' + agingCell(d.aging.d31,'a31') + '</td>'
+        + '<td class="aging-col">' + agingCell(d.aging.d61,'a61') + '</td>'
+        + '<td class="aging-col">' + agingCell(d.aging.d91,'a91') + '</td>'
+        + '<td><span class="ar-status-badge ' + sc + '">' + agingStatusLabel(sc) + '</span></td></tr>';
+    }).join('');
+    wrap.innerHTML = '<table class="ar-table"><thead><tr>'
+      + '<th>Dai ly</th><th class="num-col">Phai thu</th><th class="num-col">Da thu</th><th class="num-col">Con no</th>'
+      + '<th class="aging-col" style="border-left:2px solid #e2e8f0">0-30 ngay</th>'
+      + '<th class="aging-col">31-60 ngay</th><th class="aging-col">61-90 ngay</th><th class="aging-col">&gt;90 ngay</th>'
+      + '<th>Trang thai</th></tr></thead>'
+      + '<tbody>' + rows + '</tbody>'
+      + '<tfoot><tr>'
+      + '<td><strong>TONG CONG (' + list.length + ' dai ly)</strong></td>'
+      + '<td class="num-col">' + _arH.money(tot.ar) + '</td>'
+      + '<td class="num-col" style="color:#027a48">' + _arH.money(tot.collected) + '</td>'
+      + '<td class="num-col" style="color:' + (tot.outstanding>0?'#b42318':'#64748b') + '">' + _arH.money(tot.outstanding) + '</td>'
+      + '<td class="aging-col" style="border-left:2px solid #cbd5e1">' + agingCell(tot.d0,'a0') + '</td>'
+      + '<td class="aging-col">' + agingCell(tot.d31,'a31') + '</td>'
+      + '<td class="aging-col">' + agingCell(tot.d61,'a61') + '</td>'
+      + '<td class="aging-col">' + agingCell(tot.d91,'a91') + '</td>'
+      + '<td></td></tr></tfoot></table>';
+  }
+
+  function exportCsv() {
+    if (!_data) return;
+    const list = _filtered.length ? _filtered : _data.dealers;
+    const BOM = '\uFEFF';
+    const hdr = ['Ma dai ly','Ten dai ly','Khu vuc','Phai thu (d)','Da thu (d)','Con no (d)','0-30 ngay (d)','31-60 ngay (d)','61-90 ngay (d)','>90 ngay (d)','Trang thai'];
+    const rows = list.map(d => [d.code,d.name,d.region,d.ar,d.collected,d.outstanding,d.aging.d0||0,d.aging.d31||0,d.aging.d61||0,d.aging.d91||0,agingStatusLabel(agingStatusClass(d))].map(v=>'\"'+String(v).replace(/"/g,'""')+'\"').join(','));
+    const csv = BOM + [hdr.map(h=>'\"'+h+'\"').join(','),...rows].join('\r\n');
+    const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const now = new Date();
+    const stamp = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+    a.href = url; a.download = `SoCongNo_TuoiNo_${stamp}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  }
+
+  function bindEvents() {
+    let t;
+    document.getElementById('arSearch')?.addEventListener('input', e => { clearTimeout(t); t=setTimeout(()=>{ _fs.keyword=e.target.value; applyFilterAndRender(); },200); });
+    document.getElementById('arAgeFilter')?.addEventListener('change', e => { _fs.ageGroup=e.target.value; applyFilterAndRender(); });
+    document.getElementById('arRegionFilter')?.addEventListener('change', e => { _fs.region=e.target.value; applyFilterAndRender(); });
+    document.getElementById('arResetFilter')?.addEventListener('click', () => {
+      _fs = {keyword:'',ageGroup:'',region:''};
+      ['arSearch','arAgeFilter','arRegionFilter'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+      applyFilterAndRender();
+    });
+    document.getElementById('arRefreshBtn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('arRefreshBtn');
+      if(btn) btn.disabled=true;
+      _data=null; await loadData(); renderKpi(); applyFilterAndRender();
+      if(btn) btn.disabled=false;
+    });
+    document.getElementById('arExportBtn')?.addEventListener('click', exportCsv);
+  }
+
+  async function render() {
+    const host = document.getElementById(ROOT);
+    if (!host) return;
+    host.innerHTML = '<header class="ar-header"><div><span class="ar-eyebrow">KE TOAN CONG NO · PHAN TICH TUOI NO</span><h1 class="ar-title">So cong no theo dai ly</h1><p class="ar-desc">Tong hop phai thu, da thu va phan tich tuoi no 0-30 / 31-60 / 61-90 / &gt;90 ngay cho tung dai ly.</p></div><div class="ar-header-actions"><button class="ar-btn" id="arRefreshBtn">↻ Lam moi</button><button class="ar-btn primary" id="arExportBtn">⬇ Xuat Excel (.csv)</button></div></header>'
+      + '<section id="arKpiSection"></section>'
+      + '<section class="ar-card" id="arTableCard"><div class="ar-toolbar"><div class="ar-search-wrap"><span class="ar-search-icon">🔍</span><input type="text" id="arSearch" class="ar-input" placeholder="Tim dai ly, ma, khu vuc..."></div><select id="arAgeFilter" class="ar-select"><option value="">Tat ca nhom tuoi no</option><option value="31">Qua han 31-60 ngay</option><option value="61">Qua han 61-90 ngay</option><option value="91">Qua han &gt;90 ngay (Nghiem trong)</option><option value="any">Co no qua han (bat ky nhom)</option><option value="clear">Da thanh toan hoan toan</option></select><select id="arRegionFilter" class="ar-select"><option value="">Tat ca khu vuc</option></select><button class="ar-btn" id="arResetFilter">↺ Xoa loc</button><span class="ar-filter-summary" id="arFilterSummary"></span></div><div class="ar-table-wrap" id="arTableWrap"></div></section>';
+    await loadData();
+    renderKpi();
+    populateRegions();
+    applyFilterAndRender();
+    bindEvents();
+  }
+
+  return { render };
+})();
+</script>

@@ -28,7 +28,10 @@
 - Không suy ra yêu cầu push từ yêu cầu sửa code hoặc commit. Khi người dùng yêu cầu push, dùng đúng remote/nhánh đã xác nhận; không tự đổi sang `main`.
 - Giữ thay đổi sẵn có của người dùng; kiểm tra `git status` trước khi stage. Không commit file tạm hoặc đầu ra build.
 - Chỉ thêm file kiểm thử hay tài liệu sử dụng khi được yêu cầu hoặc phạm vi công việc cần chúng. Có thể dùng các kiểm tra sẵn có để xác minh thay đổi.
-- Không thêm dữ liệu mẫu để che lỗi API. Phân biệt dữ liệu rỗng, lỗi kết nối, thiếu quyền và hết phiên.
+- Cấm dùng dữ liệu mẫu, mock, demo hoặc dữ liệu nghiệp vụ viết sẵn trong màn hình chức năng, API và luồng vận hành thực tế. Các danh sách, số tổng hợp, hóa đơn, công nợ, thanh toán và thông tin đại lý phải lấy từ API/PostgreSQL theo đúng phạm vi người dùng đăng nhập.
+- Cấm dùng dữ liệu mẫu làm fallback khi API chưa triển khai, lỗi kết nối, thiếu quyền, hết phiên hoặc trả dữ liệu không hợp lệ. Hiển thị đúng trạng thái lỗi; dữ liệu rỗng phải có trạng thái rỗng, không tự thay bằng bản ghi mẫu.
+- Cấm giả lập thao tác nghiệp vụ rồi báo thành công: chỉ báo đã lưu, xác nhận, thanh toán hoặc gửi email khi backend xác nhận kết quả thực tế. Không coi cập nhật biến JavaScript hoặc browser storage là hoàn thành nghiệp vụ.
+- Dữ liệu mẫu chỉ được dùng trong kiểm thử cô lập hoặc bản demo được người dùng yêu cầu rõ ràng; phải tách khỏi luồng vận hành thực tế và không tự nạp vào database thật.
 - Dữ liệu nghiệp vụ phải lưu qua API vào PostgreSQL. Không dùng `localStorage`, `sessionStorage` hoặc mảng JavaScript làm nguồn lưu chính thức cho chính sách, sản phẩm hay đơn hàng.
 - Có thể dùng bộ nhớ tạm cho form và trạng thái giao diện. Dấu hiệu phiên hiện có trong `sessionStorage` chỉ phục vụ FE; xác thực và quyền phải dựa vào phiên ở server. Không tự xóa cơ chế này khi công việc không yêu cầu thay đổi đăng nhập.
 - Với phần backend đang sửa, kiểm tra xác thực, quyền và quyền truy cập từng bản ghi; không tin ID, giá tiền hoặc vai trò do FE gửi lên.

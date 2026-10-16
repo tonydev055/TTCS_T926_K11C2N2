@@ -989,8 +989,199 @@
   <div id="toast"></div>
 
   <script>
-    // Sẽ bổ sung chi tiết logic xử lý ở các commit tiếp theo
-    console.log("Khởi tạo trang nhắc hạn thanh toán tự động S7-08");
+    // ═══════════════════════════════════════════════════════════════════
+    // State Management & Data Store
+    // ═══════════════════════════════════════════════════════════════════
+    const AppState = {
+      currentUser: {
+        fullName: 'Đại lý Kim Long',
+        email: 'daily.kimlong@khoflow.vn',
+        code: 'DL-00284',
+        role: 'CUSTOMER',
+        phone: '0912 345 678'
+      },
+      creditInfo: {
+        creditLimit: 500000000,
+        creditDays: 30,
+        outstanding: 142500000,
+        available: 357500000,
+        overdueAmount: 48500000,
+        overdueOrders: 1,
+        tradingLocked: false,
+        lockReason: ''
+      },
+      currentDate: new Date().toISOString().split('T')[0],
+      invoices: [],
+      notifications: [],
+      auditLogs: [],
+      activeFilter: 'ALL',
+      jobConfig: {
+        runHour: 8,
+        runMinute: 0,
+        lastRun: null,
+        nextRun: null,
+        isRunning: false
+      }
+    };
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Tiện ích Format & Date
+    // ═══════════════════════════════════════════════════════════════════
+    function formatMoney(amount) {
+      if (amount == null) return '0 đ';
+      return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount).replace('₫', 'đ');
+    }
+
+    function formatDateVN(dateStr) {
+      if (!dateStr) return '—';
+      const parts = String(dateStr).slice(0, 10).split('-');
+      return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dateStr;
+    }
+
+    function formatDateTimeVN(isoStr) {
+      if (!isoStr) return '—';
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return isoStr;
+      return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} - ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2800);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Tích hợp API Backend hoặc Khởi tạo Dữ liệu Thực tế
+    // ═══════════════════════════════════════════════════════════════════
+    async function loadInitialData() {
+      // 1. Thử tải thông tin người dùng từ api/auth/me
+      try {
+        const resUser = await fetch('api/auth/me', { signal: AbortSignal.timeout(3000) });
+        if (resUser.ok) {
+          const user = await resUser.json();
+          AppState.currentUser.fullName = user.fullName || user.email || 'Đại lý Kim Long';
+          AppState.currentUser.email = user.email || 'daily.kimlong@khoflow.vn';
+          AppState.currentUser.role = user.role || 'CUSTOMER';
+        }
+      } catch (_) {
+        // Fallback default
+      }
+
+      // 2. Thử tải thông tin công nợ từ api/portal/me
+      try {
+        const resPortal = await fetch('api/portal/me', { signal: AbortSignal.timeout(3000) });
+        if (resPortal.ok) {
+          const portalData = await resPortal.json();
+          if (portalData.code) AppState.currentUser.code = portalData.code;
+          if (portalData.name) AppState.currentUser.fullName = portalData.name;
+          if (portalData.phone) AppState.currentUser.phone = portalData.phone;
+          if (portalData.credit) {
+            AppState.creditInfo.creditLimit = Number(portalData.credit.creditLimit) || 500000000;
+            AppState.creditInfo.outstanding = Number(portalData.credit.outstanding) || 142500000;
+            AppState.creditInfo.available = Number(portalData.credit.available) || 357500000;
+          }
+          if (portalData.creditDays) AppState.creditInfo.creditDays = Number(portalData.creditDays) || 30;
+          AppState.creditInfo.tradingLocked = !!portalData.tradingLocked;
+          AppState.creditInfo.lockReason = portalData.lockReason || '';
+        }
+      } catch (_) {
+        // Fallback default
+      }
+
+      // 3. Khởi tạo danh sách hóa đơn theo chuẩn nghiệp vụ Sprint 7
+      // Thiết lập ngày cơ sở dựa vào ngày hiện tại để có các kịch bản:
+      // - Hóa đơn quá hạn (> 0 ngày) -> Nguy cơ khóa đơn
+      // - Hóa đơn sắp đến hạn trong 3 ngày tới -> Cần nhắc nhở trước 3 ngày
+      // - Hóa đơn còn hạn dài
+      // - Hóa đơn đã tất toán
+      const today = new Date(AppState.currentDate);
+      
+      const addDays = (d, n) => {
+        const res = new Date(d);
+        res.setDate(res.getDate() + n);
+        return res.toISOString().split('T')[0];
+      };
+
+      AppState.invoices = [
+        {
+          id: 1,
+          code: 'HD-2026-088',
+          orderCode: 'DH-000412',
+          issueDate: addDays(today, -35),
+          deliveryDate: addDays(today, -35),
+          dueDate: addDays(today, -5), // Đã quá hạn 5 ngày!
+          amount: 48500000,
+          paidAmount: 0,
+          remainingAmount: 48500000,
+          status: 'UNPAID',
+          description: 'Lô hàng máy khoan pin & máy mài góc Bosch'
+        },
+        {
+          id: 2,
+          code: 'HD-2026-092',
+          orderCode: 'DH-000428',
+          issueDate: addDays(today, -27),
+          deliveryDate: addDays(today, -27),
+          dueDate: addDays(today, 3), // Đúng chuẩn 3 ngày nữa đến hạn! (Cần nhắc trước 3 ngày)
+          amount: 62000000,
+          paidAmount: 0,
+          remainingAmount: 62000000,
+          status: 'UNPAID',
+          description: 'Lô hàng thiết bị điện dân dụng Panasonic đợt 1'
+        },
+        {
+          id: 3,
+          code: 'HD-2026-096',
+          orderCode: 'DH-000435',
+          issueDate: addDays(today, -25),
+          deliveryDate: addDays(today, -25),
+          dueDate: addDays(today, 5), // 5 ngày nữa đến hạn (Chưa cần nhắc)
+          amount: 32000000,
+          paidAmount: 0,
+          remainingAmount: 32000000,
+          status: 'UNPAID',
+          description: 'Dây cáp điện Cadivi & công tắc ổ cắm'
+        },
+        {
+          id: 4,
+          code: 'HD-2026-075',
+          orderCode: 'DH-000395',
+          issueDate: addDays(today, -45),
+          deliveryDate: addDays(today, -45),
+          dueDate: addDays(today, -15),
+          amount: 85000000,
+          paidAmount: 85000000,
+          remainingAmount: 0,
+          status: 'PAID',
+          description: 'Đơn hàng đèn chiếu sáng LED Philips (Đã thanh toán đủ)'
+        }
+      ];
+
+      // Đọc nhật ký và thông báo đã lưu (nếu có trong localStorage)
+      try {
+        const savedLogs = localStorage.getItem('kf_s708_audit_logs');
+        if (savedLogs) AppState.auditLogs = JSON.parse(savedLogs);
+        const savedNotifs = localStorage.getItem('kf_s708_notifications');
+        if (savedNotifs) AppState.notifications = JSON.parse(savedNotifs);
+      } catch (_) {}
+
+      // Đồng bộ UI
+      updateUserUI();
+    }
+
+    function updateUserUI() {
+      document.getElementById('userFullName').textContent = AppState.currentUser.fullName;
+      document.getElementById('userCode').textContent = `${AppState.currentUser.code} · ${AppState.currentUser.email}`;
+      const initials = AppState.currentUser.fullName.split(' ').slice(-2).map(w => w[0]).join('').toUpperCase() || 'ĐL';
+      document.getElementById('userAvatar').textContent = initials;
+      document.getElementById('valCreditLimit').textContent = formatMoney(AppState.creditInfo.creditLimit);
+      document.getElementById('valCreditDays').textContent = `${AppState.creditInfo.creditDays} ngày`;
+      document.getElementById('simDateInput').value = AppState.currentDate;
+    }
+
+    console.log("Đã tải xong phần tích hợp API và dữ liệu công nợ đại lý.");
   </script>
 </body>
 </html>

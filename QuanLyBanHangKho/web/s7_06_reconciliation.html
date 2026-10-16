@@ -1420,7 +1420,25 @@
       updateRoleUI();
     }
 
-    console.log("Đã cài đặt xong logic tính toán số dư đầu/cuối kỳ và phát sinh.");
+    // ═══════════════════════════════════════════════════════════════════
+    // Chức Năng Xuất Biên Bản Ra File PDF / In Ấn Chuẩn A4 (AC2)
+    // ═══════════════════════════════════════════════════════════════════
+    function exportReconciliationPDF() {
+      const dealer = ReconState.dealers[ReconState.currentDealerCode];
+      const oldTitle = document.title;
+      const pdfFileName = `Bien_ban_doi_chieu_cong_no_${dealer.code}_${ReconState.currentPeriod}`;
+
+      // Đặt tên file gợi ý khi chọn Save as PDF
+      document.title = pdfFileName;
+      showToast('Đang mở hộp thoại xuất file PDF / In ấn. Vui lòng chọn "Lưu dưới dạng PDF" (Save as PDF)...');
+
+      setTimeout(() => {
+        window.print();
+        document.title = oldTitle;
+      }, 350);
+    }
+
+    console.log("Đã bổ sung chức năng xuất PDF / In biên bản chuẩn A4.");
   </script>
 </body>
 </html>

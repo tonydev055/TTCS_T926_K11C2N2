@@ -1413,7 +1413,193 @@
       renderNotifications();
     }
 
-    console.log("Đã cài đặt xong logic tính ngày đến hạn và phân loại hóa đơn.");
+    // ═══════════════════════════════════════════════════════════════════
+    // Thuật Toán Chống Gửi Trùng Trong Ngày (AC3)
+    // ═══════════════════════════════════════════════════════════════════
+    function generateReminderKey(invoiceId, reminderType, dateStr) {
+      return `REMINDER_INV${invoiceId}_${reminderType}_${dateStr}`;
+    }
+
+    function isReminderSentToday(invoiceId, reminderType, dateStr) {
+      if (!reminderType) return false;
+      const key = generateReminderKey(invoiceId, reminderType, dateStr);
+      return AppState.auditLogs.some(log => log.uniqueKey === key && log.result === 'SUCCESS');
+    }
+
+    function addAuditLog(entry) {
+      const logItem = {
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        timestamp: new Date().toISOString(),
+        dateStr: AppState.currentDate,
+        ...entry
+      };
+      AppState.auditLogs.unshift(logItem);
+      // Giới hạn 100 bản ghi nhật ký
+      if (AppState.auditLogs.length > 100) AppState.auditLogs.pop();
+      try {
+        localStorage.setItem('kf_s708_audit_logs', JSON.stringify(AppState.auditLogs));
+      } catch (_) {}
+    }
+
+    function renderAuditLogsTable() {
+      const tbody = document.getElementById('auditTableBody');
+      tbody.innerHTML = '';
+
+      if (AppState.auditLogs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--muted)">Chưa có nhật ký gửi nhắc hạn thanh toán. Bấm "Chạy quét định kỳ ngay" để bắt đầu.</td></tr>`;
+        return;
+      }
+
+      AppState.auditLogs.forEach(log => {
+        const tr = document.createElement('tr');
+        const isSuccess = log.result === 'SUCCESS';
+        const isBlocked = log.result === 'DUPLICATE_BLOCKED';
+
+        tr.innerHTML = `
+          <td>
+            <div style="font-weight:600">${formatDateTimeVN(log.timestamp)}</div>
+            <div style="font-size:11px;color:var(--muted)">Ngày HT: ${formatDateVN(log.dateStr)}</div>
+          </td>
+          <td>
+            <strong style="color:var(--ink)">${log.invoiceCode}</strong>
+          </td>
+          <td>
+            <span class="badge ${log.channel === 'EMAIL' ? 'badge-info' : (log.channel === 'IN_APP' ? 'badge-warning' : 'badge-neutral')}">
+              ${log.channel === 'EMAIL' ? '✉️ Email' : (log.channel === 'IN_APP' ? '🔔 In-App' : log.channel)}
+            </span>
+          </td>
+          <td>
+            <strong style="font-size:13px;color:var(--ink)">${log.title}</strong>
+            <div style="font-size:11.5px;color:var(--muted);max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              ${log.summary || ''}
+            </div>
+          </td>
+          <td>
+            <div style="font-size:12.5px">${log.recipient}</div>
+          </td>
+          <td>
+            ${isSuccess ? `
+              <span class="badge badge-success">✓ Đã gửi</span>
+            ` : (isBlocked ? `
+              <span class="badge badge-warning" title="Bị chặn bởi bộ lọc chống gửi trùng trong cùng ngày">
+                🛡️ Chặn trùng
+              </span>
+            ` : `
+              <span class="badge badge-danger">Lỗi</span>
+            `)}
+          </td>
+          <td>
+            <div style="font-family:monospace;font-size:11px;color:var(--muted)">${log.uniqueKey}</div>
+            <div style="font-size:10.5px;color:${isBlocked ? '#b54708' : 'var(--success)'}">
+              ${log.note || (isSuccess ? 'Bản ghi duy nhất trong ngày' : 'Bỏ qua không gửi lại')}
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Tác Vụ Định Kỳ Quét Hàng Ngày (AC2: Daily Scheduled Job)
+    // ═══════════════════════════════════════════════════════════════════
+    async function executeDailyReminderJob(isManual = false) {
+      if (AppState.jobConfig.isRunning) return;
+      AppState.jobConfig.isRunning = true;
+      const btn = document.getElementById('btnRunJobNow');
+      btn.disabled = true;
+      btn.textContent = '⏳ Đang quét hóa đơn...';
+
+      const scanDate = AppState.currentDate;
+      let sentEmailCount = 0;
+      let sentInAppCount = 0;
+      let duplicateBlockedCount = 0;
+      let skippedCount = 0;
+
+      console.log(`[Scheduled Job] Bắt đầu quét ngày ${scanDate}...`);
+
+      for (const inv of AppState.invoices) {
+        const st = calculateInvoiceDueStatus(inv, scanDate);
+
+        // Chỉ xử lý nếu hóa đơn cần gửi nhắc (trước hạn 3 ngày hoặc quá hạn)
+        if (!st.needsReminder) {
+          skippedCount++;
+          continue;
+        }
+
+        const uniqueKey = generateReminderKey(inv.id, st.reminderType, scanDate);
+
+        // AC3: Kiểm tra chống gửi trùng lặp cho cùng một hóa đơn trong cùng một ngày
+        const alreadySent = isReminderSentToday(inv.id, st.reminderType, scanDate);
+        if (alreadySent) {
+          duplicateBlockedCount++;
+          addAuditLog({
+            invoiceId: inv.id,
+            invoiceCode: inv.code,
+            channel: 'TẤT CẢ (EMAIL + IN-APP)',
+            reminderType: st.reminderType,
+            title: `BỎ QUA: Hóa đơn ${inv.code} đã được nhắc trong ngày`,
+            summary: `Hóa đơn này đã nhận nhắc ${st.reminderType} lúc trước. Chặn gửi trùng nhiều lần trong ngày ${formatDateVN(scanDate)}.`,
+            recipient: AppState.currentUser.email,
+            result: 'DUPLICATE_BLOCKED',
+            uniqueKey: uniqueKey,
+            note: 'Chống gửi trùng lặp kích hoạt: 1 lần/ngày/hóa đơn'
+          });
+          continue;
+        }
+
+        // 1. Tạo thông báo trong ứng dụng (In-App Notification)
+        createInAppNotification({
+          invoiceId: inv.id,
+          invoiceCode: inv.code,
+          type: st.reminderType,
+          title: st.messageTitle,
+          summary: st.messageSummary,
+          amount: inv.remainingAmount,
+          dueDate: inv.dueDate,
+          riskLevel: st.riskLevel
+        });
+        sentInAppCount++;
+
+        addAuditLog({
+          invoiceId: inv.id,
+          invoiceCode: inv.code,
+          channel: 'IN_APP',
+          reminderType: st.reminderType,
+          title: st.messageTitle,
+          summary: st.messageSummary,
+          recipient: `${AppState.currentUser.fullName} (${AppState.currentUser.code})`,
+          result: 'SUCCESS',
+          uniqueKey: uniqueKey,
+          note: 'Thông báo ứng dụng hiển thị tại chuông nhắc nợ'
+        });
+
+        // 2. Gửi Email thông báo (Gửi vào dev-mailbox hoặc lưu trữ)
+        await sendReminderEmail({
+          invoice: inv,
+          status: st,
+          uniqueKey: uniqueKey,
+          scanDate: scanDate
+        });
+        sentEmailCount++;
+      }
+
+      AppState.jobConfig.lastRun = new Date().toISOString();
+      document.getElementById('lblLastRun').textContent = `Hôm nay ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
+
+      AppState.jobConfig.isRunning = false;
+      btn.disabled = false;
+      btn.textContent = '⚡ Chạy quét định kỳ ngay';
+
+      renderInvoicesTable();
+      renderAuditLogsTable();
+      renderNotifications();
+
+      const msg = `Tác vụ định kỳ hoàn tất! Đã gửi ${sentEmailCount} email, ${sentInAppCount} thông báo. (Chặn ${duplicateBlockedCount} lần gửi trùng).`;
+      showToast(msg);
+      console.log(`[Scheduled Job] ${msg}`);
+    }
+
+    console.log("Đã cài đặt xong tác vụ định kỳ 1 lần/ngày và chống gửi trùng.");
   </script>
 </body>
 </html>

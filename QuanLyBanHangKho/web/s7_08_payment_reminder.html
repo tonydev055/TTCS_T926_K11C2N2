@@ -1171,17 +1171,249 @@
       updateUserUI();
     }
 
-    function updateUserUI() {
-      document.getElementById('userFullName').textContent = AppState.currentUser.fullName;
-      document.getElementById('userCode').textContent = `${AppState.currentUser.code} · ${AppState.currentUser.email}`;
-      const initials = AppState.currentUser.fullName.split(' ').slice(-2).map(w => w[0]).join('').toUpperCase() || 'ĐL';
-      document.getElementById('userAvatar').textContent = initials;
-      document.getElementById('valCreditLimit').textContent = formatMoney(AppState.creditInfo.creditLimit);
-      document.getElementById('valCreditDays').textContent = `${AppState.creditInfo.creditDays} ngày`;
-      document.getElementById('simDateInput').value = AppState.currentDate;
+    // ═══════════════════════════════════════════════════════════════════
+    // Logic Tính Hạn Thanh Toán & Phân Loại Hóa Đơn (AC1)
+    // ═══════════════════════════════════════════════════════════════════
+    function calculateInvoiceDueStatus(invoice, simDate) {
+      if (invoice.status === 'PAID' || invoice.remainingAmount <= 0) {
+        return {
+          type: 'PAID',
+          label: 'Đã thanh toán',
+          badgeClass: 'badge-success',
+          daysDiff: 0,
+          needsReminder: false,
+          reminderType: null,
+          riskLevel: 'NONE'
+        };
+      }
+
+      const dDue = new Date(invoice.dueDate);
+      dDue.setHours(0, 0, 0, 0);
+      const dCurrent = new Date(simDate);
+      dCurrent.setHours(0, 0, 0, 0);
+
+      const diffDays = Math.round((dDue - dCurrent) / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) {
+        const overdueDays = Math.abs(diffDays);
+        return {
+          type: 'OVERDUE',
+          label: `Quá hạn ${overdueDays} ngày`,
+          badgeClass: 'badge-danger',
+          daysDiff: diffDays,
+          overdueDays: overdueDays,
+          needsReminder: true,
+          reminderType: 'OVERDUE',
+          riskLevel: 'CRITICAL',
+          messageTitle: `Hóa đơn ${invoice.code} đã quá hạn thanh toán!`,
+          messageSummary: `Hóa đơn ${invoice.code} (số tiền ${formatMoney(invoice.remainingAmount)}) đã quá hạn ${overdueDays} ngày. Đại lý có nguy cơ bị khóa tạo đơn hàng mới.`
+        };
+      } else if (diffDays === 3) {
+        return {
+          type: 'DUE_SOON_3D',
+          label: 'Còn đúng 3 ngày (Cần nhắc)',
+          badgeClass: 'badge-warning',
+          daysDiff: diffDays,
+          needsReminder: true,
+          reminderType: 'DUE_IN_3_DAYS',
+          riskLevel: 'WARNING',
+          messageTitle: `Nhắc hạn: Hóa đơn ${invoice.code} còn 3 ngày nữa đến hạn`,
+          messageSummary: `Hóa đơn ${invoice.code} với số tiền ${formatMoney(invoice.remainingAmount)} sẽ đến hạn vào ngày ${formatDateVN(invoice.dueDate)}. Vui lòng thanh toán đúng hạn.`
+        };
+      } else if (diffDays === 0) {
+        return {
+          type: 'DUE_TODAY',
+          label: 'Đến hạn hôm nay',
+          badgeClass: 'badge-danger',
+          daysDiff: diffDays,
+          needsReminder: true,
+          reminderType: 'DUE_TODAY',
+          riskLevel: 'HIGH',
+          messageTitle: `Hôm nay là hạn thanh toán hóa đơn ${invoice.code}`,
+          messageSummary: `Hóa đơn ${invoice.code} cần thanh toán trong hôm nay để tránh phát sinh nợ quá hạn.`
+        };
+      } else if (diffDays > 0 && diffDays < 3) {
+        return {
+          type: 'DUE_VERY_SOON',
+          label: `Còn ${diffDays} ngày nữa`,
+          badgeClass: 'badge-warning',
+          daysDiff: diffDays,
+          needsReminder: true,
+          reminderType: 'DUE_URGENT',
+          riskLevel: 'WARNING',
+          messageTitle: `Khẩn: Hóa đơn ${invoice.code} còn ${diffDays} ngày`,
+          messageSummary: `Hạn chót thanh toán là ngày ${formatDateVN(invoice.dueDate)}.`
+        };
+      } else {
+        return {
+          type: 'NORMAL',
+          label: `Còn ${diffDays} ngày`,
+          badgeClass: 'badge-neutral',
+          daysDiff: diffDays,
+          needsReminder: false,
+          reminderType: null,
+          riskLevel: 'LOW'
+        };
+      }
     }
 
-    console.log("Đã tải xong phần tích hợp API và dữ liệu công nợ đại lý.");
+    // ═══════════════════════════════════════════════════════════════════
+    // Render Giao Diện Bảng Hóa Đơn & Thẻ Tổng Quan
+    // ═══════════════════════════════════════════════════════════════════
+    function renderInvoicesTable() {
+      const tbody = document.getElementById('invoicesTableBody');
+      tbody.innerHTML = '';
+
+      let dueSoonCount = 0;
+      let overdueCount = 0;
+      let totalOverdueAmount = 0;
+      let totalOutstanding = 0;
+
+      // Lọc danh sách theo activeFilter
+      const filtered = AppState.invoices.filter(inv => {
+        const status = calculateInvoiceDueStatus(inv, AppState.currentDate);
+        if (AppState.activeFilter === 'DUE_SOON') return status.type === 'DUE_SOON_3D';
+        if (AppState.activeFilter === 'OVERDUE') return status.type === 'OVERDUE';
+        return true;
+      });
+
+      // Duyệt qua tất cả hóa đơn để thống kê số liệu
+      AppState.invoices.forEach(inv => {
+        const st = calculateInvoiceDueStatus(inv, AppState.currentDate);
+        if (st.type === 'DUE_SOON_3D') dueSoonCount++;
+        if (st.type === 'OVERDUE') {
+          overdueCount++;
+          totalOverdueAmount += inv.remainingAmount;
+        }
+        if (inv.status !== 'PAID') {
+          totalOutstanding += inv.remainingAmount;
+        }
+      });
+
+      // Cập nhật thẻ metrics
+      document.getElementById('valDueSoonCount').textContent = `${dueSoonCount} hóa đơn`;
+      document.getElementById('valOverdueCount').textContent = `${overdueCount} hóa đơn`;
+      document.getElementById('valOutstanding').textContent = formatMoney(totalOutstanding);
+      const avail = Math.max(0, AppState.creditInfo.creditLimit - totalOutstanding);
+      document.getElementById('valAvailable').textContent = formatMoney(avail);
+
+      // Cập nhật banner cảnh báo nếu có nợ quá hạn
+      renderRiskBanner(overdueCount, totalOverdueAmount);
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:36px;color:var(--muted)">Không có hóa đơn nào phù hợp với bộ lọc hiện tại.</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(inv => {
+        const st = calculateInvoiceDueStatus(inv, AppState.currentDate);
+        const tr = document.createElement('tr');
+
+        // Kiểm tra xem hóa đơn này hôm nay đã gửi nhắc nhở chưa
+        const sentToday = isReminderSentToday(inv.id, st.reminderType, AppState.currentDate);
+
+        tr.innerHTML = `
+          <td>
+            <strong style="color:var(--ink);font-size:14px">${inv.code}</strong>
+            <div style="font-size:11.5px;color:var(--muted)">Đơn: ${inv.orderCode}</div>
+          </td>
+          <td>
+            <div>${formatDateVN(inv.issueDate)}</div>
+            <div style="font-size:11px;color:var(--muted)">Giao: ${formatDateVN(inv.deliveryDate)}</div>
+          </td>
+          <td>
+            <strong style="color:${st.type === 'OVERDUE' ? 'var(--danger)' : (st.type === 'DUE_SOON_3D' ? '#b54708' : 'inherit')}">
+              ${formatDateVN(inv.dueDate)}
+            </strong>
+          </td>
+          <td>
+            ${st.type === 'PAID' ? '<span style="color:var(--success)">Đã xong</span>' : (
+              st.type === 'OVERDUE' ? `<span style="color:var(--danger);font-weight:700">Trễ ${st.overdueDays} ngày</span>` :
+              `<span style="color:${st.type === 'DUE_SOON_3D' ? '#b54708;font-weight:700' : 'var(--muted)'}">Còn ${st.daysDiff} ngày</span>`
+            )}
+          </td>
+          <td>
+            <strong style="font-size:14px">${formatMoney(inv.remainingAmount)}</strong>
+            ${inv.paidAmount > 0 ? `<div style="font-size:11px;color:var(--muted)">Đã trả: ${formatMoney(inv.paidAmount)}</div>` : ''}
+          </td>
+          <td>
+            <span class="badge ${st.badgeClass}">${st.label}</span>
+          </td>
+          <td>
+            ${sentToday ? `
+              <span class="badge badge-success" title="Đã gửi thông báo nhắc nợ hôm nay, tránh gửi trùng lặp">
+                ✓ Đã nhắc hôm nay
+              </span>
+            ` : (
+              st.needsReminder ? `
+                <span class="badge badge-warning" title="Chưa gửi nhắc nợ trong ngày hôm nay">
+                  ⏳ Chờ gửi nhắc
+                </span>
+              ` : `
+                <span style="font-size:11.5px;color:var(--muted)">Không cần nhắc</span>
+              `
+            )}
+          </td>
+          <td>
+            ${inv.remainingAmount > 0 ? `
+              <button class="btn btn-outline btn-sm btn-action-pay" data-id="${inv.id}" style="color:var(--orange-dark);border-color:#fcd9b0">
+                💳 Thanh toán
+              </button>
+            ` : `
+              <span style="font-size:12px;color:var(--success)">✓ Đã hoàn tất</span>
+            `}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Bắt sự kiện nút thanh toán giả lập
+      document.querySelectorAll('.btn-action-pay').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = Number(btn.dataset.id);
+          simulatePayment(id);
+        });
+      });
+    }
+
+    function renderRiskBanner(overdueCount, overdueAmount) {
+      const container = document.getElementById('riskBannerContainer');
+      if (overdueCount > 0) {
+        container.innerHTML = `
+          <div class="alert-banner danger">
+            <span class="icon">⚠️</span>
+            <div>
+              <strong>CẢNH BÁO RỦI RO: Đại lý có ${overdueCount} khoản nợ quá hạn (tổng ${formatMoney(overdueAmount)})!</strong>
+              <span>Theo quy định bán hàng, đại lý có nợ quá hạn sẽ bị hệ thống tự động <strong>chặn tạo đơn hàng mới</strong> và gửi đơn để tránh phát sinh nợ xấu. Vui lòng thanh toán các hóa đơn quá hạn ngay lập tức để tiếp tục giao dịch bình thường.</span>
+            </div>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="alert-banner info">
+            <span class="icon">ℹ️</span>
+            <div>
+              <strong>Trạng thái tín dụng tốt: Không có hóa đơn nợ quá hạn</strong>
+              <span>Hệ thống nhắc hạn thanh toán tự động đang giám sát liên tục để thông báo trước 3 ngày và hỗ trợ đại lý chủ động thanh toán đúng hạn.</span>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function simulatePayment(invoiceId) {
+      const inv = AppState.invoices.find(i => i.id === invoiceId);
+      if (!inv) return;
+      inv.paidAmount = inv.amount;
+      inv.remainingAmount = 0;
+      inv.status = 'PAID';
+      showToast(`Đã ghi nhận thanh toán thành công hóa đơn ${inv.code}!`);
+      renderInvoicesTable();
+      renderAuditLogsTable();
+      renderNotifications();
+    }
+
+    console.log("Đã cài đặt xong logic tính ngày đến hạn và phân loại hóa đơn.");
   </script>
 </body>
 </html>

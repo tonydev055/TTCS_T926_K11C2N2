@@ -56,3 +56,5 @@ Mật khẩu chung: `Demo@123`
 - `customer@khoflow.local`
 
 KhoMail chỉ dùng cho môi trường phát triển cục bộ, không phải dịch vụ email công cộng.
+
+S7-02 (phụ thuộc S7-01): chạy `database/sprint7-payments.sql`. GET `api/payments` trả `customers`, `invoices`, `payments`; GET `api/payments/{id}` trả khoản thu và `allocations`. POST `api/payments` nhận `customerId`, `amount` (tiền, tối đa 2 số lẻ), `receivedDate` (YYYY-MM-DD, không ở tương lai), `paymentMethod` (CASH/BANK_TRANSFER/OTHER), `note`, `requestKey` (UUID), `invoiceId` tùy chọn. Không chọn hóa đơn thì đối trừ FIFO theo ngày phát hành rồi ID. POST `api/payments/{id}/reversals` nhận `reason` bắt buộc để hoàn tác toàn bộ khoản thu bằng bút toán riêng; GET vẫn giữ chứng từ gốc. PUT/DELETE bị từ chối. Quyền `payments.write`; danh tính người thu lấy từ session. Hạn thanh toán hóa đơn được chụp tại lúc phát hành. Số dư lấy từ `receivable_invoice_balances`, gồm điều chỉnh hóa đơn và khoản thu chưa hoàn tác. Không dùng bảng `payments` khung cũ hoặc bảng `cash_receipts` độc lập của bản S7-09 cũ làm nguồn công nợ.

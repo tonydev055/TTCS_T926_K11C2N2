@@ -1,0 +1,13 @@
+<script>
+(()=>{
+ function render(dealer){const ui=financeUi,e=ui.e,m=ui.m,endpoint=dealer?'dealer-reminders':'reminders';ui.screen(dealer?'Nhắc hạn thanh toán':'Nhật ký nhắc công nợ','Thông báo được tạo bởi tác vụ máy chủ mỗi ngày. Trạng thái email phản ánh hàng đợi và kết quả gửi thực tế.',endpoint,(data,body,revision)=>{
+  const status={DEVELOPMENT_MAILBOX:'Hộp thư phát triển (chưa gửi email thật)',MISSING_RECIPIENT:'Thiếu tài khoản hoặc email nhận',PENDING:'Đang chờ gửi',SENT:'Đã gửi',FAILED:'Gửi thất bại'};
+  body.innerHTML=(dealer?'':'<button id="reminderRun">Chạy đánh giá hôm nay</button><p>Hệ thống chỉ tạo một lượt nhắc mỗi hóa đơn/ngày, kể cả khi bấm lại.</p>')+ui.table(['Ngày','Đại lý','Hóa đơn','Số dư khi nhắc','Nội dung','Email','Đã đọc','Thao tác'],data.items.map(r=>[e(r.reminder_date),e(r.customer_code+' · '+r.customer_name),e(r.invoice_number),m(r.amount),e(r.message),e(status[r.email_status]||r.email_status)+(r.last_error?'<br>'+e(r.last_error):''),r.read_at?'Đã đọc':'Chưa đọc',dealer&&!r.read_at?'<button data-read="'+r.id+'">Đánh dấu đã đọc</button>':'—']));
+  if(!dealer)body.querySelector('#reminderRun').onclick=async event=>{event.target.disabled=true;try{const result=await apiRequest('reminders/run',jsonRequestOptions('POST',{}));showToast('Đã tạo '+result.created+' thông báo mới','success');if(revision===viewRevision)render(false);}catch(error){showRequestError(error);}finally{event.target.disabled=false;}};
+  body.onclick=async event=>{const button=event.target.closest('[data-read]');if(!button)return;button.disabled=true;try{await apiRequest(endpoint+'/'+button.dataset.read+'/read',jsonRequestOptions('POST',{}));if(revision===viewRevision)render(true);}catch(error){showRequestError(error);}finally{button.disabled=false;}};
+ });}
+ window.sprint5Features=window.sprint5Features||{};
+ window.sprint5Features['Nhật ký nhắc công nợ']={path:'nhac-thanh-toan',permission:'receivables.read',render:()=>render(false)};
+ window.sprint5Features['Nhắc hạn thanh toán']={path:'nhac-thanh-toan',permission:'invoices.self',render:()=>render(true)};
+})();
+</script>

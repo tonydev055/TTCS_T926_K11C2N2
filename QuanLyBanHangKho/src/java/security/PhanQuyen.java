@@ -308,6 +308,8 @@ public final class PhanQuyen {
         if (under(path, "/api/credit-alerts")) return "customers.credit";
         if (under(path, "/api/route-collections")) return "orders.own";
         if (under(path, "/api/collection-settlements")) return "payments.write";
+        if (under(path, "/api/reconciliations")) return "receivables.read";
+        if (under(path, "/api/dealer-reconciliations")) return "invoices.self";
         if (under(path, "/api/returns")) return "returns.self";
         // S4-10: cổng đặt hàng của đại lý; phạm vi luôn là đại lý gắn với tài khoản (CongDaiLyService).
         if (under(path, "/api/portal")) return "orders.self";

@@ -301,6 +301,7 @@ public final class PhanQuyen {
         if (under(path, "/api/order-approvals")) return "orders.approve";
         if (under(path, "/api/orders")) return ORDERS_ACCESS;
         if (under(path, "/api/invoices")) return "invoices.write";
+        if (under(path, "/api/cash-receipts")) return "payments.write";
         if (under(path, "/api/payments")) return "payments.write";
         if (under(path, "/api/reminders")) return "receivables.read";
         if (under(path, "/api/dealer-reminders")) return "invoices.self";

@@ -27,6 +27,7 @@ public final class SalesInvoiceIntegrationTest {
         check(decimal(first.get("subtotal")).compareTo(new BigDecimal("1440.00"))==0,"Tạm tính phải theo lượng thực giao");
         check(decimal(first.get("discount_total")).compareTo(new BigDecimal("40.00"))==0,"Chiết khấu phải phân bổ theo lượng thực giao");
         check(decimal(first.get("total_amount")).compareTo(new BigDecimal("1400.00"))==0,"Tổng hóa đơn phải theo lượng thực giao, không theo lượng đặt");
+        check(decimal(((Map<?,?>)((List<?>)first.get("lines")).get(0)).get("unit_price")).compareTo(new BigDecimal("110.00"))==0,"Đơn giá in phải trước chiết khấu, không trừ chiết khấu hai lần");
         BigDecimal delivered=((List<Map<String,Object>>)first.get("lines")).stream().map(x->decimal(x.get("delivered_quantity"))).reduce(BigDecimal.ZERO,BigDecimal::add);
         check(delivered.compareTo(new BigDecimal("9"))==0,"Hóa đơn phải lưu 9 đơn vị thực giao thay vì 15 đơn vị đặt");
 

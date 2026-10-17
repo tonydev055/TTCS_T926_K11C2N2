@@ -1,4 +1,4 @@
-param(
+﻿param(
   [Parameter(Mandatory=$true)][string]$Recipient,
   [switch]$PrepareOnly,
   [string]$JavaHome='C:/Program Files/Java/jdk-17',

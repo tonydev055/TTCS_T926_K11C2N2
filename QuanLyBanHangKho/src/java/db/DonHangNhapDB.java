@@ -76,13 +76,13 @@ public class DonHangNhapDB extends CoSoDB {
         out.put("overdueAmount", r.get("overdue_amount"));
         out.put("overdueOrders", r.get("overdue_orders"));
         out.put("maxOverdueDays", r.get("max_overdue_days"));
-        boolean blocked = ((Number) r.get("overdue_orders")).intValue() > 0;
+        var policies=query("SELECT over_limit_mode,overdue_mode FROM credit_risk_policy WHERE id=1");
+        var policy=policies.get(0);
+        boolean blocked = ((Number) r.get("overdue_orders")).intValue() > 0 && "BLOCK".equals(policy.get("overdue_mode"))
+            || ((java.math.BigDecimal)r.get("outstanding")).compareTo((java.math.BigDecimal)r.get("credit_limit"))>0 && "BLOCK".equals(policy.get("over_limit_mode"));
         out.put("blocked", blocked);
         out.put("blockReason", blocked
-            ? "Đại lý " + r.get("code") + " có " + r.get("overdue_orders") + " đơn nợ quá hạn (quá " + r.get("max_overdue_days") +
-              " ngày so với " + r.get("credit_days") + " ngày được nợ, tổng " +
-              service.TaoDonHangService.tien((java.math.BigDecimal) r.get("overdue_amount")) +
-              "). Không thể tạo hoặc gửi đơn mới cho tới khi thu hồi công nợ"
+            ? "Đại lý " + r.get("code") + " có công nợ vượt hạn mức hoặc quá hạn; chính sách hiện tại chặn đơn mới"
             : "");
         return out;
     }

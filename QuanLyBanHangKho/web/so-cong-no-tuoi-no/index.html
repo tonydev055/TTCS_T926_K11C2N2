@@ -1,0 +1,14 @@
+<script>
+window.sprint5Features=window.sprint5Features||{};
+window.sprint5Features['Sổ công nợ và tuổi nợ']={path:'so-cong-no-tuoi-no',permission:'receivables.read',render(){
+ const ui=financeUi,e=ui.e,m=ui.m;
+ ui.screen('Sổ công nợ và tuổi nợ','Phải thu, đã thu và số dư hóa đơn thực tế. Tuổi nợ tính từ ngày phát hành; quá hạn theo hạn thanh toán.','receivables/aging',(data,body,revision)=>{
+  body.innerHTML='<div class="finance-toolbar"><input id="arQ" placeholder="Mã hoặc tên đại lý" aria-label="Tìm đại lý"><select id="arRegion" aria-label="Khu vực"><option value="">Mọi khu vực</option>'+data.regions.map(r=>'<option>'+e(r.region)+'</option>').join('')+'</select><select id="arAge" aria-label="Nhóm tuổi nợ"><option value="">Mọi nhóm tuổi nợ</option><option value="0">0–30 ngày</option><option value="31">31–60 ngày</option><option value="61">61–90 ngày</option><option value="91">Trên 90 ngày</option></select><label><input type="checkbox" id="arOverdue"> Chỉ có nợ quá hạn</label><button id="arFilter">Lọc</button><button id="arExport">Xuất Excel</button></div><div id="arResult"></div>';
+  const fields=['ar','collected','outstanding','d0','d31','d61','d91','overdue'];let params=new URLSearchParams();let request=0;
+  function render(d){body.querySelector('#arResult').innerHTML='<p>'+e(d.dealerCount)+' đại lý</p>'+ui.table(['Đại lý','Khu vực','Phải thu','Đã thu','Còn nợ','0–30','31–60','61–90','Trên 90','Quá hạn'],[...d.dealers.map(r=>[e(r.code+' · '+r.name),e(r.region),...fields.map(f=>m(r[f]))]),['<strong>Tổng cộng</strong>','',...fields.map(f=>'<strong>'+m(d.summary[f])+'</strong>')]]);}
+  render(data);
+  body.querySelector('#arFilter').onclick=async()=>{const generation=++request;params=new URLSearchParams({q:body.querySelector('#arQ').value,region:body.querySelector('#arRegion').value,age:body.querySelector('#arAge').value,overdue:String(body.querySelector('#arOverdue').checked)});try{const d=await apiRequest('receivables/aging?'+params);if(revision===viewRevision&&generation===request)render(d);}catch(error){if(revision===viewRevision&&generation===request)body.querySelector('#arResult').innerHTML='<p class="finance-error" role="alert">'+e(error.message)+'</p>';}};
+  body.querySelector('#arExport').onclick=async()=>{const button=body.querySelector('#arExport');button.disabled=true;try{const response=await apiFetch('api/receivables/export?'+params);if(!response.ok){const d=await response.json();throw new Error(d.message||'Không xuất được Excel');}const url=URL.createObjectURL(await response.blob()),a=document.createElement('a');a.href=url;a.download='cong-no-tuoi-no.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(error){showRequestError(error);}finally{button.disabled=false;}};
+ });
+}};
+</script>

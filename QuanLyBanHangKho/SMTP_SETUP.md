@@ -31,6 +31,14 @@ Script khởi chạy Tomcat riêng với môi trường Gmail. Nếu muốn ch�
 
 ## Kiểm tra gửi thật
 
+Để kiểm tra riêng luồng nhắc nợ S7-08, trên nhánh task S7-08 chạy từ gốc repository:
+
+```powershell
+.\QuanLyBanHangKho\scripts\check-s7-08-mail.ps1 -Recipient 'email-ban-so-huu@example.com'
+```
+
+Script tạo database `khoflow_s7_test_YYYYMMDDhhmmss` riêng, áp dụng migration và lưu hai hóa đơn kiểm thử: 1.250.000 đồng đến hạn sau 3 ngày, 250.000 đồng đã quá hạn 7 ngày. Email nhận là tham số, không viết sẵn địa chỉ cá nhân trong repository. Nhập Gmail gửi và App Password tại lời nhắc ẩn; script chạy chính `NhacNoService.daily()` và worker SMTP, kiểm tra chạy lại trong ngày không tạo trùng. Không thay database hoặc khởi động lại Tomcat đang chạy. Chỉ kết luận gửi thành công khi cả hai hàng đợi là `SENT`; cần kiểm tra Inbox/Spam để xác nhận nhận thư. Thêm `-PrepareOnly` để chuẩn bị/xem dữ liệu mà chưa gửi. Các file trạng thái trong `build/s7-live-mail` chỉ lưu database/email nhận, không lưu mật khẩu. Dữ liệu này chỉ dành cho kiểm thử riêng, không được đưa vào database kinh doanh thật; nên thực hiện kiểm tra ngay ngày chuẩn bị dữ liệu.
+
 Sau khi cấu hình, dùng một tài khoản thử với địa chỉ email bạn sở hữu: tạo tài khoản hoặc dùng Quên mật khẩu, kiểm tra Gmail và trạng thái:
 
 ```sql

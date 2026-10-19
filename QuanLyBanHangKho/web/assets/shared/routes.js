@@ -17,7 +17,8 @@ function getAvailableMenu() {
   if (hasPermission('invoices.write')) menu.push('Hóa đơn bán hàng');
   if (hasPermission('payments.write')) menu.push('Phiếu thu');
   for (const [name, feature] of Object.entries(window.sprint5Features || {})) {
-    if (hasPermission(feature.permission)) menu.push(name);
+    // Một chức năng có thể mở cho nhiều quyền (mảng): chỉ cần có một quyền.
+    if ([].concat(feature.permission).some(hasPermission)) menu.push(name);
   }
   menu.push('Hồ sơ cá nhân', 'Đổi mật khẩu');
   return [...new Set(menu)];

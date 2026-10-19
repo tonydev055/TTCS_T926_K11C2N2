@@ -55,8 +55,8 @@ public final class HoaDonService {
                 "FROM invoice_lines l JOIN orders o ON o.id=l.order_id JOIN products p ON p.id=l.product_id JOIN product_units u ON u.id=l.unit_id " +
                 "WHERE l.invoice_id=? ORDER BY o.code,p.sku,l.id",id));
             invoice.put("adjustments",TruyVanDB.rows(c,
-                "SELECT a.id,a.adjustment_number,a.amount,a.reason,a.created_at::text AS created_at,u.full_name AS created_by_name " +
-                "FROM invoice_adjustments a JOIN users u ON u.id=a.created_by WHERE a.invoice_id=? ORDER BY a.created_at,a.id",id));
+                "SELECT a.id,a.adjustment_number,a.amount,a.reason,a.created_at::text AS created_at,u.full_name AS created_by_name,r.code AS return_code " +
+                "FROM invoice_adjustments a JOIN users u ON u.id=a.created_by LEFT JOIN sales_returns r ON r.id=a.return_id WHERE a.invoice_id=? ORDER BY a.created_at,a.id",id));
             return invoice;
         }
     }

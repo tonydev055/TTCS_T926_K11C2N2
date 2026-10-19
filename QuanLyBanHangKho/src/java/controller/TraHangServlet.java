@@ -7,7 +7,7 @@ import java.util.*;
 import service.TraHangService;
 import util.XuLyJson;
 
-/** S8-01: phiếu trả hàng theo hoá đơn gốc; phạm vi và vai trò được kiểm tra trong TraHangService. */
+/** S8-01/S8-02: phiếu trả hàng và giảm trừ công nợ theo hoá đơn gốc; phạm vi và vai trò được kiểm tra trong TraHangService. */
 @WebServlet("/api/returns/*")
 public final class TraHangServlet extends TaiChinhServlet {
     private final TraHangService service = new TraHangService();
@@ -41,6 +41,7 @@ public final class TraHangServlet extends TaiChinhServlet {
                 case "receive" -> service.receive(id, user, roles, in);
                 case "reject" -> service.reject(id, user, roles, in);
                 case "cancel" -> service.cancel(id, user, roles, in);
+                case "credit" -> service.credit(id, user, roles, in);
                 default -> throw new NoSuchElementException("Không tìm thấy chức năng");
             }
             send(r, service.detail(id, user, roles));

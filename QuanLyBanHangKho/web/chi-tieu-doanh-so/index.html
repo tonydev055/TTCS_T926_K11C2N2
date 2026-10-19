@@ -472,6 +472,22 @@
       gap: 10px;
     }
 
+    /* Modal xem lịch sử chỉnh sửa */
+    .log-item {
+      padding: 12px 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 12.5px;
+      margin-bottom: 8px;
+    }
+
+    .log-item small {
+      color: #64748b;
+      display: block;
+      margin-bottom: 4px;
+    }
+
     /* Layout standalone */
     .standalone-body {
       margin: 0;
@@ -683,14 +699,58 @@
         </div>
       </div>
 
+      <!-- Modal Xem Nhật ký chỉnh sửa -->
+      <div class="target-modal" id="targetModalLogs">
+        <div class="target-modal-dialog">
+          <div class="target-modal-header">
+            <h4>Nhật ký lý do chỉnh sửa</h4>
+            <button type="button" class="target-modal-close" id="btnCloseLogsModal">&times;</button>
+          </div>
+          <div class="target-modal-body" id="targetLogsContent" style="max-height:360px;overflow-y:auto;">
+          </div>
+          <div class="target-modal-footer">
+            <button type="button" class="target-btn target-btn-outline" id="btnDismissLogsModal">Đóng</button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
   <script>
     (function () {
-      function getUserSession() {
+      // Helper gọi API có xử lý fallback an toàn
+      async function callApi(path, options = {}) {
+        try {
+          const res = await fetch(`../api/${path}`, {
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', ...options.headers },
+            ...options
+          });
+          if (res.ok) {
+            return await res.json();
+          }
+        } catch (e) {
+          // Fallback nếu gọi qua đường dẫn tương đối khác
+          try {
+            const res2 = await fetch(`api/${path}`, {
+              headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', ...options.headers },
+              ...options
+            });
+            if (res2.ok) {
+              return await res2.json();
+            }
+          } catch (err) {}
+        }
+        return null;
+      }
+
+      async function fetchCurrentUser() {
         if (window.currentUser && Object.keys(window.currentUser).length) {
           return window.currentUser;
+        }
+        const data = await callApi('auth/me');
+        if (data && data.user) {
+          return data.user;
         }
         try {
           const raw = sessionStorage.getItem('khoFlowSession');
@@ -721,60 +781,150 @@
         return `${d.getFullYear()}-${m}`;
       }
 
-      // Kho dữ liệu chỉ tiêu (gồm cả kỳ hiện tại và kỳ cũ đã qua để kiểm thử khóa kỳ)
-      let targetsStore = [
-        {
-          id: 1,
-          repId: 1,
-          repName: 'Nguyễn Văn An',
-          repCode: 'NV-001',
-          region: 'Hà Nội',
-          period: '2026-10',
-          targetAmount: 200000000,
-          actualAmount: 145000000,
-          note: 'Mở rộng đại lý khu vực Cầu Giấy và Ba Đình',
-          editLogs: []
-        },
-        {
-          id: 2,
-          repId: 2,
-          repName: 'Trần Thị Bình',
-          repCode: 'NV-002',
-          region: 'Miền Bắc',
-          period: '2026-10',
-          targetAmount: 180000000,
-          actualAmount: 195000000,
-          note: 'Tập trung sản phẩm đồ uống chủ lực',
-          editLogs: []
-        },
-        {
-          id: 3,
-          repId: 3,
-          repName: 'Lê Hoàng Nam',
-          repCode: 'NV-003',
-          region: 'TP. Hồ Chí Minh',
-          period: '2026-09', // Kỳ đã qua -> Tự động KHÓA
-          targetAmount: 220000000,
-          actualAmount: 215000000,
-          note: 'Chỉ tiêu tháng 9 đã qua kỳ',
-          editLogs: []
-        },
-        {
-          id: 4,
-          repId: 4,
-          repName: 'Phạm Minh Đức',
-          repCode: 'NV-004',
-          region: 'Đà Nẵng',
-          period: '2026-09', // Kỳ đã qua -> Tự động KHÓA
-          targetAmount: 140000000,
-          actualAmount: 130000000,
-          note: 'Chỉ tiêu tháng 9 đã qua kỳ',
-          editLogs: []
-        }
-      ];
+      // Kho dữ liệu lưu trữ
+      const STORAGE_KEY = 'khoFlow_sales_targets_data';
+      function loadPersistedTargets() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        return [
+          {
+            id: 1,
+            repId: 1,
+            repName: 'Nguyễn Văn An',
+            repCode: 'NV-001',
+            region: 'Hà Nội',
+            period: '2026-10',
+            targetAmount: 200000000,
+            actualAmount: 145000000,
+            note: 'Mở rộng đại lý khu vực Cầu Giấy và Ba Đình',
+            editLogs: []
+          },
+          {
+            id: 2,
+            repId: 2,
+            repName: 'Trần Thị Bình',
+            repCode: 'NV-002',
+            region: 'Miền Bắc',
+            period: '2026-10',
+            targetAmount: 180000000,
+            actualAmount: 195000000,
+            note: 'Tập trung sản phẩm đồ uống chủ lực',
+            editLogs: []
+          },
+          {
+            id: 3,
+            repId: 3,
+            repName: 'Lê Hoàng Nam',
+            repCode: 'NV-003',
+            region: 'TP. Hồ Chí Minh',
+            period: '2026-09',
+            targetAmount: 220000000,
+            actualAmount: 215000000,
+            note: 'Chỉ tiêu tháng 9 đã qua kỳ',
+            editLogs: [
+              {
+                time: '2026-10-01T08:30:00Z',
+                editedBy: 'Quản lý kinh doanh',
+                oldAmount: 200000000,
+                newAmount: 220000000,
+                reason: 'Điều chỉnh bổ sung theo hợp đồng phân phối mới ký cuối kỳ'
+              }
+            ]
+          },
+          {
+            id: 4,
+            repId: 4,
+            repName: 'Phạm Minh Đức',
+            repCode: 'NV-004',
+            region: 'Đà Nẵng',
+            period: '2026-09',
+            targetAmount: 140000000,
+            actualAmount: 130000000,
+            note: 'Chỉ tiêu tháng 9 đã qua kỳ',
+            editLogs: []
+          }
+        ];
+      }
 
-      function renderApp() {
-        const user = getUserSession();
+      function savePersistedTargets(targets) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(targets));
+        } catch (e) {}
+      }
+
+      let targetsStore = loadPersistedTargets();
+      let realSalesReps = [];
+      let realRegions = [];
+
+      // Tích hợp API backend: Lấy bộ lọc thực tế và doanh số thực tế
+      async function syncBackendData() {
+        // 1. Fetch danh sách sales reps và regions từ API /api/orders/filters
+        const filterData = await callApi('orders/filters');
+        if (filterData) {
+          if (filterData.regions && filterData.regions.length) {
+            realRegions = filterData.regions.filter(Boolean);
+          }
+          if (filterData.salesReps && filterData.salesReps.length) {
+            realSalesReps = filterData.salesReps;
+          }
+        }
+
+        // Cập nhật các ô select với dữ liệu thực tế từ backend
+        populateSelectOptions();
+
+        // 2. Tự động đồng bộ doanh số thực tế cho từng nhân viên từ API /api/orders
+        const currentPeriod = document.getElementById('filterPeriod')?.value || getCurrentPeriod();
+        const [year, month] = currentPeriod.split('-');
+        const lastDay = new Date(Number(year), Number(month), 0).getDate();
+        const fromDate = `${currentPeriod}-01`;
+        const toDate = `${currentPeriod}-${String(lastDay).padStart(2, '0')}`;
+
+        for (const target of targetsStore) {
+          if (target.period === currentPeriod) {
+            try {
+              const ordersRes = await callApi(`orders?salesRepId=${target.repId}&from=${fromDate}&to=${toDate}&pageSize=1`);
+              if (ordersRes && ordersRes.totalAmount != null) {
+                target.actualAmount = Number(ordersRes.totalAmount);
+              }
+            } catch (err) {}
+          }
+        }
+        savePersistedTargets(targetsStore);
+      }
+
+      function populateSelectOptions() {
+        const filterRegion = document.getElementById('filterRegion');
+        const filterRep = document.getElementById('filterRep');
+        const targetRepSelect = document.getElementById('targetRepSelect');
+        const targetRegionSelect = document.getElementById('targetRegionSelect');
+
+        const regions = realRegions.length ? realRegions : ['Hà Nội', 'Miền Bắc', 'TP. Hồ Chí Minh', 'Đà Nẵng', 'Miền Trung', 'Miền Nam'];
+        const reps = realSalesReps.length ? realSalesReps : [
+          { id: 1, name: 'Nguyễn Văn An' },
+          { id: 2, name: 'Trần Thị Bình' },
+          { id: 3, name: 'Lê Hoàng Nam' },
+          { id: 4, name: 'Phạm Minh Đức' }
+        ];
+
+        if (filterRegion && targetRegionSelect && filterRegion.options.length <= 1) {
+          regions.forEach(r => {
+            filterRegion.add(new Option(r, r));
+            targetRegionSelect.add(new Option(r, r));
+          });
+        }
+
+        if (filterRep && targetRepSelect && filterRep.options.length <= 1) {
+          reps.forEach(rep => {
+            filterRep.add(new Option(rep.name, rep.id));
+            targetRepSelect.add(new Option(rep.name, rep.id));
+          });
+        }
+      }
+
+      async function renderApp() {
+        const user = await fetchCurrentUser();
         const isSales = isSalesRepOnly(user);
         const currentPeriod = getCurrentPeriod();
 
@@ -836,6 +986,7 @@
           const rate = target > 0 ? Math.round((actual / target) * 100) : 0;
           const barWidth = Math.min(100, Math.max(0, rate));
           const isLocked = item.period < currentPeriod;
+          const hasLogs = item.editLogs && item.editLogs.length > 0;
 
           let color = '#ea580c';
           if (rate >= 100) color = '#16a34a';
@@ -847,13 +998,19 @@
 
           const actionBtn = !isSales ? (
             isLocked ? `
-              <button class="target-btn target-btn-outline target-btn-sm btn-edit-target" data-id="${item.id}" data-locked="true" style="color:#c2410c;border-color:#fdba74;">
-                🔒 Sửa (Cần lý do)
-              </button>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <button class="target-btn target-btn-outline target-btn-sm btn-edit-target" data-id="${item.id}" data-locked="true" style="color:#c2410c;border-color:#fdba74;">
+                  🔒 Sửa (Cần lý do)
+                </button>
+                ${hasLogs ? `<button class="target-btn target-btn-outline target-btn-sm btn-view-logs" data-id="${item.id}" title="Xem lịch sử lý do sửa">📜 Nhật ký</button>` : ''}
+              </div>
             ` : `
-              <button class="target-btn target-btn-outline target-btn-sm btn-edit-target" data-id="${item.id}" data-locked="false">
-                ✏️ Chỉnh sửa
-              </button>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <button class="target-btn target-btn-outline target-btn-sm btn-edit-target" data-id="${item.id}" data-locked="false">
+                  ✏️ Chỉnh sửa
+                </button>
+                ${hasLogs ? `<button class="target-btn target-btn-outline target-btn-sm btn-view-logs" data-id="${item.id}" title="Xem lịch sử lý do sửa">📜 Nhật ký</button>` : ''}
+              </div>
             `
           ) : `<span style="color:#94a3b8;font-size:12px;">Chỉ xem</span>`;
 
@@ -894,6 +1051,14 @@
             openEditTargetModal(id, isLocked);
           };
         });
+
+        // Gắn sự kiện xem logs
+        document.querySelectorAll('.btn-view-logs').forEach(btn => {
+          btn.onclick = () => {
+            const id = Number(btn.dataset.id);
+            openLogsModal(id);
+          };
+        });
       }
 
       function openEditTargetModal(id, isLocked) {
@@ -923,7 +1088,6 @@
           fieldEditReason.style.display = 'flex';
           reasonInput.required = true;
           reasonInput.value = '';
-          // Khóa không cho đổi nhân viên và kỳ tháng khi sửa bản ghi cũ
           document.getElementById('targetRepSelect').disabled = true;
           document.getElementById('targetMonthInput').disabled = true;
         } else {
@@ -939,19 +1103,49 @@
         modal.classList.add('open');
       }
 
+      function openLogsModal(id) {
+        const item = targetsStore.find(t => t.id === id);
+        if (!item || !item.editLogs) return;
+
+        const modal = document.getElementById('targetModalLogs');
+        const container = document.getElementById('targetLogsContent');
+        
+        if (!item.editLogs.length) {
+          container.innerHTML = '<p style="text-align:center;color:#64748b;">Chưa có lần chỉnh sửa nào được ghi lại.</p>';
+        } else {
+          container.innerHTML = item.editLogs.map(log => `
+            <div class="log-item">
+              <small>🕒 ${new Date(log.time).toLocaleString('vi-VN')} · Người sửa: <strong>${escapeHtml(log.editedBy)}</strong></small>
+              <div style="margin:4px 0;">Chỉ tiêu: <del style="color:#dc2626;">${formatMoney(log.oldAmount)}</del> ➜ <strong style="color:#16a34a;">${formatMoney(log.newAmount)}</strong></div>
+              <div style="background:#fff;padding:8px 10px;border-radius:6px;border:1px dashed #cbd5e1;margin-top:6px;">
+                <strong>Lý do chỉnh sửa:</strong> ${escapeHtml(log.reason)}
+              </div>
+            </div>
+          `).join('');
+        }
+        modal.classList.add('open');
+      }
+
       function escapeHtml(str) {
         if (!str) return '';
         return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       }
 
-      function initApp() {
+      async function initApp() {
         const filterPeriod = document.getElementById('filterPeriod');
         if (filterPeriod && !filterPeriod.value) {
           filterPeriod.value = getCurrentPeriod();
         }
 
+        // Đồng bộ dữ liệu thật từ backend
+        await syncBackendData();
+
         // Bắt sự kiện lọc
-        document.getElementById('btnApplyFilter')?.addEventListener('click', renderApp);
+        document.getElementById('btnApplyFilter')?.addEventListener('click', async () => {
+          await syncBackendData();
+          renderApp();
+        });
+
         document.getElementById('btnResetFilter')?.addEventListener('click', () => {
           if (document.getElementById('filterPeriod')) document.getElementById('filterPeriod').value = getCurrentPeriod();
           if (document.getElementById('filterRegion')) document.getElementById('filterRegion').value = '';
@@ -984,54 +1178,106 @@
         if (btnClose) btnClose.onclick = closeModal;
         if (btnCancel) btnCancel.onclick = closeModal;
 
+        // Modal logs triggers
+        const logsModal = document.getElementById('targetModalLogs');
+        const btnCloseLogs = document.getElementById('btnCloseLogsModal');
+        const btnDismissLogs = document.getElementById('btnDismissLogsModal');
+        const closeLogs = () => logsModal && logsModal.classList.remove('open');
+        if (btnCloseLogs) btnCloseLogs.onclick = closeLogs;
+        if (btnDismissLogs) btnDismissLogs.onclick = closeLogs;
+
         // Xử lý submit form đặt / sửa chỉ tiêu
-        document.getElementById('formTarget')?.addEventListener('submit', function (e) {
+        document.getElementById('formTarget')?.addEventListener('submit', async function (e) {
           e.preventDefault();
           const editId = document.getElementById('targetEditId').value;
-          const user = getUserSession();
+          const user = await fetchCurrentUser();
           const reasonInput = document.getElementById('targetEditReasonInput');
           const errorEditReason = document.getElementById('errorEditReason');
+          const currentPeriod = getCurrentPeriod();
+
+          const repSelect = document.getElementById('targetRepSelect');
+          const regionSelect = document.getElementById('targetRegionSelect');
+          const monthInput = document.getElementById('targetMonthInput');
+          const amountInput = document.getElementById('targetAmountInput');
+          const noteInput = document.getElementById('targetNoteInput');
 
           if (editId) {
             const item = targetsStore.find(t => t.id === Number(editId));
-            if (item && item.period < getCurrentPeriod()) {
-              const reason = (reasonInput.value || '').trim();
-              if (reason.length < 5) {
-                if (errorEditReason) errorEditReason.textContent = 'Vui lòng nhập lý do chỉnh sửa rõ ràng (tối thiểu 5 ký tự).';
-                reasonInput.focus();
-                return;
+            if (item) {
+              const isLocked = item.period < currentPeriod;
+              if (isLocked) {
+                const reason = (reasonInput.value || '').trim();
+                if (reason.length < 5) {
+                  if (errorEditReason) errorEditReason.textContent = 'Vui lòng nhập lý do chỉnh sửa rõ ràng (tối thiểu 5 ký tự).';
+                  reasonInput.focus();
+                  return;
+                }
+                // Ghi nhật ký sửa đổi
+                item.editLogs = item.editLogs || [];
+                item.editLogs.push({
+                  time: new Date().toISOString(),
+                  editedBy: user.fullName || 'Quản lý kinh doanh',
+                  oldAmount: item.targetAmount,
+                  newAmount: Number(amountInput.value),
+                  reason: reason
+                });
+
+                // Gửi ghi log tới API audit của backend nếu có
+                await callApi('audit-logs', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    action: 'UPDATE_SALES_TARGET',
+                    entity: 'SALES_TARGET',
+                    entityId: item.id,
+                    reason: reason,
+                    details: `Điều chỉnh chỉ tiêu nhân viên ${item.repName} kỳ ${item.period} từ ${item.targetAmount} thành ${amountInput.value}`
+                  })
+                });
               }
-              // Ghi nhật ký chỉnh sửa
-              item.editLogs = item.editLogs || [];
-              item.editLogs.push({
-                time: new Date().toISOString(),
-                editedBy: user.fullName || 'Quản lý kinh doanh',
-                oldAmount: item.targetAmount,
-                newAmount: Number(document.getElementById('targetAmountInput').value),
-                reason: reason
-              });
+
+              item.targetAmount = Number(amountInput.value);
+              item.region = regionSelect.value;
+              item.note = noteInput.value;
             }
+          } else {
+            // Thêm mới chỉ tiêu
+            const repId = Number(repSelect.value);
+            const repName = repSelect.options[repSelect.selectedIndex]?.text || 'Nhân viên';
+            const newTarget = {
+              id: Date.now(),
+              repId: repId,
+              repName: repName,
+              repCode: `NV-${String(repId).padStart(3, '0')}`,
+              region: regionSelect.value,
+              period: monthInput.value,
+              targetAmount: Number(amountInput.value),
+              actualAmount: 0,
+              note: noteInput.value,
+              editLogs: []
+            };
+            targetsStore.unshift(newTarget);
           }
 
+          savePersistedTargets(targetsStore);
           closeModal();
-          renderApp();
+          await renderApp();
         });
 
-        renderApp();
+        await renderApp();
       }
 
       window.sprint5Features = window.sprint5Features || {};
       window.sprint5Features['Chỉ tiêu doanh số'] = {
         path: 'chi-tieu-doanh-so',
         permission: ['orders.read', 'orders.own', 'admin.users'],
-        render: function () {
+        render: async function () {
           const host = document.getElementById('moduleContent');
           if (host) {
             host.innerHTML = document.getElementById('targetAppRoot')
               ? document.getElementById('targetAppRoot').outerHTML
               : '';
           }
-          initApp();
+          await initApp();
         }
       };
 

@@ -1,41 +1,49 @@
 package controller;
 
-import db.TraHangDB;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-import java.io.*;
+import java.io.IOException;
+import java.util.*;
+import service.TraHangService;
+import util.XuLyJson;
 
+/** S8-01: phiếu trả hàng theo hoá đơn gốc; phạm vi và vai trò được kiểm tra trong TraHangService. */
 @WebServlet("/api/returns/*")
-public class TraHangServlet extends CoSoServlet {
+public final class TraHangServlet extends TaiChinhServlet {
+    private final TraHangService service = new TraHangService();
 
-    private final TraHangDB db = new TraHangDB();
-
-    protected void doGet(HttpServletRequest q, HttpServletResponse r) throws IOException {
+    @Override protected void doGet(HttpServletRequest q, HttpServletResponse r) throws IOException {
         try {
-            String p = q.getPathInfo();
-            if (p == null || p.equals("/")) {
-                ok(r, jsonRows(db.findAll()));
-                return;
-            }
-            long id = Long.parseLong(p.substring(1));
-            var row = db.findById(id);
-            if (row == null) {
-                error(r, 404, "Không tìm thấy dữ liệu");
-                return;
-            }
-            ok(r, jsonRows(java.util.List.of(row)));
-        } catch (Exception e) {
-            error(r, 500, e.getMessage());
-        }
+            String[] p = path(q).split("/");
+            if (path(q).equals("/")) send(r, service.list(user(q), roles(q)));
+            else if (p.length == 2 && p[1].equals("invoices")) send(r, service.invoices(user(q), roles(q), q.getParameter("q")));
+            else if (p.length == 3 && p[1].equals("invoices")) send(r, service.invoice(id(p[2]), user(q), roles(q)));
+            else if (p.length == 2) send(r, service.detail(id(p[1]), user(q), roles(q)));
+            else throw new NoSuchElementException("Không tìm thấy chức năng");
+        } catch (Exception e) { fail(r, e); }
     }
 
-    protected void doDelete(HttpServletRequest q, HttpServletResponse r) throws IOException {
+    @Override protected void doPost(HttpServletRequest q, HttpServletResponse r) throws IOException {
         try {
-            long id = Long.parseLong(q.getPathInfo().substring(1));
-            db.delete(id);
-            ok(r, "{\"deleted\":true}");
-        } catch (Exception e) {
-            error(r, 400, e.getMessage());
-        }
+            checkWrite(q);
+            Map<String, Object> in = XuLyJson.object(body(q));
+            String[] p = path(q).split("/");
+            long user = user(q);
+            List<String> roles = roles(q);
+            if (path(q).equals("/")) {
+                long id = service.create(user, roles, in);
+                created(r, XuLyJson.stringify(service.detail(id, user, roles)));
+                return;
+            }
+            if (p.length != 3) throw new NoSuchElementException("Không tìm thấy chức năng");
+            long id = id(p[1]);
+            switch (p[2]) {
+                case "receive" -> service.receive(id, user, roles, in);
+                case "reject" -> service.reject(id, user, roles, in);
+                case "cancel" -> service.cancel(id, user, roles, in);
+                default -> throw new NoSuchElementException("Không tìm thấy chức năng");
+            }
+            send(r, service.detail(id, user, roles));
+        } catch (Exception e) { fail(r, e); }
     }
 }

@@ -254,6 +254,9 @@ public final class TraHangService {
                     Map<?, ?> decision = decisions.get(lineId);
                     String condition = String.valueOf(decision.get("condition"));
                     TruyVanDB.update(c, "UPDATE sales_return_lines SET condition=? WHERE id=?", condition, lineId);
+                    // Các phiếu trả khác nhau có thể cùng nhận lại một dòng/lô đã xuất.
+                    // Khóa trước khi đọc phần còn được trả để không phân bổ vượt lô khi nhận đồng thời.
+                    StockLedgerDB.lockStock(c, warehouse, product);
                     var lots = shippedLots(c, ((Number) line.get("order_line_id")).longValue());
                     Map<Long, BigDecimal> plan = allocation(lots, (BigDecimal) line.get("base_quantity"), decision.get("allocations"));
                     for (var lot : lots) {

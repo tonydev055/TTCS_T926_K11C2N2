@@ -1,0 +1,72 @@
+<style>
+.adj-toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap}
+.adj-toolbar select{min-height:38px;padding:0 10px;border:1px solid #d7dde5;border-radius:8px;font:inherit}
+.adj-badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.adj-PENDING{background:#fff4e5;color:#b45309}.adj-APPROVED{background:#e8f7ef;color:#16804a}.adj-REJECTED{background:#fdecec;color:#b42318}.adj-CANCELLED{background:#f1f3f5;color:#5b6675}
+#s2Dialog .adj-lines .feature-table{min-width:640px}#s2Dialog .adj-lines td,#s2Dialog .adj-lines th{padding:9px;vertical-align:top}
+#s2Dialog .adj-lines input[type=number]{width:96px;min-width:0}#s2Dialog .adj-lines input[type=text]{width:130px;min-width:0}.adj-lines small{font-size:11px!important}#s2Dialog .adj-lines td:first-child{min-width:150px}
+.adj-head p{margin:2px 0;line-height:1.55}.adj-hint{color:#6b7787;font-size:12px;margin:4px 0 0}
+.adj-sum{display:flex;justify-content:flex-end;gap:8px;font-weight:600;margin-top:8px}
+.adj-expired{color:#b42318;font-size:11px;font-weight:600}
+.adj-search{display:flex;gap:8px}.adj-search input{flex:1}
+.adj-danger{background:#fff;border:1px solid #f3b4ae;color:#b42318;border-radius:8px;padding:8px 14px;cursor:pointer;font:inherit}
+.adj-warn{grid-column:1/-1;padding:10px 12px;border:1px solid #fde1b4;border-radius:10px;background:#fff8ec;color:#8a4b06;font-size:13px}
+</style>
+<script>
+window.sprint5Features=window.sprint5Features||{};
+(function(){
+const STATUS={PENDING:'Chờ duyệt',APPROVED:'Đã duyệt',REJECTED:'Từ chối',CANCELLED:'Đã huỷ'};
+const REASON={DAMAGED:'Hàng hỏng',LOST:'Hàng mất',EXPIRED_DISPOSAL:'Huỷ hàng hết hạn'};
+const money=v=>Number(v||0).toLocaleString('vi-VN')+' ₫';
+const qty=v=>Number(v||0).toLocaleString('vi-VN',{maximumFractionDigits:6});
+const feature=window.sprint5Features['Điều chỉnh tồn kho']={path:'dieu-chinh-ton',permission:'inventory.write',render:()=>warehouseUi.screen('Điều chỉnh tồn kho','Ghi giảm hàng hỏng, hàng mất, hàng hết hạn phải huỷ. Tồn chỉ giảm khi một Quản lý kho khác người lập duyệt phiếu.',()=>apiRequest('stock-adjustments'),draw)};
+let filter='';
+function draw(host,data){
+ const ui=warehouseUi,e=ui.esc,rows=data.adjustments.filter(r=>!filter||r.status===filter);
+ host.innerHTML='<div class="adj-toolbar"><select id="adjStatus" aria-label="Lọc trạng thái"><option value="">Mọi trạng thái</option>'+Object.entries(STATUS).map(([k,v])=>'<option value="'+k+'"'+(filter===k?' selected':'')+'>'+v+'</option>').join('')+'</select><button class="orange-button" id="adjNew">Lập phiếu điều chỉnh</button></div>'+
+  ui.table(['Mã phiếu','Kho','Lý do','Số dòng','Giá trị tổn thất','Người lập','Trạng thái','Ngày lập','Thao tác'],rows.map(r=>'<tr><td>'+e(r.code)+'</td><td>'+e(r.warehouse_name)+'</td><td>'+e(REASON[r.reason])+'</td><td>'+e(r.line_count)+'</td><td>'+money(r.total_loss)+'</td><td>'+e(r.created_by_name)+'</td><td><span class="adj-badge adj-'+e(r.status)+'">'+e(STATUS[r.status])+'</span>'+(r.decided_by_name&&r.status!=='CANCELLED'?'<br><small>'+e(r.decided_by_name)+'</small>':'')+'</td><td>'+e(String(r.created_at).slice(0,16))+'</td><td><button data-open="'+r.id+'">'+(r.status==='PENDING'&&data.canApprove&&r.created_by!==data.userId?'Xem & duyệt':'Xem')+'</button></td></tr>'));
+ host.querySelector('#adjStatus').onchange=ev=>{filter=ev.target.value;draw(host,data);};
+ host.querySelector('#adjNew').onclick=()=>create(data);
+ host.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>detail(Number(b.dataset.open)));
+}
+function create(data){
+ const ui=warehouseUi,e=ui.esc;
+ if(!data.warehouses.length){showToast('Bạn chưa được phân công kho nào','error');return;}
+ const {form,close}=openFormDialog('Lập phiếu điều chỉnh tồn',ui.field('warehouseId','Kho',data.warehouses.length===1?data.warehouses[0].id:'','text',true,data.warehouses.map(w=>[w.id,w.code+' · '+w.name]))+ui.field('reason','Lý do điều chỉnh','','text',true,Object.entries(REASON))+'<div class="form-group full"><span>Tìm lô/vị trí cần ghi giảm</span><div class="adj-search"><input id="adjQ" placeholder="Mã, tên sản phẩm hoặc số lô" autocomplete="off"></div></div><div class="form-group full adj-lines" id="adjBins"><p class="adj-hint">Chọn kho để hiển thị các lô còn tồn.</p></div>'+ui.field('note','Diễn giải (bắt buộc khi hàng mất)','','textarea',false),'Gửi duyệt');
+ const box=form.querySelector('#adjBins'),err=form.querySelector('#s2FormError');let bins=[],chosen=new Map(),known=new Map(),seq=0,timer;
+ async function load(){const wh=form.warehouseId.value;if(!wh){box.innerHTML='<p class="adj-hint">Chọn kho để hiển thị các lô còn tồn.</p>';return;}const n=++seq;try{const list=await apiRequest('stock-adjustments/bins?'+new URLSearchParams({warehouseId:wh,q:form.querySelector('#adjQ').value.trim()}));if(n!==seq)return;list.forEach(b=>known.set(b.bin_id,b));bins=[...[...chosen.keys()].filter(k=>!list.some(b=>b.bin_id===k)).map(k=>known.get(k)),...list];render();}catch(x){err.textContent=x.message;}}
+ function render(){
+  const expiredOnly=form.reason.value==='EXPIRED_DISPOSAL';
+  const shown=bins.filter(b=>!expiredOnly||b.expired||chosen.has(b.bin_id));
+  box.innerHTML=ui.table(['Sản phẩm','Lô · HSD','Vị trí','Tồn lô','SL ghi giảm','Giá trị tổn thất (₫)','Ghi chú'],shown.map(b=>{const c=chosen.get(b.bin_id)||{};return '<tr><td>'+e(b.sku+' · '+b.product_name)+'</td><td>'+e(b.lot_number||'—')+(b.expiry_date?'<br><small>'+e(b.expiry_date)+'</small>':'')+(b.expired?'<br><span class="adj-expired">Đã hết hạn</span>':'')+'</td><td>'+e(b.location_name)+'</td><td>'+qty(b.on_hand)+' '+e(b.base_unit)+'</td><td><input type="number" min="0" step="any" max="'+b.on_hand+'" data-qty="'+b.bin_id+'" value="'+e(c.quantity||'')+'" aria-label="Số lượng ghi giảm '+e(b.sku)+'"></td><td><input type="number" min="0" step="0.01" data-loss="'+b.bin_id+'" value="'+e(c.lossValue??'')+'" aria-label="Giá trị tổn thất '+e(b.sku)+'"></td><td><input type="text" maxlength="500" data-lnote="'+b.bin_id+'" value="'+e(c.note||'')+'"></td></tr>';}))+(expiredOnly&&!shown.length?'<p class="adj-hint">Kho không có lô nào đã hết hạn.</p>':'')+'<div class="adj-sum">Tổng giá trị tổn thất: <span id="adjTotal">'+money([...chosen.values()].reduce((s,c)=>s+Number(c.lossValue||0),0))+'</span></div>';
+  box.querySelectorAll('input').forEach(i=>i.oninput=()=>{err.textContent='';const id=Number(i.dataset.qty||i.dataset.loss||i.dataset.lnote),c=chosen.get(id)||{};if(i.dataset.qty)c.quantity=i.value;if(i.dataset.loss)c.lossValue=i.value;if(i.dataset.lnote)c.note=i.value;if(!c.quantity&&!c.lossValue&&!c.note)chosen.delete(id);else chosen.set(id,c);box.querySelector('#adjTotal').textContent=money([...chosen.values()].reduce((s,c)=>s+Number(c.lossValue||0),0));});
+ }
+ form.warehouseId.onchange=()=>{chosen.clear();known.clear();load();};form.reason.onchange=()=>{if(bins.length)render();};
+ form.querySelector('#adjQ').oninput=()=>{clearTimeout(timer);timer=setTimeout(load,250);};
+ if(form.warehouseId.value)load();
+ form.onsubmit=ev=>{ev.preventDefault();err.textContent='';
+  const lines=[...chosen.entries()].filter(([,c])=>Number(c.quantity)>0).map(([binId,c])=>({binId,quantity:Number(c.quantity),lossValue:c.lossValue===''||c.lossValue==null?null:String(c.lossValue),note:(c.note||'').trim()}));
+  if(!lines.length){err.textContent='Nhập số lượng ghi giảm cho ít nhất một lô';return;}
+  if(lines.some(l=>l.lossValue==null)){err.textContent='Ghi rõ giá trị tổn thất cho từng dòng';return;}
+  const f=new FormData(form);if(f.get('reason')==='LOST'&&!String(f.get('note')||'').trim()){err.textContent='Hàng mất bắt buộc diễn giải';return;}
+  ui.submit(form,'stock-adjustments','POST',{warehouseId:Number(f.get('warehouseId')),reason:f.get('reason'),note:f.get('note')||'',lines},close,feature.render);};
+}
+async function detail(id){
+ const ui=warehouseUi,e=ui.esc;let r;
+ try{r=await apiRequest('stock-adjustments/'+id);}catch(x){showToast(x.message,'error');return;}
+ const head='<div class="form-group full adj-head"><p><b>'+e(r.code)+'</b> · <span class="adj-badge adj-'+e(r.status)+'">'+e(STATUS[r.status])+'</span> · '+e(REASON[r.reason])+'</p><p>Kho '+e(r.warehouse_code+' · '+r.warehouse_name)+'</p><p>Lập bởi '+e(r.created_by_name)+' lúc '+e(String(r.created_at_text).slice(0,16))+(r.note?' · '+e(r.note):'')+'</p>'+(r.decided_by_name?'<p>'+(r.status==='CANCELLED'?'Huỷ':r.status==='APPROVED'?'Duyệt':'Từ chối')+' bởi '+e(r.decided_by_name)+' lúc '+e(String(r.decided_at_text).slice(0,16))+(r.decision_note?' · '+e(r.decision_note):'')+'</p>':'')+'</div>';
+ const pending=r.status==='PENDING',short=r.lines.some(l=>Number(l.quantity)>Number(l.current_on_hand));
+ const lines='<div class="form-group full adj-lines">'+ui.table(['Sản phẩm','Lô · HSD','Vị trí','SL ghi giảm',pending?'Tồn lô hiện tại':'','Giá trị tổn thất','Ghi chú'].filter(Boolean),r.lines.map(l=>'<tr><td>'+e(l.sku+' · '+l.product_name)+'</td><td>'+e(l.lot_number||'—')+(l.expiry_date?'<br><small>'+e(l.expiry_date)+'</small>':'')+'</td><td>'+e(l.location_name)+'</td><td>'+qty(l.quantity)+' '+e(l.base_unit)+'</td>'+(pending?'<td>'+qty(l.current_on_hand)+'</td>':'')+'<td>'+money(l.loss_value)+'</td><td>'+e(l.note||'')+'</td></tr>'))+'<div class="adj-sum">Tổng giá trị tổn thất: '+money(r.total_loss)+'</div></div>';
+ const warn=pending&&short?'<p class="adj-warn">Tồn lô hiện tại thấp hơn số ghi giảm; phiếu sẽ không duyệt được. Người lập nên huỷ và lập lại.</p>':'';
+ const pendingOwn=pending&&!r.canApprove&&!r.canCancel?'':pending&&!r.canApprove?'<p class="form-group full adj-hint">Phiếu do bạn lập; cần một Quản lý kho khác duyệt.</p>':'';
+ const note=r.canApprove||r.canCancel?ui.field('note',r.canApprove?'Ý kiến duyệt / lý do từ chối':'Lý do huỷ','','textarea',false):'';
+ const {form,close}=openFormDialog('Phiếu điều chỉnh '+r.code,head+lines+warn+pendingOwn+note,r.canApprove?'Duyệt và trừ tồn':null);
+ const err=form.querySelector('#s2FormError'),footer=form.querySelector('footer');
+ async function act(url,body,msg,btn){if(btn.disabled)return;btn.disabled=true;err.textContent='';try{await apiRequest('stock-adjustments/'+id+'/'+url,jsonRequestOptions('POST',body));close();showToast(msg);await feature.render();}catch(x){err.textContent=x.message;}finally{if(btn.isConnected)btn.disabled=false;}}
+ const noteVal=()=>form.querySelector('[name=note]').value.trim();
+ if(r.canApprove){form.onsubmit=ev=>{ev.preventDefault();act('approve',{note:noteVal()},'Đã duyệt, tồn kho đã được ghi giảm',form.querySelector('button[type=submit]'));};
+  const b=document.createElement('button');b.type='button';b.className='adj-danger';b.textContent='Từ chối';footer.prepend(b);b.onclick=()=>{if(!noteVal()){err.textContent='Nhập lý do từ chối';return;}act('reject',{note:noteVal()},'Đã từ chối phiếu điều chỉnh',b);};}
+ if(r.canCancel){const b=document.createElement('button');b.type='button';b.className='adj-danger';b.textContent='Huỷ phiếu';footer.prepend(b);b.onclick=()=>{if(!noteVal()){err.textContent='Nhập lý do huỷ';return;}act('cancel',{note:noteVal()},'Đã huỷ phiếu điều chỉnh',b);};}
+}
+})();
+</script>

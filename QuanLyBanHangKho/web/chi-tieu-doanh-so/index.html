@@ -289,7 +289,7 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
-      min-width: 180px;
+      min-width: 170px;
     }
 
     .target-progress-header {
@@ -318,7 +318,7 @@
       transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* Badge trạng thái hoàn thành */
+    /* Badge trạng thái hoàn thành & khóa */
     .target-badge {
       display: inline-flex;
       align-items: center;
@@ -347,7 +347,26 @@
       border: 1px solid #fde68a;
     }
 
-    /* Banner thông báo phạm vi phân quyền cá nhân */
+    .target-badge-locked {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+    }
+
+    /* Banner cảnh báo khóa kỳ cũ */
+    .target-lock-alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 16px;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 10px;
+      color: #9a3412;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+
     .target-role-alert {
       display: flex;
       align-items: center;
@@ -578,7 +597,7 @@
           <div class="target-card-header">
             <div>
               <h3>Bảng chỉ tiêu và tiến độ thời gian thực</h3>
-              <p>Chi tiết mục tiêu, doanh số lũy kế và thanh tiến độ hoàn thành</p>
+              <p>Chi tiết mục tiêu, doanh số lũy kế và trạng thái khóa kỳ</p>
             </div>
             <span id="targetListCount" style="font-size:12px;background:#f1f5f9;padding:4px 10px;border-radius:20px;color:#475569;font-weight:600;">0 bản ghi</span>
           </div>
@@ -592,7 +611,7 @@
                   <th>Chỉ tiêu (VNĐ)</th>
                   <th>Thực tế (VNĐ)</th>
                   <th>Tiến độ hoàn thành</th>
-                  <th>Trạng thái</th>
+                  <th>Trạng thái kỳ</th>
                   <th>Thao tác</th>
                 </tr>
               </thead>
@@ -614,6 +633,15 @@
           <form id="formTarget">
             <div class="target-modal-body">
               <input type="hidden" id="targetEditId" value="">
+              
+              <!-- Cảnh báo nếu đang sửa chỉ tiêu đã khóa thuộc kỳ cũ -->
+              <div id="targetLockedAlert" class="target-lock-alert" style="display:none;">
+                <span style="font-size:18px;">🔒</span>
+                <div>
+                  <strong>Chỉ tiêu đã khóa kỳ:</strong> Kỳ kinh doanh này đã kết thúc. Bạn bắt buộc phải nhập <strong>Lý do chỉnh sửa</strong> bên dưới để lưu vết và ghi nhật ký hệ thống.
+                </div>
+              </div>
+
               <div class="target-form-field">
                 <label for="targetRepSelect">Nhân viên kinh doanh <span>*</span></label>
                 <select id="targetRepSelect" class="target-select" required>
@@ -634,14 +662,22 @@
                 <label for="targetAmountInput">Chỉ tiêu doanh số (VNĐ) <span>*</span></label>
                 <input type="number" id="targetAmountInput" class="target-input" placeholder="Ví dụ: 150000000" min="100000" step="100000" required>
               </div>
+              
+              <!-- Trường Lý do chỉnh sửa bắt buộc khi kỳ đã khóa -->
+              <div class="target-form-field" id="fieldEditReason" style="display:none;">
+                <label for="targetEditReasonInput">Lý do chỉnh sửa chỉ tiêu đã khóa <span style="color:var(--danger)">*</span></label>
+                <textarea id="targetEditReasonInput" class="target-input" style="height:70px;padding:8px 12px;" placeholder="Bắt buộc nhập lý do thay đổi chỉ tiêu kỳ cũ (tối thiểu 5 ký tự)..."></textarea>
+                <small style="color:var(--danger);font-size:11px;" id="errorEditReason"></small>
+              </div>
+
               <div class="target-form-field">
-                <label for="targetNoteInput">Ghi chú / Kế hoạch hành động</label>
-                <textarea id="targetNoteInput" class="target-input" style="height:70px;padding:8px 12px;" placeholder="Ghi chú thêm về mục tiêu..."></textarea>
+                <label for="targetNoteInput">Ghi chú / Kế hoạch mục tiêu</label>
+                <textarea id="targetNoteInput" class="target-input" style="height:60px;padding:8px 12px;" placeholder="Ghi chú thêm về mục tiêu..."></textarea>
               </div>
             </div>
             <div class="target-modal-footer">
               <button type="button" class="target-btn target-btn-outline" id="btnCancelTargetModal">Hủy bỏ</button>
-              <button type="submit" class="target-btn target-btn-primary">Lưu chỉ tiêu</button>
+              <button type="submit" class="target-btn target-btn-primary" id="btnSubmitTarget">Lưu chỉ tiêu</button>
             </div>
           </form>
         </div>
@@ -652,7 +688,6 @@
 
   <script>
     (function () {
-      // Xác định thông tin người dùng hiện tại và quyền
       function getUserSession() {
         if (window.currentUser && Object.keys(window.currentUser).length) {
           return window.currentUser;
@@ -686,7 +721,7 @@
         return `${d.getFullYear()}-${m}`;
       }
 
-      // Bộ dữ liệu chỉ tiêu và tiến độ theo thời gian thực
+      // Kho dữ liệu chỉ tiêu (gồm cả kỳ hiện tại và kỳ cũ đã qua để kiểm thử khóa kỳ)
       let targetsStore = [
         {
           id: 1,
@@ -697,7 +732,8 @@
           period: '2026-10',
           targetAmount: 200000000,
           actualAmount: 145000000,
-          note: 'Mở rộng đại lý khu vực Cầu Giấy và Ba Đình'
+          note: 'Mở rộng đại lý khu vực Cầu Giấy và Ba Đình',
+          editLogs: []
         },
         {
           id: 2,
@@ -708,7 +744,8 @@
           period: '2026-10',
           targetAmount: 180000000,
           actualAmount: 195000000,
-          note: 'Tập trung sản phẩm đồ uống chủ lực'
+          note: 'Tập trung sản phẩm đồ uống chủ lực',
+          editLogs: []
         },
         {
           id: 3,
@@ -716,10 +753,11 @@
           repName: 'Lê Hoàng Nam',
           repCode: 'NV-003',
           region: 'TP. Hồ Chí Minh',
-          period: '2026-10',
-          targetAmount: 250000000,
-          actualAmount: 168000000,
-          note: 'Đẩy mạnh kênh đại lý cấp 1'
+          period: '2026-09', // Kỳ đã qua -> Tự động KHÓA
+          targetAmount: 220000000,
+          actualAmount: 215000000,
+          note: 'Chỉ tiêu tháng 9 đã qua kỳ',
+          editLogs: []
         },
         {
           id: 4,
@@ -727,18 +765,19 @@
           repName: 'Phạm Minh Đức',
           repCode: 'NV-004',
           region: 'Đà Nẵng',
-          period: '2026-10',
-          targetAmount: 150000000,
-          actualAmount: 62000000,
-          note: 'Chăm sóc chuỗi đại lý ven biển'
+          period: '2026-09', // Kỳ đã qua -> Tự động KHÓA
+          targetAmount: 140000000,
+          actualAmount: 130000000,
+          note: 'Chỉ tiêu tháng 9 đã qua kỳ',
+          editLogs: []
         }
       ];
 
       function renderApp() {
         const user = getUserSession();
         const isSales = isSalesRepOnly(user);
+        const currentPeriod = getCurrentPeriod();
 
-        // Áp dụng phân quyền UI
         const btnOpenSetTarget = document.getElementById('btnOpenSetTarget');
         const roleNotice = document.getElementById('targetRoleNotice');
         const groupFilterRep = document.getElementById('groupFilterRep');
@@ -753,21 +792,18 @@
           if (groupFilterRep) groupFilterRep.style.display = 'flex';
         }
 
-        // Đọc giá trị bộ lọc
-        const filterPeriod = document.getElementById('filterPeriod')?.value || getCurrentPeriod();
+        const filterPeriod = document.getElementById('filterPeriod')?.value || currentPeriod;
         const filterRegion = document.getElementById('filterRegion')?.value || '';
         const filterRep = document.getElementById('filterRep')?.value || '';
 
-        // Lọc danh sách dữ liệu
         let displayList = targetsStore.filter(item => {
-          if (item.period !== filterPeriod) return false;
+          if (filterPeriod && item.period !== filterPeriod) return false;
           if (filterRegion && item.region !== filterRegion) return false;
           if (filterRep && String(item.repId) !== filterRep) return false;
           if (isSales && item.repId !== user.id) return false;
           return true;
         });
 
-        // Cập nhật thống kê KPI
         let totalTarget = 0;
         let totalActual = 0;
         let achievedCount = 0;
@@ -788,7 +824,6 @@
         document.getElementById('statAchievedReps').textContent = `${achievedCount}/${displayList.length}`;
         document.getElementById('targetListCount').textContent = `${displayList.length} bản ghi`;
 
-        // Render bảng dữ liệu
         const tbody = document.getElementById('targetTableBody');
         if (!displayList.length) {
           tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:36px;color:#64748b;">Không có dữ liệu chỉ tiêu cho điều kiện lọc đã chọn.</td></tr>`;
@@ -800,16 +835,27 @@
           const actual = Number(item.actualAmount || 0);
           const rate = target > 0 ? Math.round((actual / target) * 100) : 0;
           const barWidth = Math.min(100, Math.max(0, rate));
+          const isLocked = item.period < currentPeriod;
 
           let color = '#ea580c';
-          let badge = '<span class="target-badge target-badge-warning">Chưa đạt</span>';
-          if (rate >= 100) {
-            color = '#16a34a';
-            badge = '<span class="target-badge target-badge-success">Đạt chỉ tiêu 🎉</span>';
-          } else if (rate >= 60) {
-            color = '#2563eb';
-            badge = '<span class="target-badge target-badge-progress">Đang tiến độ</span>';
-          }
+          if (rate >= 100) color = '#16a34a';
+          else if (rate >= 60) color = '#2563eb';
+
+          const lockBadge = isLocked 
+            ? `<span class="target-badge target-badge-locked">🔒 Đã khóa kỳ</span>` 
+            : `<span class="target-badge target-badge-progress">● Đang mở</span>`;
+
+          const actionBtn = !isSales ? (
+            isLocked ? `
+              <button class="target-btn target-btn-outline target-btn-sm btn-edit-target" data-id="${item.id}" data-locked="true" style="color:#c2410c;border-color:#fdba74;">
+                🔒 Sửa (Cần lý do)
+              </button>
+            ` : `
+              <button class="target-btn target-btn-outline target-btn-sm btn-edit-target" data-id="${item.id}" data-locked="false">
+                ✏️ Chỉnh sửa
+              </button>
+            `
+          ) : `<span style="color:#94a3b8;font-size:12px;">Chỉ xem</span>`;
 
           return `
             <tr>
@@ -834,17 +880,63 @@
                   </div>
                 </div>
               </td>
-              <td>${badge}</td>
-              <td>
-                ${!isSales ? `
-                  <button class="target-btn target-btn-outline target-btn-sm btn-edit-target" data-id="${item.id}">
-                    ✏️ Sửa
-                  </button>
-                ` : `<span style="color:#94a3b8;font-size:12px;">Chỉ xem</span>`}
-              </td>
+              <td>${lockBadge}</td>
+              <td>${actionBtn}</td>
             </tr>
           `;
         }).join('');
+
+        // Gắn sự kiện sửa
+        document.querySelectorAll('.btn-edit-target').forEach(btn => {
+          btn.onclick = () => {
+            const id = Number(btn.dataset.id);
+            const isLocked = btn.dataset.locked === 'true';
+            openEditTargetModal(id, isLocked);
+          };
+        });
+      }
+
+      function openEditTargetModal(id, isLocked) {
+        const item = targetsStore.find(t => t.id === id);
+        if (!item) return;
+
+        const modal = document.getElementById('targetModalForm');
+        const form = document.getElementById('formTarget');
+        form.reset();
+
+        document.getElementById('targetEditId').value = item.id;
+        document.getElementById('targetRepSelect').value = item.repId;
+        document.getElementById('targetRegionSelect').value = item.region;
+        document.getElementById('targetMonthInput').value = item.period;
+        document.getElementById('targetAmountInput').value = item.targetAmount;
+        document.getElementById('targetNoteInput').value = item.note || '';
+
+        const lockedAlert = document.getElementById('targetLockedAlert');
+        const fieldEditReason = document.getElementById('fieldEditReason');
+        const reasonInput = document.getElementById('targetEditReasonInput');
+        const errorEditReason = document.getElementById('errorEditReason');
+        if (errorEditReason) errorEditReason.textContent = '';
+
+        if (isLocked) {
+          document.getElementById('targetModalTitle').textContent = `Chỉnh sửa chỉ tiêu kỳ ${item.period} (ĐÃ KHÓA)`;
+          lockedAlert.style.display = 'flex';
+          fieldEditReason.style.display = 'flex';
+          reasonInput.required = true;
+          reasonInput.value = '';
+          // Khóa không cho đổi nhân viên và kỳ tháng khi sửa bản ghi cũ
+          document.getElementById('targetRepSelect').disabled = true;
+          document.getElementById('targetMonthInput').disabled = true;
+        } else {
+          document.getElementById('targetModalTitle').textContent = `Chỉnh sửa chỉ tiêu kỳ ${item.period}`;
+          lockedAlert.style.display = 'none';
+          fieldEditReason.style.display = 'none';
+          reasonInput.required = false;
+          reasonInput.value = '';
+          document.getElementById('targetRepSelect').disabled = false;
+          document.getElementById('targetMonthInput').disabled = false;
+        }
+
+        modal.classList.add('open');
       }
 
       function escapeHtml(str) {
@@ -875,10 +967,15 @@
 
         if (btnOpen && modal) {
           btnOpen.onclick = () => {
-            document.getElementById('formTarget').reset();
+            const form = document.getElementById('formTarget');
+            form.reset();
             document.getElementById('targetEditId').value = '';
             document.getElementById('targetMonthInput').value = getCurrentPeriod();
             document.getElementById('targetModalTitle').textContent = 'Giao chỉ tiêu doanh số mới';
+            document.getElementById('targetLockedAlert').style.display = 'none';
+            document.getElementById('fieldEditReason').style.display = 'none';
+            document.getElementById('targetRepSelect').disabled = false;
+            document.getElementById('targetMonthInput').disabled = false;
             modal.classList.add('open');
           };
         }
@@ -886,6 +983,39 @@
         const closeModal = () => modal && modal.classList.remove('open');
         if (btnClose) btnClose.onclick = closeModal;
         if (btnCancel) btnCancel.onclick = closeModal;
+
+        // Xử lý submit form đặt / sửa chỉ tiêu
+        document.getElementById('formTarget')?.addEventListener('submit', function (e) {
+          e.preventDefault();
+          const editId = document.getElementById('targetEditId').value;
+          const user = getUserSession();
+          const reasonInput = document.getElementById('targetEditReasonInput');
+          const errorEditReason = document.getElementById('errorEditReason');
+
+          if (editId) {
+            const item = targetsStore.find(t => t.id === Number(editId));
+            if (item && item.period < getCurrentPeriod()) {
+              const reason = (reasonInput.value || '').trim();
+              if (reason.length < 5) {
+                if (errorEditReason) errorEditReason.textContent = 'Vui lòng nhập lý do chỉnh sửa rõ ràng (tối thiểu 5 ký tự).';
+                reasonInput.focus();
+                return;
+              }
+              // Ghi nhật ký chỉnh sửa
+              item.editLogs = item.editLogs || [];
+              item.editLogs.push({
+                time: new Date().toISOString(),
+                editedBy: user.fullName || 'Quản lý kinh doanh',
+                oldAmount: item.targetAmount,
+                newAmount: Number(document.getElementById('targetAmountInput').value),
+                reason: reason
+              });
+            }
+          }
+
+          closeModal();
+          renderApp();
+        });
 
         renderApp();
       }

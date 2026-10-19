@@ -76,6 +76,10 @@
     #agentFeature .ag-table tbody tr { display: block; padding: 12px 16px; border-top: 1px solid #edf1f5; }
     #agentFeature .ag-table td { display: block; padding: 2px 0; border: 0; }
   }
+.ag-portal-results{list-style:none;margin:4px 0 0;padding:4px;max-height:240px;overflow:auto;border:1px solid #e3e8ef;border-radius:10px;background:#fff;box-shadow:0 8px 24px rgba(15,23,42,.12)}
+.ag-portal-results li{padding:8px 10px;border-radius:8px;cursor:pointer}
+.ag-portal-results li:hover{background:#fff4e8}
+.ag-portal-results li.empty{color:#7a8699;cursor:default}
 </style>
 <script>
 window.agentFeature = (() => {
@@ -511,6 +515,47 @@ window.agentFeature = (() => {
     });
   }
 
+  // Ô tìm tài khoản cổng: gõ tên/email (không cần dấu) rồi chọn trong danh sách gợi ý; gửi lên vẫn là portal_user_id.
+  function portalPicker(agent) {
+    const current = masters.portalUsers.find((u) => String(u.id) === String(agent?.portal_user_id ?? ''));
+    return `<div class="form-group"><label>Tài khoản cổng đặt hàng
+        <input type="search" id="agPortalSearch" autocomplete="off" placeholder="Gõ tên hoặc email..."
+          value="${current ? esc(`${current.full_name} · ${current.email}`) : ''}">
+      </label>
+      <input type="hidden" name="portal_user_id" value="${esc(agent?.portal_user_id ?? '')}">
+      <ul id="agPortalResults" class="ag-portal-results" role="listbox" hidden></ul></div>`;
+  }
+
+  function wirePortalPicker(form, agent) {
+    const search = form.querySelector('#agPortalSearch');
+    if (!search) return;
+    const hidden = form.querySelector('[name="portal_user_id"]');
+    const list = form.querySelector('#agPortalResults');
+    const fold = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+    const pool = masters.portalUsers.filter((u) => !u.linked_code || u.linked_code === agent?.code);
+    const show = () => {
+      // Mọi từ gõ vào đều phải có trong tên hoặc email, không phân biệt dấu và thứ tự.
+      const words = fold(search.value).split(/\s+/).filter(Boolean);
+      const hits = pool.filter((u) => { const text = fold(`${u.full_name} ${u.email}`); return words.every((w) => text.includes(w)); }).slice(0, 20);
+      list.innerHTML = hits.length
+        ? hits.map((u) => `<li role="option" data-id="${esc(u.id)}">${esc(u.full_name)} · ${esc(u.email)}</li>`).join('')
+        : '<li class="empty">Không tìm thấy tài khoản</li>';
+      list.hidden = false;
+    };
+    search.addEventListener('input', () => { hidden.value = ''; show(); });
+    search.addEventListener('focus', show);
+    list.addEventListener('mousedown', (event) => {
+      const item = event.target.closest('li[data-id]');
+      if (!item) return;
+      event.preventDefault();
+      hidden.value = item.dataset.id;
+      search.value = item.textContent;
+      list.hidden = true;
+    });
+    search.addEventListener('blur', () => setTimeout(() => { list.hidden = true; }, 150));
+  }
+
   function openForm(agent, revision) {
     const value = (key, fallback = '') => agent?.[key] ?? fallback;
     const regionOptions = masters.regions.map((region) => `<option value="${esc(region)}">`).join('');
@@ -523,12 +568,11 @@ window.agentFeature = (() => {
       `<div class="form-group"><label>Khu vực *<input name="region" list="agRegions" value="${esc(value('region'))}" required maxlength="150"></label><datalist id="agRegions">${regionOptions}</datalist></div>`,
       !agent && masters.canAssign ? renderInputField('sales_rep_id', 'Người phụ trách', '', 'text', false, masters.salesReps.map((rep) => [rep.id, rep.full_name + (rep.territory ? ` · ${rep.territory}` : '')])) : '',
       renderInputField('warehouse_id', 'Kho phục vụ', value('warehouse_id'), 'text', false, (masters.warehouses || []).map((w) => [w.id, w.name])),
-      (masters.portalUsers || []).length ? renderInputField('portal_user_id', 'Tài khoản cổng đặt hàng', value('portal_user_id'), 'text', false,
-        masters.portalUsers.filter((u) => !u.linked_code || u.linked_code === agent?.code)
-          .map((u) => [u.id, `${u.full_name} · ${u.email}`])) : '',
+      (masters.portalUsers || []).length ? portalPicker(agent) : '',
       renderInputField('status', 'Trạng thái', value('status', 'ACTIVE'), 'text', true, [['ACTIVE', 'Đang giao dịch'], ['INACTIVE', 'Ngừng giao dịch']])
     ].join('');
     const { form, close } = openFormDialog(agent ? 'Sửa hồ sơ đại lý' : 'Thêm đại lý', body, 'Lưu hồ sơ đại lý');
+    wirePortalPicker(form, agent);
     form.querySelector('[name="code"]').maxLength = 40;
     form.querySelector('[name="name"]').maxLength = 200;
     form.querySelector('[name="tax_code"]').placeholder = '10 chữ số, chi nhánh thêm -XXX';
@@ -538,6 +582,13 @@ window.agentFeature = (() => {
       const errorHost = document.getElementById('s2FormError');
       submit.disabled = true;
       errorHost.textContent = '';
+      // Gõ mà chưa chọn gợi ý thì portal_user_id rỗng: chặn để không vô tình gỡ liên kết cũ.
+      const portalSearch = form.querySelector('#agPortalSearch');
+      if (portalSearch && portalSearch.value.trim() && !form.querySelector('[name="portal_user_id"]').value) {
+        errorHost.textContent = 'Chọn một tài khoản trong danh sách gợi ý';
+        submit.disabled = false;
+        return;
+      }
       const data = Object.fromEntries(new FormData(form));
       try {
         const result = await apiRequest(agent ? `customers/${agent.id}` : 'customers/', jsonRequestOptions(agent ? 'PUT' : 'POST', data));

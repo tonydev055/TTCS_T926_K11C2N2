@@ -72,6 +72,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
+      flex-wrap: wrap;
     }
 
     .target-btn {
@@ -124,6 +125,34 @@
       opacity: 0.6;
       cursor: not-allowed;
       transform: none !important;
+    }
+
+    /* Role switcher bar */
+    .target-role-switcher {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px;
+      background: #f1f5f9;
+      border-radius: 10px;
+      border: 1px dashed #cbd5e1;
+      font-size: 12.5px;
+    }
+
+    .target-role-switcher label {
+      font-weight: 600;
+      color: #334155;
+    }
+
+    .target-role-switcher select {
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      font-size: 12px;
+      background: #fff;
+      font-family: inherit;
+      cursor: pointer;
     }
 
     /* KPI Summary Cards */
@@ -621,6 +650,21 @@
     <div id="targetAppRoot">
       <!-- Khung giao diện tổng quan module Chỉ tiêu doanh số -->
       <section class="target-page">
+        <!-- Thanh giả lập kiểm thử vai trò cho QA Reviewer -->
+        <div class="target-role-switcher" id="qaRoleSwitcher">
+          <div>
+            <strong>🔧 Công cụ kiểm thử vai trò (QA Review):</strong>
+            <span style="color:#64748b;margin-left:6px;">Chuyển đổi nhanh vai trò để kiểm tra logic phân quyền</span>
+          </div>
+          <div>
+            <label for="selectCurrentRoleDemo">Vai trò hiện tại: </label>
+            <select id="selectCurrentRoleDemo">
+              <option value="SALES_MANAGER">Quản lý kinh doanh (Đầy đủ quyền)</option>
+              <option value="SALES_REP">Nhân viên kinh doanh (Chỉ xem cá nhân)</option>
+            </select>
+          </div>
+        </div>
+
         <div class="target-hero">
           <div>
             <span class="target-kicker">KẾ HOẠCH & ĐIỀU HÀNH KINH DOANH</span>
@@ -638,7 +682,7 @@
         <div id="targetRoleNotice" class="target-role-alert" style="display:none;">
           <span style="font-size:18px;">ℹ️</span>
           <div>
-            <strong>Chế độ xem cá nhân:</strong> Bạn đang đăng nhập với vai trò Nhân viên kinh doanh. Dữ liệu chỉ hiển thị chỉ tiêu và tiến độ thực tế của chính bạn.
+            <strong>Chế độ xem cá nhân:</strong> Bạn đang ở vai trò <strong>Nhân viên kinh doanh</strong>. Dữ liệu chỉ hiển thị chỉ tiêu và tiến độ thực tế của chính bạn. Các quyền giao chỉ tiêu và chỉnh sửa đã được ẩn.
           </div>
         </div>
 
@@ -823,7 +867,6 @@
       // Toast notification helper
       let toastTimer = null;
       function notify(msg, tone = 'success') {
-        // Tích hợp với toast hệ thống KhoFlow nếu có
         if (typeof showToast === 'function') {
           showToast(msg, tone === 'success' ? 'info' : 'error');
         }
@@ -837,48 +880,71 @@
         }, 3000);
       }
 
-      // Helper gọi API an toàn
+      // Helper gọi API an toàn với AbortSignal timeout
       async function callApi(path, options = {}) {
+        const timeoutSignal = AbortSignal.timeout ? AbortSignal.timeout(10000) : null;
+        const fetchOptions = {
+          headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', ...options.headers },
+          signal: timeoutSignal,
+          ...options
+        };
+
         try {
-          const res = await fetch(`../api/${path}`, {
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', ...options.headers },
-            ...options
-          });
-          if (res.ok) {
-            return await res.json();
-          }
+          const res = await fetch(`../api/${path}`, fetchOptions);
+          if (res.ok) return await res.json();
         } catch (e) {
           try {
-            const res2 = await fetch(`api/${path}`, {
-              headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', ...options.headers },
-              ...options
-            });
-            if (res2.ok) {
-              return await res2.json();
-            }
+            const res2 = await fetch(`api/${path}`, fetchOptions);
+            if (res2.ok) return await res2.json();
           } catch (err) {}
         }
         return null;
       }
 
+      // Role simulation state (dành cho QA / Demo Switcher)
+      let activeSimulatedRole = 'SALES_MANAGER';
+
       async function fetchCurrentUser() {
+        let baseUser = null;
         if (window.currentUser && Object.keys(window.currentUser).length) {
-          return window.currentUser;
+          baseUser = window.currentUser;
+        } else {
+          const data = await callApi('auth/me');
+          if (data && data.user) baseUser = data.user;
         }
-        const data = await callApi('auth/me');
-        if (data && data.user) {
-          return data.user;
+
+        if (!baseUser) {
+          try {
+            const raw = sessionStorage.getItem('khoFlowSession');
+            if (raw) baseUser = JSON.parse(raw);
+          } catch (e) {}
         }
-        try {
-          const raw = sessionStorage.getItem('khoFlowSession');
-          if (raw) return JSON.parse(raw);
-        } catch (e) {}
-        return {
-          id: 1,
-          fullName: 'Quản lý kinh doanh',
-          roles: ['SALES_MANAGER', 'ADMIN'],
-          permissions: ['orders.read', 'orders.approve', 'admin.users']
-        };
+
+        if (!baseUser) {
+          baseUser = {
+            id: 1,
+            fullName: 'Nguyễn Văn An',
+            roles: ['SALES_MANAGER', 'ADMIN'],
+            permissions: ['orders.read', 'orders.approve', 'admin.users']
+          };
+        }
+
+        // Áp dụng role simulation nếu người dùng chọn trên giao diện
+        if (activeSimulatedRole === 'SALES_REP') {
+          return {
+            ...baseUser,
+            id: 1, // Gắn với repId = 1 để xem đúng tiến độ cá nhân của Nguyễn Văn An
+            fullName: 'Nguyễn Văn An (NV Kinh Doanh)',
+            roles: ['SALES_REP'],
+            permissions: ['orders.own']
+          };
+        } else {
+          return {
+            ...baseUser,
+            roles: ['SALES_MANAGER', 'ADMIN'],
+            permissions: ['orders.read', 'orders.approve', 'admin.users']
+          };
+        }
       }
 
       function isSalesRepOnly(user) {
@@ -889,7 +955,8 @@
       }
 
       function formatMoney(amount) {
-        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount || 0);
+        const val = Number(amount) || 0;
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
       }
 
       function getCurrentPeriod() {
@@ -899,7 +966,7 @@
       }
 
       // Kho dữ liệu lưu trữ
-      const STORAGE_KEY = 'khoFlow_sales_targets_data';
+      const STORAGE_KEY = 'khoFlow_sales_targets_data_v2';
       function loadPersistedTargets() {
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
@@ -1018,6 +1085,7 @@
         }
       }
 
+      // Xóa và nạp lại chính xác dropdown options, tránh bug length > 1
       function populateSelectOptions() {
         const filterRegion = document.getElementById('filterRegion');
         const filterRep = document.getElementById('filterRep');
@@ -1032,18 +1100,36 @@
           { id: 4, name: 'Phạm Minh Đức' }
         ];
 
-        if (filterRegion && targetRegionSelect && filterRegion.options.length <= 1) {
+        if (filterRegion && targetRegionSelect) {
+          const selectedFilterRegion = filterRegion.value;
+          const selectedTargetRegion = targetRegionSelect.value;
+
+          filterRegion.innerHTML = '<option value="">Tất cả khu vực</option>';
+          targetRegionSelect.innerHTML = '<option value="">-- Chọn khu vực --</option>';
+
           regions.forEach(r => {
             filterRegion.add(new Option(r, r));
             targetRegionSelect.add(new Option(r, r));
           });
+
+          if (selectedFilterRegion) filterRegion.value = selectedFilterRegion;
+          if (selectedTargetRegion) targetRegionSelect.value = selectedTargetRegion;
         }
 
-        if (filterRep && targetRepSelect && filterRep.options.length <= 1) {
+        if (filterRep && targetRepSelect) {
+          const selectedFilterRep = filterRep.value;
+          const selectedTargetRep = targetRepSelect.value;
+
+          filterRep.innerHTML = '<option value="">Tất cả nhân viên</option>';
+          targetRepSelect.innerHTML = '<option value="">-- Chọn nhân viên --</option>';
+
           reps.forEach(rep => {
             filterRep.add(new Option(rep.name, rep.id));
             targetRepSelect.add(new Option(rep.name, rep.id));
           });
+
+          if (selectedFilterRep) filterRep.value = selectedFilterRep;
+          if (selectedTargetRep) targetRepSelect.value = selectedTargetRep;
         }
       }
 
@@ -1083,13 +1169,16 @@
         let achievedCount = 0;
 
         displayList.forEach(item => {
-          totalTarget += Number(item.targetAmount || 0);
-          totalActual += Number(item.actualAmount || 0);
-          if (Number(item.actualAmount || 0) >= Number(item.targetAmount || 0)) {
+          const t = Number(item.targetAmount) || 0;
+          const a = Number(item.actualAmount) || 0;
+          totalTarget += t;
+          totalActual += a;
+          if (t > 0 && a >= t) {
             achievedCount++;
           }
         });
 
+        // Bảo vệ triệt để chia cho 0: không bao giờ ra NaN% hoặc Infinity%
         const overallRate = totalTarget > 0 ? Math.round((totalActual / totalTarget) * 100) : 0;
 
         document.getElementById('statTotalTarget').textContent = formatMoney(totalTarget);
@@ -1108,7 +1197,7 @@
                   <h4>Chưa có chỉ tiêu doanh số</h4>
                   <p>Không tìm thấy chỉ tiêu nào phù hợp với bộ lọc hiện tại của kỳ <strong>${escapeHtml(filterPeriod)}</strong>.</p>
                   ${!isSales ? `
-                    <button class="target-btn target-btn-primary target-btn-sm" onclick="document.getElementById('btnOpenSetTarget').click()">
+                    <button class="target-btn target-btn-primary target-btn-sm" id="btnEmptyCreateTarget">
                       ＋ Giao chỉ tiêu ngay
                     </button>
                   ` : ''}
@@ -1116,12 +1205,16 @@
               </td>
             </tr>
           `;
+          document.getElementById('btnEmptyCreateTarget')?.addEventListener('click', () => {
+            document.getElementById('btnOpenSetTarget')?.click();
+          });
           return;
         }
 
         tbody.innerHTML = displayList.map(item => {
-          const target = Number(item.targetAmount || 0);
-          const actual = Number(item.actualAmount || 0);
+          const target = Number(item.targetAmount) || 0;
+          const actual = Number(item.actualAmount) || 0;
+          // Ngăn chia cho 0 khi target <= 0
           const rate = target > 0 ? Math.round((actual / target) * 100) : 0;
           const barWidth = Math.min(100, Math.max(0, rate));
           const isLocked = item.period < currentPeriod;
@@ -1250,7 +1343,7 @@
         const container = document.getElementById('targetLogsContent');
         
         if (!item.editLogs.length) {
-          container.innerHTML = '<p style="text-align:center;padding:24px;color:#64748b;">Chưa có lần chỉnh sửa nào được ghi lại.</p>';
+          container.innerHTML = '<p style="text-align:center;padding:24px;color:#64748b;">Chưa có lần chỉnh sửa nào được ghi lại cho chỉ tiêu này.</p>';
         } else {
           container.innerHTML = item.editLogs.map(log => `
             <div class="log-item">
@@ -1275,6 +1368,13 @@
         if (filterPeriod && !filterPeriod.value) {
           filterPeriod.value = getCurrentPeriod();
         }
+
+        // Dropdown đổi vai trò kiểm thử cho QA Reviewer
+        document.getElementById('selectCurrentRoleDemo')?.addEventListener('change', async (e) => {
+          activeSimulatedRole = e.target.value;
+          await renderApp();
+          notify(`Đã chuyển sang vai trò: ${e.target.options[e.target.selectedIndex].text}`, 'success');
+        });
 
         // Đồng bộ dữ liệu thật từ backend
         await syncBackendData();
@@ -1315,9 +1415,19 @@
           };
         }
 
-        const closeModal = () => modal && modal.classList.remove('open');
+        const closeModal = () => {
+          if (modal) modal.classList.remove('open');
+          document.getElementById('targetRepSelect').disabled = false;
+          document.getElementById('targetMonthInput').disabled = false;
+        };
+
         if (btnClose) btnClose.onclick = closeModal;
         if (btnCancel) btnCancel.onclick = closeModal;
+
+        // Đóng modal khi bấm ra backdrop ngoài
+        modal?.addEventListener('click', (e) => {
+          if (e.target === modal) closeModal();
+        });
 
         // Modal logs triggers
         const logsModal = document.getElementById('targetModalLogs');
@@ -1326,10 +1436,52 @@
         const closeLogs = () => logsModal && logsModal.classList.remove('open');
         if (btnCloseLogs) btnCloseLogs.onclick = closeLogs;
         if (btnDismissLogs) btnDismissLogs.onclick = closeLogs;
+        logsModal?.addEventListener('click', (e) => {
+          if (e.target === logsModal) closeLogs();
+        });
 
-        // Xử lý submit form đặt / sửa chỉ tiêu
+        // Đóng modal bằng phím Escape
+        window.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            closeModal();
+            closeLogs();
+          }
+        });
+
+        // Xử lý submit form đặt / sửa chỉ tiêu (Đã FIX bug UI Freezing validation)
         document.getElementById('formTarget')?.addEventListener('submit', async function (e) {
           e.preventDefault();
+
+          const editId = document.getElementById('targetEditId').value;
+          const user = await fetchCurrentUser();
+          const reasonInput = document.getElementById('targetEditReasonInput');
+          const errorEditReason = document.getElementById('errorEditReason');
+          const currentPeriod = getCurrentPeriod();
+
+          const repSelect = document.getElementById('targetRepSelect');
+          const regionSelect = document.getElementById('targetRegionSelect');
+          const monthInput = document.getElementById('targetMonthInput');
+          const amountInput = document.getElementById('targetAmountInput');
+          const noteInput = document.getElementById('targetNoteInput');
+
+          // 1. Kiểm tra validation lý do TRƯỚC KHI disable nút submit (Tránh UI Freeze)
+          if (editId) {
+            const item = targetsStore.find(t => t.id === Number(editId));
+            if (item && item.period < currentPeriod) {
+              const reason = (reasonInput.value || '').trim();
+              if (reason.length === 0) {
+                if (errorEditReason) errorEditReason.textContent = 'Bắt buộc nhập lý do chỉnh sửa (không được để trống).';
+                reasonInput.focus();
+                return;
+              }
+              if (reason.length < 5) {
+                if (errorEditReason) errorEditReason.textContent = 'Lý do chỉnh sửa quá ngắn, vui lòng nhập tối thiểu 5 ký tự.';
+                reasonInput.focus();
+                return;
+              }
+            }
+          }
+
           const submitBtn = document.getElementById('btnSubmitTarget');
           const submitSpinner = document.getElementById('submitSpinner');
           const submitText = document.getElementById('submitText');
@@ -1339,30 +1491,12 @@
           if (submitText) submitText.textContent = 'Đang lưu...';
 
           try {
-            const editId = document.getElementById('targetEditId').value;
-            const user = await fetchCurrentUser();
-            const reasonInput = document.getElementById('targetEditReasonInput');
-            const errorEditReason = document.getElementById('errorEditReason');
-            const currentPeriod = getCurrentPeriod();
-
-            const repSelect = document.getElementById('targetRepSelect');
-            const regionSelect = document.getElementById('targetRegionSelect');
-            const monthInput = document.getElementById('targetMonthInput');
-            const amountInput = document.getElementById('targetAmountInput');
-            const noteInput = document.getElementById('targetNoteInput');
-
             if (editId) {
               const item = targetsStore.find(t => t.id === Number(editId));
               if (item) {
                 const isLocked = item.period < currentPeriod;
                 if (isLocked) {
                   const reason = (reasonInput.value || '').trim();
-                  if (reason.length < 5) {
-                    if (errorEditReason) errorEditReason.textContent = 'Vui lòng nhập lý do chỉnh sửa rõ ràng (tối thiểu 5 ký tự).';
-                    reasonInput.focus();
-                    return;
-                  }
-                  // Ghi nhật ký sửa đổi
                   item.editLogs = item.editLogs || [];
                   item.editLogs.push({
                     time: new Date().toISOString(),
@@ -1407,6 +1541,11 @@
                 editLogs: []
               };
               targetsStore.unshift(newTarget);
+              
+              // Nếu đang lọc kỳ khác, đồng bộ chuyển bộ lọc sang kỳ mới thêm để người dùng nhìn thấy ngay
+              if (filterPeriod && filterPeriod.value !== monthInput.value) {
+                filterPeriod.value = monthInput.value;
+              }
               notify(`Đã giao chỉ tiêu thành công cho ${repName}!`, 'success');
             }
 

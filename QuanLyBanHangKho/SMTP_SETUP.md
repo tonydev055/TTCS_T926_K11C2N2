@@ -7,7 +7,13 @@
 1. Bật xác minh 2 bước cho Gmail. Tạo App Password tại https://myaccount.google.com/apppasswords. Một số tài khoản tổ chức hoặc Advanced Protection không hỗ trợ App Password; xem hướng dẫn Google bên dưới.
 2. Chạy `database/smtp.sql` vào database hiện tại bằng `psql -v ON_ERROR_STOP=1` hoặc pgAdmin. Migration chỉ thêm hàng đợi email, không xóa thư KhoMail cũ.
 3. Build lại: `./scripts/build-sprint2.ps1 -Test`. Thư viện Jakarta Mail và Activation đã nằm trong `web/WEB-INF/lib`.
-4. Dừng Tomcat đang chạy (trong NetBeans hoặc nơi bạn khởi động nó), rồi chạy `./scripts/start-gmail.ps1` từ thư mục dự án. Nhập địa chỉ Gmail và App Password tại lời nhắc ẩn. Script không lưu mật khẩu ra file hoặc Git.
+4. Cấu hình cố định cho máy này (khuyên dùng): chạy một lần từ thư mục dự án
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\scripts\setup-gmail.ps1
+   ```
+   Nhập Gmail gửi thư và App Password tại lời nhắc ẩn. Script ghi `bin\setenv.bat` trong thư mục Tomcat (giữ các dòng cấu hình khác, sao lưu bản cũ thành `setenv.bat.bak`); Tomcat đọc file này mỗi lần khởi động, kể cả khi chạy từ NetBeans, nên không phải nhập lại. Sau đó dừng và chạy lại Tomcat. Tham số: `-TomcatHome` nếu Tomcat cài ở chỗ khác, `-AppUrl` cho địa chỉ máy chủ, `-Mode dev` để quay về hộp thư thử nghiệm KhoMail. App Password chỉ nằm trong thư mục Tomcat của máy đó, không nằm trong repository hay file WAR; mỗi máy cần chạy script một lần.
+
+   Chỉ chạy tạm một phiên: dừng Tomcat đang chạy (trong NetBeans hoặc nơi bạn khởi động nó), rồi chạy `./scripts/start-gmail.ps1` từ thư mục dự án. Nhập địa chỉ Gmail và App Password tại lời nhắc ẩn. Script không lưu mật khẩu ra file hoặc Git; lần khởi động Tomcat sau sẽ quay về chế độ `dev`.
 5. Nếu ứng dụng chạy trên máy chủ, truyền `-AppUrl 'https://ten-mien-cua-ban/QuanLyBanHangKho/'`. Liên kết localhost chỉ mở được trên máy đang chạy ứng dụng; người nhận dùng máy khác cần URL máy chủ truy cập được.
 
 Script khởi chạy Tomcat riêng với môi trường Gmail. Nếu muốn chạy Tomcat từ NetBeans/service, phải cấu hình các biến bên dưới cho **đúng tiến trình khởi chạy Tomcat**, sau đó khởi động lại; Java không tự đọc file `.env`.

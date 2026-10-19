@@ -21,12 +21,13 @@
       --success: #16a34a;
       --warning: #f59e0b;
       --danger: #dc2626;
+      --info: #2563eb;
     }
 
     .target-page {
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 20px;
       color: var(--text-main);
       font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
@@ -36,7 +37,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 20px;
-      padding: 24px 28px;
+      padding: 22px 26px;
       background: #ffffff;
       border: 1px solid var(--border-color);
       border-radius: 16px;
@@ -55,7 +56,7 @@
 
     .target-hero h2 {
       margin: 0 0 6px 0;
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 700;
       color: #0f172a;
     }
@@ -63,7 +64,7 @@
     .target-hero p {
       margin: 0;
       color: var(--text-muted);
-      font-size: 14px;
+      font-size: 13.5px;
       line-height: 1.5;
     }
 
@@ -78,11 +79,11 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      min-height: 44px;
-      padding: 0 20px;
+      min-height: 42px;
+      padding: 0 18px;
       border: 1px solid transparent;
       border-radius: 10px;
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s ease;
@@ -111,6 +112,13 @@
       border-color: #cbd5e1;
     }
 
+    .target-btn-sm {
+      min-height: 32px;
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: 6px;
+    }
+
     /* KPI Summary Cards */
     .target-stats {
       display: grid;
@@ -119,19 +127,19 @@
     }
 
     .target-stat-card {
-      padding: 20px;
+      padding: 18px 20px;
       background: #ffffff;
       border: 1px solid var(--border-color);
       border-radius: 14px;
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
     }
 
     .target-stat-icon {
-      width: 46px;
-      height: 46px;
+      width: 44px;
+      height: 44px;
       border-radius: 12px;
       display: flex;
       align-items: center;
@@ -142,17 +150,60 @@
 
     .target-stat-info span {
       display: block;
-      font-size: 12px;
+      font-size: 11.5px;
       color: var(--text-muted);
       font-weight: 500;
     }
 
     .target-stat-info strong {
       display: block;
-      margin-top: 4px;
-      font-size: 20px;
+      margin-top: 3px;
+      font-size: 19px;
       color: #0f172a;
       font-weight: 700;
+    }
+
+    /* Bộ lọc Toolbar */
+    .target-filter-bar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding: 16px 20px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    }
+
+    .target-filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .target-filter-group label {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    .target-input, .target-select {
+      height: 38px;
+      padding: 0 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--text-main);
+      background: #fff;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .target-input:focus, .target-select:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
     }
 
     .target-main-card {
@@ -164,7 +215,7 @@
     }
 
     .target-card-header {
-      padding: 20px 24px;
+      padding: 18px 24px;
       border-bottom: 1px solid var(--border-color);
       display: flex;
       justify-content: space-between;
@@ -175,14 +226,139 @@
 
     .target-card-header h3 {
       margin: 0 0 4px 0;
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 600;
     }
 
     .target-card-header p {
       margin: 0;
-      font-size: 13px;
+      font-size: 12.5px;
       color: var(--text-muted);
+    }
+
+    /* Bảng dữ liệu */
+    .target-table-wrap {
+      overflow-x: auto;
+    }
+
+    .target-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 860px;
+    }
+
+    .target-table th, .target-table td {
+      padding: 13px 18px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 13px;
+      vertical-align: middle;
+    }
+
+    .target-table th {
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 600;
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .target-table tbody tr:hover {
+      background: #fdfaf6;
+    }
+
+    /* Modal Form */
+    .target-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 16px;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .target-modal.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .target-modal-dialog {
+      background: #ffffff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 540px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+      overflow: hidden;
+      animation: modalSlide 0.25s ease-out;
+    }
+
+    @keyframes modalSlide {
+      from { transform: translateY(16px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .target-modal-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .target-modal-header h4 {
+      margin: 0;
+      font-size: 16.5px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .target-modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: #94a3b8;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+    }
+
+    .target-modal-body {
+      padding: 22px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .target-form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .target-form-field label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    .target-form-field label span {
+      color: var(--danger);
+    }
+
+    .target-modal-footer {
+      padding: 16px 24px;
+      background: #f8fafc;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
     }
 
     /* Layout standalone */
@@ -196,6 +372,26 @@
       max-width: 1320px;
       margin: 0 auto;
       padding: 24px 20px;
+    }
+
+    @media (max-width: 960px) {
+      .target-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .target-hero {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .target-stats {
+        grid-template-columns: 1fr;
+      }
+      .target-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
     }
   </style>
 </head>
@@ -249,30 +445,189 @@
           </div>
         </div>
 
+        <!-- Bộ lọc thông minh -->
+        <div class="target-filter-bar">
+          <div class="target-filter-group">
+            <label for="filterPeriod">Kỳ (Tháng / Năm)</label>
+            <input type="month" id="filterPeriod" class="target-input">
+          </div>
+          <div class="target-filter-group">
+            <label for="filterRegion">Khu vực</label>
+            <select id="filterRegion" class="target-select">
+              <option value="">Tất cả khu vực</option>
+            </select>
+          </div>
+          <div class="target-filter-group">
+            <label for="filterRep">Nhân viên kinh doanh</label>
+            <select id="filterRep" class="target-select">
+              <option value="">Tất cả nhân viên</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:8px;margin-top:auto;">
+            <button class="target-btn target-btn-primary target-btn-sm" id="btnApplyFilter" style="height:38px;">
+              <span>🔍</span> Lọc dữ liệu
+            </button>
+            <button class="target-btn target-btn-outline target-btn-sm" id="btnResetFilter" style="height:38px;">
+              Đặt lại
+            </button>
+          </div>
+        </div>
+
         <!-- Vùng nội dung chính -->
         <div class="target-main-card" id="targetContentArea">
           <div class="target-card-header">
             <div>
-              <h3>Bảng theo dõi tiến độ nhân viên</h3>
-              <p>Chi tiết mục tiêu, doanh số lũy kế và tỷ lệ đạt chỉ tiêu</p>
+              <h3>Bảng chỉ tiêu và tiến độ nhân viên</h3>
+              <p>Chi tiết mục tiêu, doanh số lũy kế và phân bổ theo từng khu vực</p>
             </div>
+            <span id="targetListCount" style="font-size:12px;background:#f1f5f9;padding:4px 10px;border-radius:20px;color:#475569;font-weight:600;">0 nhân viên</span>
           </div>
-          <div id="targetTableContainer" style="padding: 24px;">
-            <p style="text-align:center;color:#64748b;">Đang khởi tạo khung giao diện...</p>
+          <div class="target-table-wrap">
+            <table class="target-table">
+              <thead>
+                <tr>
+                  <th>Nhân viên</th>
+                  <th>Khu vực</th>
+                  <th>Kỳ áp dụng</th>
+                  <th>Chỉ tiêu (VNĐ)</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="targetTableBody">
+                <tr>
+                  <td colspan="5" style="text-align:center;padding:36px;color:#64748b;">
+                    Đang nạp danh sách chỉ tiêu...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
+
+      <!-- Modal Đặt chỉ tiêu mới / Chỉnh sửa chỉ tiêu -->
+      <div class="target-modal" id="targetModalForm">
+        <div class="target-modal-dialog">
+          <div class="target-modal-header">
+            <h4 id="targetModalTitle">Giao chỉ tiêu doanh số</h4>
+            <button type="button" class="target-modal-close" id="btnCloseTargetModal">&times;</button>
+          </div>
+          <form id="formTarget">
+            <div class="target-modal-body">
+              <input type="hidden" id="targetEditId" value="">
+              <div class="target-form-field">
+                <label for="targetRepSelect">Nhân viên kinh doanh <span>*</span></label>
+                <select id="targetRepSelect" class="target-select" required>
+                  <option value="">-- Chọn nhân viên --</option>
+                </select>
+              </div>
+              <div class="target-form-field">
+                <label for="targetRegionSelect">Khu vực phụ trách <span>*</span></label>
+                <select id="targetRegionSelect" class="target-select" required>
+                  <option value="">-- Chọn khu vực --</option>
+                </select>
+              </div>
+              <div class="target-form-field">
+                <label for="targetMonthInput">Kỳ doanh số (Tháng/Năm) <span>*</span></label>
+                <input type="month" id="targetMonthInput" class="target-input" required>
+              </div>
+              <div class="target-form-field">
+                <label for="targetAmountInput">Chỉ tiêu doanh số (VNĐ) <span>*</span></label>
+                <input type="number" id="targetAmountInput" class="target-input" placeholder="Ví dụ: 150000000" min="100000" step="100000" required>
+              </div>
+              <div class="target-form-field">
+                <label for="targetNoteInput">Ghi chú / Kế hoạch hành động</label>
+                <textarea id="targetNoteInput" class="target-input" style="height:70px;padding:8px 12px;" placeholder="Ghi chú thêm về mục tiêu..."></textarea>
+              </div>
+            </div>
+            <div class="target-modal-footer">
+              <button type="button" class="target-btn target-btn-outline" id="btnCancelTargetModal">Hủy bỏ</button>
+              <button type="submit" class="target-btn target-btn-primary">Lưu chỉ tiêu</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
     </div>
   </div>
 
   <script>
-    // Logic khởi tạo module và tích hợp SPA
     (function () {
-      function initFeature() {
-        console.log('Khởi tạo module Chỉ tiêu doanh số (S8-04)');
+      // Dữ liệu mẫu khởi tạo ban đầu cho giao diện bộ lọc và form
+      let sampleRegions = ['Miền Bắc', 'Miền Nam', 'Miền Trung', 'Hà Nội', 'Đà Nẵng', 'TP. Hồ Chí Minh'];
+      let sampleReps = [
+        { id: 1, name: 'Nguyễn Văn An', region: 'Hà Nội' },
+        { id: 2, name: 'Trần Thị Bình', region: 'Miền Bắc' },
+        { id: 3, name: 'Lê Hoàng Nam', region: 'TP. Hồ Chí Minh' },
+        { id: 4, name: 'Phạm Minh Đức', region: 'Đà Nẵng' }
+      ];
+
+      function formatMoney(amount) {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount || 0);
       }
 
-      // Đăng ký vào hệ thống SPA KhoFlow nếu có
+      function getCurrentPeriod() {
+        const d = new Date();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        return `${d.getFullYear()}-${m}`;
+      }
+
+      function initFiltersAndForm() {
+        const filterPeriod = document.getElementById('filterPeriod');
+        const filterRegion = document.getElementById('filterRegion');
+        const filterRep = document.getElementById('filterRep');
+        const targetRepSelect = document.getElementById('targetRepSelect');
+        const targetRegionSelect = document.getElementById('targetRegionSelect');
+        const targetMonthInput = document.getElementById('targetMonthInput');
+
+        if (filterPeriod && !filterPeriod.value) {
+          filterPeriod.value = getCurrentPeriod();
+        }
+        if (targetMonthInput && !targetMonthInput.value) {
+          targetMonthInput.value = getCurrentPeriod();
+        }
+
+        // Nạp danh sách khu vực
+        if (filterRegion && targetRegionSelect) {
+          sampleRegions.forEach(r => {
+            const opt1 = new Option(r, r);
+            const opt2 = new Option(r, r);
+            filterRegion.add(opt1);
+            targetRegionSelect.add(opt2);
+          });
+        }
+
+        // Nạp danh sách nhân viên
+        if (filterRep && targetRepSelect) {
+          sampleReps.forEach(rep => {
+            const opt1 = new Option(rep.name, rep.id);
+            const opt2 = new Option(rep.name, rep.id);
+            filterRep.add(opt1);
+            targetRepSelect.add(opt2);
+          });
+        }
+
+        // Modal triggers
+        const btnOpen = document.getElementById('btnOpenSetTarget');
+        const modal = document.getElementById('targetModalForm');
+        const btnClose = document.getElementById('btnCloseTargetModal');
+        const btnCancel = document.getElementById('btnCancelTargetModal');
+
+        if (btnOpen && modal) {
+          btnOpen.onclick = () => {
+            document.getElementById('formTarget').reset();
+            document.getElementById('targetEditId').value = '';
+            document.getElementById('targetMonthInput').value = getCurrentPeriod();
+            document.getElementById('targetModalTitle').textContent = 'Giao chỉ tiêu doanh số mới';
+            modal.classList.add('open');
+          };
+        }
+
+        const closeModal = () => modal && modal.classList.remove('open');
+        if (btnClose) btnClose.onclick = closeModal;
+        if (btnCancel) btnCancel.onclick = closeModal;
+      }
+
       window.sprint5Features = window.sprint5Features || {};
       window.sprint5Features['Chỉ tiêu doanh số'] = {
         path: 'chi-tieu-doanh-so',
@@ -280,18 +635,18 @@
         render: function () {
           const host = document.getElementById('moduleContent');
           if (host) {
-            host.innerHTML = document.getElementById('targetAppRoot') 
-              ? document.getElementById('targetAppRoot').outerHTML 
+            host.innerHTML = document.getElementById('targetAppRoot')
+              ? document.getElementById('targetAppRoot').outerHTML
               : '';
           }
-          initFeature();
+          initFiltersAndForm();
         }
       };
 
       if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initFeature);
+        document.addEventListener('DOMContentLoaded', initFiltersAndForm);
       } else {
-        initFeature();
+        initFiltersAndForm();
       }
     })();
   </script>

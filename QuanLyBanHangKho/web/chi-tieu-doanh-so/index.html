@@ -9,26 +9,26 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/shared/styles.css">
   <style>
-    /* CSS Kế thừa hệ thống KhoFlow cho module Chỉ tiêu doanh số */
+    /* CSS Kế thừa hệ thống KhoFlow cho module Chỉ tiêu doanh số (S8-04) */
     :root {
-      --primary-color: #f97316;
-      --primary-hover: #ea580c;
-      --text-main: #172033;
-      --text-muted: #64748b;
-      --border-color: #e2e8f0;
-      --bg-card: #ffffff;
-      --bg-surface: #f8fafc;
-      --success: #16a34a;
-      --warning: #f59e0b;
-      --danger: #dc2626;
-      --info: #2563eb;
+      --target-primary: #f97316;
+      --target-primary-hover: #ea580c;
+      --target-ink: #172033;
+      --target-muted: #64748b;
+      --target-border: #e2e8f0;
+      --target-card: #ffffff;
+      --target-surface: #f8fafc;
+      --target-success: #16a34a;
+      --target-warning: #f59e0b;
+      --target-danger: #dc2626;
+      --target-info: #2563eb;
     }
 
     .target-page {
       display: flex;
       flex-direction: column;
       gap: 20px;
-      color: var(--text-main);
+      color: var(--target-ink);
       font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
@@ -37,20 +37,20 @@
       align-items: center;
       justify-content: space-between;
       gap: 20px;
-      padding: 22px 26px;
+      padding: 24px 28px;
       background: #ffffff;
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--target-border);
       border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.03);
     }
 
     .target-kicker {
       display: inline-block;
       margin-bottom: 6px;
-      color: var(--primary-color);
+      color: var(--target-primary);
       font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
     }
 
@@ -63,7 +63,7 @@
 
     .target-hero p {
       margin: 0;
-      color: var(--text-muted);
+      color: var(--target-muted);
       font-size: 13.5px;
       line-height: 1.5;
     }
@@ -88,27 +88,28 @@
       cursor: pointer;
       transition: all 0.2s ease;
       font-family: inherit;
+      user-select: none;
     }
 
     .target-btn-primary {
-      background: var(--primary-color);
+      background: var(--target-primary);
       color: #ffffff;
       box-shadow: 0 4px 14px rgba(249, 115, 22, 0.25);
     }
 
-    .target-btn-primary:hover {
-      background: var(--primary-hover);
+    .target-btn-primary:hover:not(:disabled) {
+      background: var(--target-primary-hover);
       transform: translateY(-1px);
     }
 
     .target-btn-outline {
       background: #ffffff;
-      border-color: var(--border-color);
-      color: var(--text-main);
+      border-color: var(--target-border);
+      color: var(--target-ink);
     }
 
-    .target-btn-outline:hover {
-      background: var(--bg-surface);
+    .target-btn-outline:hover:not(:disabled) {
+      background: var(--target-surface);
       border-color: #cbd5e1;
     }
 
@@ -117,6 +118,12 @@
       padding: 4px 12px;
       font-size: 12px;
       border-radius: 6px;
+    }
+
+    .target-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
     }
 
     /* KPI Summary Cards */
@@ -129,17 +136,23 @@
     .target-stat-card {
       padding: 18px 20px;
       background: #ffffff;
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--target-border);
       border-radius: 14px;
       display: flex;
       align-items: center;
       gap: 14px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .target-stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
     }
 
     .target-stat-icon {
-      width: 44px;
-      height: 44px;
+      width: 46px;
+      height: 46px;
       border-radius: 12px;
       display: flex;
       align-items: center;
@@ -151,7 +164,7 @@
     .target-stat-info span {
       display: block;
       font-size: 11.5px;
-      color: var(--text-muted);
+      color: var(--target-muted);
       font-weight: 500;
     }
 
@@ -171,7 +184,7 @@
       gap: 14px;
       padding: 16px 20px;
       background: #ffffff;
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--target-border);
       border-radius: 14px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
     }
@@ -191,24 +204,24 @@
     .target-input, .target-select {
       height: 38px;
       padding: 0 12px;
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--target-border);
       border-radius: 8px;
       font-size: 13px;
       font-family: inherit;
-      color: var(--text-main);
+      color: var(--target-ink);
       background: #fff;
       outline: none;
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
 
     .target-input:focus, .target-select:focus {
-      border-color: var(--primary-color);
+      border-color: var(--target-primary);
       box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
     }
 
     .target-main-card {
       background: #ffffff;
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--target-border);
       border-radius: 16px;
       overflow: hidden;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
@@ -216,7 +229,7 @@
 
     .target-card-header {
       padding: 18px 24px;
-      border-bottom: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--target-border);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -233,7 +246,7 @@
     .target-card-header p {
       margin: 0;
       font-size: 12.5px;
-      color: var(--text-muted);
+      color: var(--target-muted);
     }
 
     /* Bảng dữ liệu & Progress Bar */
@@ -250,7 +263,7 @@
     .target-table th, .target-table td {
       padding: 14px 18px;
       text-align: left;
-      border-bottom: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--target-border);
       font-size: 13px;
       vertical-align: middle;
     }
@@ -280,7 +293,7 @@
     }
 
     .target-rep-cell small {
-      color: var(--text-muted);
+      color: var(--target-muted);
       font-size: 11.5px;
     }
 
@@ -318,7 +331,7 @@
       transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* Badge trạng thái hoàn thành & khóa */
+    /* Badge trạng thái */
     .target-badge {
       display: inline-flex;
       align-items: center;
@@ -327,17 +340,18 @@
       border-radius: 6px;
       font-size: 11.5px;
       font-weight: 600;
+      white-space: nowrap;
     }
 
     .target-badge-success {
       background: #ecfdf5;
-      color: var(--success);
+      color: var(--target-success);
       border: 1px solid #a7f3d0;
     }
 
     .target-badge-progress {
       background: #eff6ff;
-      color: var(--info);
+      color: var(--target-info);
       border: 1px solid #bfdbfe;
     }
 
@@ -417,7 +431,7 @@
 
     .target-modal-header {
       padding: 18px 24px;
-      border-bottom: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--target-border);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -460,13 +474,13 @@
     }
 
     .target-form-field label span {
-      color: var(--danger);
+      color: var(--target-danger);
     }
 
     .target-modal-footer {
       padding: 16px 24px;
       background: #f8fafc;
-      border-top: 1px solid var(--border-color);
+      border-top: 1px solid var(--target-border);
       display: flex;
       justify-content: flex-end;
       gap: 10px;
@@ -488,7 +502,87 @@
       margin-bottom: 4px;
     }
 
-    /* Layout standalone */
+    /* Empty state */
+    .target-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 56px 24px;
+      text-align: center;
+      color: var(--target-muted);
+    }
+
+    .target-empty-icon {
+      font-size: 42px;
+      margin-bottom: 12px;
+    }
+
+    .target-empty h4 {
+      margin: 0 0 6px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .target-empty p {
+      margin: 0 0 16px 0;
+      font-size: 13px;
+      max-width: 400px;
+    }
+
+    /* Toast Notification */
+    .target-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 20px;
+      background: #0f172a;
+      color: #ffffff;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 500;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 10000;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: all 0.25s ease;
+      pointer-events: none;
+    }
+
+    .target-toast.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .target-toast.success {
+      background: #15803d;
+    }
+
+    .target-toast.error {
+      background: #b91c1c;
+    }
+
+    /* Loading Spinner */
+    .target-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Standalone Container */
     .standalone-body {
       margin: 0;
       padding: 0;
@@ -600,7 +694,8 @@
           </div>
           <div style="display:flex;align-items:flex-end;gap:8px;margin-top:auto;">
             <button class="target-btn target-btn-primary target-btn-sm" id="btnApplyFilter" style="height:38px;">
-              <span>🔍</span> Lọc dữ liệu
+              <span id="filterSpinner" class="target-spinner" style="display:none;"></span>
+              <span id="filterText">🔍 Lọc dữ liệu</span>
             </button>
             <button class="target-btn target-btn-outline target-btn-sm" id="btnResetFilter" style="height:38px;">
               Đặt lại
@@ -681,9 +776,9 @@
               
               <!-- Trường Lý do chỉnh sửa bắt buộc khi kỳ đã khóa -->
               <div class="target-form-field" id="fieldEditReason" style="display:none;">
-                <label for="targetEditReasonInput">Lý do chỉnh sửa chỉ tiêu đã khóa <span style="color:var(--danger)">*</span></label>
+                <label for="targetEditReasonInput">Lý do chỉnh sửa chỉ tiêu đã khóa <span style="color:var(--target-danger)">*</span></label>
                 <textarea id="targetEditReasonInput" class="target-input" style="height:70px;padding:8px 12px;" placeholder="Bắt buộc nhập lý do thay đổi chỉ tiêu kỳ cũ (tối thiểu 5 ký tự)..."></textarea>
-                <small style="color:var(--danger);font-size:11px;" id="errorEditReason"></small>
+                <small style="color:var(--target-danger);font-size:11.5px;" id="errorEditReason"></small>
               </div>
 
               <div class="target-form-field">
@@ -693,7 +788,10 @@
             </div>
             <div class="target-modal-footer">
               <button type="button" class="target-btn target-btn-outline" id="btnCancelTargetModal">Hủy bỏ</button>
-              <button type="submit" class="target-btn target-btn-primary" id="btnSubmitTarget">Lưu chỉ tiêu</button>
+              <button type="submit" class="target-btn target-btn-primary" id="btnSubmitTarget">
+                <span id="submitSpinner" class="target-spinner" style="display:none;"></span>
+                <span id="submitText">Lưu chỉ tiêu</span>
+              </button>
             </div>
           </form>
         </div>
@@ -714,12 +812,32 @@
         </div>
       </div>
 
+      <!-- Toast Component cục bộ -->
+      <div id="targetToast" class="target-toast"></div>
+
     </div>
   </div>
 
   <script>
     (function () {
-      // Helper gọi API có xử lý fallback an toàn
+      // Toast notification helper
+      let toastTimer = null;
+      function notify(msg, tone = 'success') {
+        // Tích hợp với toast hệ thống KhoFlow nếu có
+        if (typeof showToast === 'function') {
+          showToast(msg, tone === 'success' ? 'info' : 'error');
+        }
+        const toast = document.getElementById('targetToast');
+        if (!toast) return;
+        toast.textContent = (tone === 'success' ? '✓ ' : '⚠️ ') + msg;
+        toast.className = `target-toast show ${tone}`;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toast.classList.remove('show');
+        }, 3000);
+      }
+
+      // Helper gọi API an toàn
       async function callApi(path, options = {}) {
         try {
           const res = await fetch(`../api/${path}`, {
@@ -730,7 +848,6 @@
             return await res.json();
           }
         } catch (e) {
-          // Fallback nếu gọi qua đường dẫn tương đối khác
           try {
             const res2 = await fetch(`api/${path}`, {
               headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', ...options.headers },
@@ -860,38 +977,45 @@
 
       // Tích hợp API backend: Lấy bộ lọc thực tế và doanh số thực tế
       async function syncBackendData() {
-        // 1. Fetch danh sách sales reps và regions từ API /api/orders/filters
-        const filterData = await callApi('orders/filters');
-        if (filterData) {
-          if (filterData.regions && filterData.regions.length) {
-            realRegions = filterData.regions.filter(Boolean);
+        const filterSpinner = document.getElementById('filterSpinner');
+        const filterText = document.getElementById('filterText');
+        if (filterSpinner) filterSpinner.style.display = 'inline-block';
+        if (filterText) filterText.textContent = 'Đang đồng bộ...';
+
+        try {
+          const filterData = await callApi('orders/filters');
+          if (filterData) {
+            if (filterData.regions && filterData.regions.length) {
+              realRegions = filterData.regions.filter(Boolean);
+            }
+            if (filterData.salesReps && filterData.salesReps.length) {
+              realSalesReps = filterData.salesReps;
+            }
           }
-          if (filterData.salesReps && filterData.salesReps.length) {
-            realSalesReps = filterData.salesReps;
+
+          populateSelectOptions();
+
+          const currentPeriod = document.getElementById('filterPeriod')?.value || getCurrentPeriod();
+          const [year, month] = currentPeriod.split('-');
+          const lastDay = new Date(Number(year), Number(month), 0).getDate();
+          const fromDate = `${currentPeriod}-01`;
+          const toDate = `${currentPeriod}-${String(lastDay).padStart(2, '0')}`;
+
+          for (const target of targetsStore) {
+            if (target.period === currentPeriod) {
+              try {
+                const ordersRes = await callApi(`orders?salesRepId=${target.repId}&from=${fromDate}&to=${toDate}&pageSize=1`);
+                if (ordersRes && ordersRes.totalAmount != null) {
+                  target.actualAmount = Number(ordersRes.totalAmount);
+                }
+              } catch (err) {}
+            }
           }
+          savePersistedTargets(targetsStore);
+        } finally {
+          if (filterSpinner) filterSpinner.style.display = 'none';
+          if (filterText) filterText.textContent = '🔍 Lọc dữ liệu';
         }
-
-        // Cập nhật các ô select với dữ liệu thực tế từ backend
-        populateSelectOptions();
-
-        // 2. Tự động đồng bộ doanh số thực tế cho từng nhân viên từ API /api/orders
-        const currentPeriod = document.getElementById('filterPeriod')?.value || getCurrentPeriod();
-        const [year, month] = currentPeriod.split('-');
-        const lastDay = new Date(Number(year), Number(month), 0).getDate();
-        const fromDate = `${currentPeriod}-01`;
-        const toDate = `${currentPeriod}-${String(lastDay).padStart(2, '0')}`;
-
-        for (const target of targetsStore) {
-          if (target.period === currentPeriod) {
-            try {
-              const ordersRes = await callApi(`orders?salesRepId=${target.repId}&from=${fromDate}&to=${toDate}&pageSize=1`);
-              if (ordersRes && ordersRes.totalAmount != null) {
-                target.actualAmount = Number(ordersRes.totalAmount);
-              }
-            } catch (err) {}
-          }
-        }
-        savePersistedTargets(targetsStore);
       }
 
       function populateSelectOptions() {
@@ -976,7 +1100,22 @@
 
         const tbody = document.getElementById('targetTableBody');
         if (!displayList.length) {
-          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:36px;color:#64748b;">Không có dữ liệu chỉ tiêu cho điều kiện lọc đã chọn.</td></tr>`;
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="8">
+                <div class="target-empty">
+                  <div class="target-empty-icon">🎯</div>
+                  <h4>Chưa có chỉ tiêu doanh số</h4>
+                  <p>Không tìm thấy chỉ tiêu nào phù hợp với bộ lọc hiện tại của kỳ <strong>${escapeHtml(filterPeriod)}</strong>.</p>
+                  ${!isSales ? `
+                    <button class="target-btn target-btn-primary target-btn-sm" onclick="document.getElementById('btnOpenSetTarget').click()">
+                      ＋ Giao chỉ tiêu ngay
+                    </button>
+                  ` : ''}
+                </div>
+              </td>
+            </tr>
+          `;
           return;
         }
 
@@ -1111,7 +1250,7 @@
         const container = document.getElementById('targetLogsContent');
         
         if (!item.editLogs.length) {
-          container.innerHTML = '<p style="text-align:center;color:#64748b;">Chưa có lần chỉnh sửa nào được ghi lại.</p>';
+          container.innerHTML = '<p style="text-align:center;padding:24px;color:#64748b;">Chưa có lần chỉnh sửa nào được ghi lại.</p>';
         } else {
           container.innerHTML = item.editLogs.map(log => `
             <div class="log-item">
@@ -1144,6 +1283,7 @@
         document.getElementById('btnApplyFilter')?.addEventListener('click', async () => {
           await syncBackendData();
           renderApp();
+          notify('Đã cập nhật dữ liệu tiến độ mới nhất!', 'success');
         });
 
         document.getElementById('btnResetFilter')?.addEventListener('click', () => {
@@ -1151,6 +1291,7 @@
           if (document.getElementById('filterRegion')) document.getElementById('filterRegion').value = '';
           if (document.getElementById('filterRep')) document.getElementById('filterRep').value = '';
           renderApp();
+          notify('Đã đặt lại bộ lọc', 'success');
         });
 
         // Modal triggers
@@ -1189,78 +1330,96 @@
         // Xử lý submit form đặt / sửa chỉ tiêu
         document.getElementById('formTarget')?.addEventListener('submit', async function (e) {
           e.preventDefault();
-          const editId = document.getElementById('targetEditId').value;
-          const user = await fetchCurrentUser();
-          const reasonInput = document.getElementById('targetEditReasonInput');
-          const errorEditReason = document.getElementById('errorEditReason');
-          const currentPeriod = getCurrentPeriod();
+          const submitBtn = document.getElementById('btnSubmitTarget');
+          const submitSpinner = document.getElementById('submitSpinner');
+          const submitText = document.getElementById('submitText');
 
-          const repSelect = document.getElementById('targetRepSelect');
-          const regionSelect = document.getElementById('targetRegionSelect');
-          const monthInput = document.getElementById('targetMonthInput');
-          const amountInput = document.getElementById('targetAmountInput');
-          const noteInput = document.getElementById('targetNoteInput');
+          if (submitBtn) submitBtn.disabled = true;
+          if (submitSpinner) submitSpinner.style.display = 'inline-block';
+          if (submitText) submitText.textContent = 'Đang lưu...';
 
-          if (editId) {
-            const item = targetsStore.find(t => t.id === Number(editId));
-            if (item) {
-              const isLocked = item.period < currentPeriod;
-              if (isLocked) {
-                const reason = (reasonInput.value || '').trim();
-                if (reason.length < 5) {
-                  if (errorEditReason) errorEditReason.textContent = 'Vui lòng nhập lý do chỉnh sửa rõ ràng (tối thiểu 5 ký tự).';
-                  reasonInput.focus();
-                  return;
+          try {
+            const editId = document.getElementById('targetEditId').value;
+            const user = await fetchCurrentUser();
+            const reasonInput = document.getElementById('targetEditReasonInput');
+            const errorEditReason = document.getElementById('errorEditReason');
+            const currentPeriod = getCurrentPeriod();
+
+            const repSelect = document.getElementById('targetRepSelect');
+            const regionSelect = document.getElementById('targetRegionSelect');
+            const monthInput = document.getElementById('targetMonthInput');
+            const amountInput = document.getElementById('targetAmountInput');
+            const noteInput = document.getElementById('targetNoteInput');
+
+            if (editId) {
+              const item = targetsStore.find(t => t.id === Number(editId));
+              if (item) {
+                const isLocked = item.period < currentPeriod;
+                if (isLocked) {
+                  const reason = (reasonInput.value || '').trim();
+                  if (reason.length < 5) {
+                    if (errorEditReason) errorEditReason.textContent = 'Vui lòng nhập lý do chỉnh sửa rõ ràng (tối thiểu 5 ký tự).';
+                    reasonInput.focus();
+                    return;
+                  }
+                  // Ghi nhật ký sửa đổi
+                  item.editLogs = item.editLogs || [];
+                  item.editLogs.push({
+                    time: new Date().toISOString(),
+                    editedBy: user.fullName || 'Quản lý kinh doanh',
+                    oldAmount: item.targetAmount,
+                    newAmount: Number(amountInput.value),
+                    reason: reason
+                  });
+
+                  // Gửi ghi log tới API audit của backend nếu có
+                  await callApi('audit-logs', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                      action: 'UPDATE_SALES_TARGET',
+                      entity: 'SALES_TARGET',
+                      entityId: item.id,
+                      reason: reason,
+                      details: `Điều chỉnh chỉ tiêu nhân viên ${item.repName} kỳ ${item.period} từ ${item.targetAmount} thành ${amountInput.value}`
+                    })
+                  });
                 }
-                // Ghi nhật ký sửa đổi
-                item.editLogs = item.editLogs || [];
-                item.editLogs.push({
-                  time: new Date().toISOString(),
-                  editedBy: user.fullName || 'Quản lý kinh doanh',
-                  oldAmount: item.targetAmount,
-                  newAmount: Number(amountInput.value),
-                  reason: reason
-                });
 
-                // Gửi ghi log tới API audit của backend nếu có
-                await callApi('audit-logs', {
-                  method: 'POST',
-                  body: JSON.stringify({
-                    action: 'UPDATE_SALES_TARGET',
-                    entity: 'SALES_TARGET',
-                    entityId: item.id,
-                    reason: reason,
-                    details: `Điều chỉnh chỉ tiêu nhân viên ${item.repName} kỳ ${item.period} từ ${item.targetAmount} thành ${amountInput.value}`
-                  })
-                });
+                item.targetAmount = Number(amountInput.value);
+                item.region = regionSelect.value;
+                item.note = noteInput.value;
+                notify(`Đã cập nhật chỉ tiêu cho ${item.repName}!`, 'success');
               }
-
-              item.targetAmount = Number(amountInput.value);
-              item.region = regionSelect.value;
-              item.note = noteInput.value;
+            } else {
+              // Thêm mới chỉ tiêu
+              const repId = Number(repSelect.value);
+              const repName = repSelect.options[repSelect.selectedIndex]?.text || 'Nhân viên';
+              const newTarget = {
+                id: Date.now(),
+                repId: repId,
+                repName: repName,
+                repCode: `NV-${String(repId).padStart(3, '0')}`,
+                region: regionSelect.value,
+                period: monthInput.value,
+                targetAmount: Number(amountInput.value),
+                actualAmount: 0,
+                note: noteInput.value,
+                editLogs: []
+              };
+              targetsStore.unshift(newTarget);
+              notify(`Đã giao chỉ tiêu thành công cho ${repName}!`, 'success');
             }
-          } else {
-            // Thêm mới chỉ tiêu
-            const repId = Number(repSelect.value);
-            const repName = repSelect.options[repSelect.selectedIndex]?.text || 'Nhân viên';
-            const newTarget = {
-              id: Date.now(),
-              repId: repId,
-              repName: repName,
-              repCode: `NV-${String(repId).padStart(3, '0')}`,
-              region: regionSelect.value,
-              period: monthInput.value,
-              targetAmount: Number(amountInput.value),
-              actualAmount: 0,
-              note: noteInput.value,
-              editLogs: []
-            };
-            targetsStore.unshift(newTarget);
-          }
 
-          savePersistedTargets(targetsStore);
-          closeModal();
-          await renderApp();
+            savePersistedTargets(targetsStore);
+            closeModal();
+            await renderApp();
+          } catch (err) {
+            notify(err.message || 'Có lỗi xảy ra khi lưu chỉ tiêu', 'error');
+          } finally {
+            if (submitBtn) submitBtn.disabled = false;
+            if (submitSpinner) submitSpinner.style.display = 'none';
+            if (submitText) submitText.textContent = 'Lưu chỉ tiêu';
+          }
         });
 
         await renderApp();

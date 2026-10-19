@@ -34,11 +34,13 @@ public class KhoService {
         String code=text(in.get("code"),"Mã kho",32,true).toUpperCase(Locale.ROOT),name=text(in.get("name"),"Tên kho",150,true),address=text(in.get("address"),"Địa chỉ",500,true);
         if(!code.matches("[A-Z0-9][A-Z0-9_.-]*"))throw new IllegalArgumentException("Mã kho không hợp lệ");
         Long managerId=in.get("managerId")==null?null:id(in.get("managerId"));boolean enabled=active(in.get("active"));
+        boolean defect=in.get("isDefect")!=null&&active(in.get("isDefect"));
         try(Connection c=KetNoiDB.getConnection()){c.setAutoCommit(false);try{actor(c,user);
+            if(defect&&warehouse!=null&&TruyVanDB.one(c,"SELECT 1 FROM customers WHERE warehouse_id=? LIMIT 1",warehouse)!=null)throw new IllegalArgumentException("Kho đang phục vụ đại lý, không thể chuyển thành kho hàng lỗi");
             if(managerId==null||TruyVanDB.one(c,"SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id=u.id JOIN roles r ON r.id=ur.role_id WHERE u.id=? AND u.active AND r.code='WH_MANAGER'",managerId)==null)throw new IllegalArgumentException("Vui lòng chọn người phụ trách có vai trò Quản lý kho");
             if(warehouse!=null&&TruyVanDB.one(c,"SELECT id FROM warehouses WHERE id=? FOR UPDATE",warehouse)==null)throw new NoSuchElementException("Không tìm thấy kho");
             if(!enabled&&warehouse!=null&&TruyVanDB.one(c,"SELECT 1 FROM inventory WHERE warehouse_id=? AND (on_hand>0 OR reserved>0) LIMIT 1",warehouse)!=null)throw new IllegalArgumentException("Kho còn tồn hoặc hàng giữ chỗ, chưa thể ngừng hoạt động");
-            var row=warehouse==null?TruyVanDB.one(c,"INSERT INTO warehouses(code,name,address,manager_id,active) VALUES(?,?,?,?,?) RETURNING id",code,name,address,managerId,enabled):TruyVanDB.one(c,"UPDATE warehouses SET code=?,name=?,address=?,manager_id=?,active=? WHERE id=? RETURNING id",code,name,address,managerId,enabled,warehouse);
+            var row=warehouse==null?TruyVanDB.one(c,"INSERT INTO warehouses(code,name,address,manager_id,active,is_defect) VALUES(?,?,?,?,?,?) RETURNING id",code,name,address,managerId,enabled,defect):TruyVanDB.one(c,"UPDATE warehouses SET code=?,name=?,address=?,manager_id=?,active=?,is_defect=? WHERE id=? RETURNING id",code,name,address,managerId,enabled,defect,warehouse);
             long result=TruyVanDB.id(row);TruyVanDB.update(c,"INSERT INTO user_warehouses(user_id,warehouse_id) VALUES(?,?) ON CONFLICT DO NOTHING",managerId,result);c.commit();return result;
         }catch(SQLException|RuntimeException e){c.rollback();throw e;}}
     }

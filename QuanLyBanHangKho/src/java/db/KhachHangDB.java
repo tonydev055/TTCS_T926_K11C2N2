@@ -128,7 +128,7 @@ public class KhachHangDB {
 
     /** Kho đang hoạt động để chọn làm kho phục vụ của đại lý (S4-03). */
     public List<Map<String, Object>> warehouses(Connection c) throws SQLException {
-        return TruyVanDB.rows(c, "SELECT id,code,name FROM warehouses WHERE active ORDER BY name");
+        return TruyVanDB.rows(c, "SELECT id,code,name FROM warehouses WHERE active AND NOT is_defect ORDER BY name");
     }
 
     /** Tài khoản vai trò Đại lý đang hoạt động, kèm đại lý đang liên kết (nếu có) để form chọn (S4-10). */
@@ -145,7 +145,7 @@ public class KhachHangDB {
     }
 
     public boolean isActiveWarehouse(Connection c, long id) throws SQLException {
-        return TruyVanDB.one(c, "SELECT 1 FROM warehouses WHERE id=? AND active", id) != null;
+        return TruyVanDB.one(c, "SELECT 1 FROM warehouses WHERE id=? AND active AND NOT is_defect", id) != null;
     }
 
     public List<Map<String, Object>> groups(Connection c) throws SQLException {

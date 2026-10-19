@@ -100,6 +100,9 @@ public final class PhanQuyen {
     /** Quyền gộp cho /api/orders: xem mọi đơn (orders.read) hoặc đơn của đại lý mình phụ trách (orders.own). */
     public static final String ORDERS_ACCESS = "orders.access";
 
+    /** Quyền gộp cho /api/returns: lập phiếu (kinh doanh), nhận hàng (kho), ghi giảm công nợ (kế toán). */
+    public static final String RETURNS_ACCESS = "returns.access";
+
     private static final Set<String> KNOWN_PERMISSIONS;
     private static volatile Map<String, Set<String>> configuredPermissions;
 
@@ -124,6 +127,9 @@ public final class PhanQuyen {
         // Phạm vi bản ghi của đơn hàng được kiểm tra tiếp trong DonHangService.
         if (permission.equals(ORDERS_ACCESS)) return
             allows(roles, "orders.read") || allows(roles, "orders.own");
+        // Phạm vi phiếu trả theo đại lý/kho được kiểm tra tiếp trong TraHangService.
+        if (permission.equals(RETURNS_ACCESS)) return
+            allows(roles, ORDERS_ACCESS) || allows(roles, "warehouses.manage") || allows(roles, "invoices.write");
         Map<String, Set<String>> matrix = effectivePermissions();
         for (String role : roles)
             if (matrix.getOrDefault(role, Set.of()).contains(permission)) return true;
@@ -312,7 +318,7 @@ public final class PhanQuyen {
         if (under(path, "/api/reconciliations")) return "receivables.read";
         if (under(path, "/api/dealer-reconciliations")) return "invoices.self";
         if (under(path, "/api/dealer-debt")) return "invoices.self";
-        if (under(path, "/api/returns")) return "returns.self";
+        if (under(path, "/api/returns")) return RETURNS_ACCESS;
         // S4-10: cổng đặt hàng của đại lý; phạm vi luôn là đại lý gắn với tài khoản (CongDaiLyService).
         if (under(path, "/api/portal")) return "orders.self";
         return null;

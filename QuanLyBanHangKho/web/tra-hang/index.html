@@ -1,0 +1,74 @@
+<style>
+.rt-toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap}
+.rt-filter{display:flex;gap:8px;flex-wrap:wrap}.rt-filter select,.rt-filter input{min-height:38px;padding:0 10px;border:1px solid #d7dde5;border-radius:8px;font:inherit}
+.rt-badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.rt-PENDING{background:#fff4e5;color:#b45309}.rt-RECEIVED{background:#e8f7ef;color:#16804a}.rt-REJECTED{background:#fdecec;color:#b42318}.rt-CANCELLED{background:#f1f3f5;color:#5b6675}
+.rt-lines input[type=number]{width:96px}.rt-lines input[type=text]{min-width:140px}
+.rt-lines td,.rt-lines th{vertical-align:top}.rt-hint{color:#6b7787;font-size:12px;margin:4px 0 0}
+.rt-sum{display:flex;justify-content:flex-end;gap:8px;font-weight:600;margin-top:8px}
+.rt-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px}
+.rt-danger{background:#fff;border:1px solid #f3b4ae;color:#b42318;border-radius:8px;padding:8px 14px;cursor:pointer;font:inherit}
+.rt-head p{margin:2px 0;line-height:1.55}.rt-lines select{min-width:110px}
+#s2Dialog .rt-lines .feature-table{min-width:640px}#s2Dialog .rt-lines td,#s2Dialog .rt-lines th{padding:10px}.rt-lines small{font-size:12px!important}
+.rt-lots{margin:0;padding-left:16px;color:#566274;font-size:12px}
+</style>
+<script>
+window.sprint5Features=window.sprint5Features||{};
+(function(){
+const STATUS={PENDING:'Chờ kho nhận',RECEIVED:'Đã nhận hàng',REJECTED:'Kho từ chối',CANCELLED:'Đã huỷ'};
+const COND={GOOD:'Hàng tốt',DEFECT:'Hàng lỗi'};
+const money=v=>Number(v||0).toLocaleString('vi-VN')+' ₫';
+const qty=v=>Number(v||0).toLocaleString('vi-VN',{maximumFractionDigits:6});
+const feature=window.sprint5Features['Trả hàng']={path:'tra-hang',permission:['orders.read','orders.own','warehouses.manage','invoices.write'],render:()=>warehouseUi.screen('Trả hàng','Lập phiếu trả theo hoá đơn gốc. Tồn kho chỉ tăng khi Quản lý kho xác nhận đã nhận và kiểm tra hàng.',()=>apiRequest('returns'),draw)};
+let state={status:'',q:''};
+function draw(host,data){
+ const ui=warehouseUi,e=ui.esc,reasons=Object.fromEntries(data.reasons.map(r=>[r.code,r.label]));
+ const rows=data.returns.filter(r=>(!state.status||r.status===state.status)&&(!state.q||[r.code,r.invoice_number,r.customer_code,r.customer_name].join(' ').toLowerCase().includes(state.q.toLowerCase())));
+ host.innerHTML='<div class="rt-toolbar"><div class="rt-filter"><input id="rtQ" placeholder="Tìm mã phiếu, hoá đơn, đại lý" value="'+e(state.q)+'"><select id="rtStatus"><option value="">Mọi trạng thái</option>'+Object.entries(STATUS).map(([k,v])=>'<option value="'+k+'"'+(state.status===k?' selected':'')+'>'+v+'</option>').join('')+'</select></div>'+(data.canCreate?'<button class="orange-button" id="rtNew">Lập phiếu trả hàng</button>':'')+'</div>'+
+  ui.table(['Mã phiếu','Hoá đơn','Đại lý','Kho nhận','Số dòng','Giá trị','Trạng thái','Ngày lập','Thao tác'],rows.map(r=>'<tr><td>'+e(r.code)+'</td><td>'+e(r.invoice_number)+'</td><td>'+e(r.customer_code+' · '+r.customer_name)+'</td><td>'+e(r.warehouse_name)+'</td><td>'+e(r.line_count)+'</td><td>'+money(r.total_amount)+'</td><td><span class="rt-badge rt-'+e(r.status)+'">'+e(STATUS[r.status]||r.status)+'</span></td><td>'+e(String(r.created_at).slice(0,16))+'</td><td><button data-open="'+r.id+'">'+(r.status==='PENDING'&&data.canReceive?'Kiểm tra & nhận':'Xem')+'</button></td></tr>'));
+ const q=host.querySelector('#rtQ');q.oninput=()=>{state.q=q.value;const pos=q.selectionStart;draw(host,data);const n=host.querySelector('#rtQ');n.focus();n.setSelectionRange(pos,pos);};
+ host.querySelector('#rtStatus').onchange=ev=>{state.status=ev.target.value;draw(host,data);};
+ host.querySelector('#rtNew')?.addEventListener('click',()=>create(data,reasons));
+ host.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>detail(Number(b.dataset.open),data,reasons));
+}
+async function create(data,reasons){
+ const ui=warehouseUi,e=ui.esc;
+ const {form,close}=openFormDialog('Lập phiếu trả hàng','<label class="form-group full"><span>Tìm hoá đơn gốc *</span><input id="rtInvQ" placeholder="Số hoá đơn, mã hoặc tên đại lý" autocomplete="off"></label><label class="form-group full"><span>Hoá đơn *</span><select id="rtInv" required><option value="">Đang tải…</option></select></label><div class="form-group full" id="rtLines"><p class="rt-hint">Chọn hoá đơn để hiển thị các dòng hàng đã giao.</p></div>'+ui.field('note','Ghi chú phiếu','','textarea',false),'Lập phiếu');
+ const sel=form.querySelector('#rtInv'),box=form.querySelector('#rtLines');let invoice=null,seq=0,invoiceSeq=0,timer;
+ async function search(){const n=++seq;++invoiceSeq;invoice=null;box.innerHTML='';try{const list=await apiRequest('returns/invoices?q='+encodeURIComponent(form.querySelector('#rtInvQ').value.trim()));if(n!==seq||!form.isConnected)return;sel.innerHTML='<option value="">'+(list.length?'Chọn hoá đơn…':'Không tìm thấy hoá đơn')+'</option>'+list.map(i=>'<option value="'+i.id+'">'+e(i.invoice_number+' · '+i.customer_code+' '+i.customer_name+' · '+i.issued_date+' · '+money(i.total_amount))+'</option>').join('');}catch(err){form.querySelector('#s2FormError').textContent=err.message;}}
+ form.querySelector('#rtInvQ').oninput=()=>{clearTimeout(timer);timer=setTimeout(search,250);};search();
+ sel.onchange=async()=>{const n=++invoiceSeq,invoiceId=sel.value;invoice=null;box.innerHTML='';if(!invoiceId)return;try{const result=await apiRequest('returns/invoices/'+invoiceId);if(n!==invoiceSeq||!form.isConnected||sel.value!==invoiceId)return;invoice=result;renderLines();}catch(err){if(n===invoiceSeq&&form.isConnected)form.querySelector('#s2FormError').textContent=err.message;}};
+ function renderLines(){
+  const opts=Object.entries(reasons).map(([k,v])=>'<option value="'+k+'">'+e(v)+'</option>').join('');
+  box.innerHTML='<div class="rt-lines">'+ui.table(['Đơn hàng','Sản phẩm','Đã giao','Đã/đang trả','Còn trả được','Đơn giá','SL trả','Lý do','Ghi chú lý do'],invoice.lines.map(l=>{const left=Number(l.delivered_quantity)-Number(l.returned_quantity);return '<tr><td>'+e(l.order_code)+'</td><td>'+e(l.sku+' · '+l.product_name)+'</td><td>'+qty(l.delivered_quantity)+' '+e(l.unit_name)+'</td><td>'+qty(l.returned_quantity)+'</td><td>'+qty(left)+'</td><td>'+money(l.unit_price)+'</td><td><input type="number" min="0" step="any" max="'+left+'" data-qty="'+l.id+'" '+(left>0?'':'disabled')+' aria-label="Số lượng trả '+e(l.sku)+'"></td><td><select data-reason="'+l.id+'" '+(left>0?'':'disabled')+'>'+opts+'</select></td><td><input type="text" maxlength="500" data-rnote="'+l.id+'" '+(left>0?'':'disabled')+' placeholder="Bắt buộc nếu lý do khác"></td></tr>';}))+'</div><div class="rt-sum">Giá trị trả tạm tính: <span id="rtTotal">0 ₫</span></div><p class="rt-hint">Giá trị theo đơn giá sau chiết khấu trên hoá đơn; số chính xác do hệ thống tính khi lập phiếu.</p>';
+  box.querySelectorAll('[data-qty]').forEach(i=>i.oninput=()=>{let t=0;box.querySelectorAll('[data-qty]').forEach(x=>{const l=invoice.lines.find(y=>String(y.id)===x.dataset.qty);t+=Number(x.value||0)*Number(l.line_total)/Number(l.delivered_quantity);});box.querySelector('#rtTotal').textContent=money(Math.round(t));});
+ }
+ form.onsubmit=ev=>{ev.preventDefault();const err=form.querySelector('#s2FormError');err.textContent='';if(!invoice){err.textContent='Chọn hoá đơn gốc';return;}
+  const lines=[...form.querySelectorAll('[data-qty]')].filter(i=>Number(i.value)>0).map(i=>({invoiceLineId:Number(i.dataset.qty),quantity:Number(i.value),reason:form.querySelector('[data-reason="'+i.dataset.qty+'"]').value,reasonNote:form.querySelector('[data-rnote="'+i.dataset.qty+'"]').value.trim()}));
+  if(!lines.length){err.textContent='Nhập số lượng trả cho ít nhất một dòng';return;}
+  const missing=lines.find(l=>l.reason==='OTHER'&&!l.reasonNote);if(missing){err.textContent='Ghi rõ lý do cho dòng chọn "Lý do khác"';return;}
+  ui.submit(form,'returns','POST',{invoiceId:invoice.id,note:new FormData(form).get('note'),lines},close,feature.render);};
+}
+async function detail(id,data,reasons){
+ const ui=warehouseUi,e=ui.esc;let r;
+ try{r=await apiRequest('returns/'+id);}catch(err){showToast(err.message,'error');return;}
+ const receiving=r.canReceive;
+ const head='<div class="form-group full rt-head"><p><b>'+e(r.code)+'</b> · <span class="rt-badge rt-'+e(r.status)+'">'+e(STATUS[r.status])+'</span></p><p>Hoá đơn <b>'+e(r.invoice_number)+'</b> · Đại lý '+e(r.customer_code+' · '+r.customer_name)+' · Kho xuất '+e(r.warehouse_name)+'</p><p>Lập bởi '+e(r.created_by_name)+' lúc '+e(String(r.created_at_text).slice(0,16))+(r.note?' · Ghi chú: '+e(r.note):'')+'</p>'+(r.decided_by_name?'<p>Xử lý bởi '+e(r.decided_by_name)+' lúc '+e(String(r.decided_at_text).slice(0,16))+(r.decision_note?' · '+e(r.decision_note):'')+'</p>':'')+'</div>';
+ const lot=a=>' · lô '+e(a.lot_number||'—')+(a.expiry_date?' · HSD '+e(a.expiry_date):'');
+ const lots=l=>l.allocations.length?'<ul class="rt-lots">'+l.allocations.map(a=>'<li>Nhập '+qty(a.base_quantity)+' vào '+e(a.warehouse_name)+lot(a)+' · '+e(a.location_name)+'</li>').join('')+'</ul>'
+  :l.lots?'<ul class="rt-lots">'+l.lots.map(a=>'<li>Đã xuất '+qty(Number(a.shipped)-Number(a.returned))+lot(a)+' · '+e(a.location_name)+'</li>').join('')+'</ul>':'';
+ const cond=l=>receiving?'<select data-cond="'+l.id+'" required><option value="GOOD">Hàng tốt</option><option value="DEFECT"'+(['DAMAGED','QUALITY','EXPIRED'].includes(l.reason)?' selected':'')+'>Hàng lỗi</option></select>':e(l.condition?COND[l.condition]:'Chưa kiểm tra');
+ const lines='<div class="form-group full rt-lines">'+ui.table(['Sản phẩm / lô','SL trả','Quy đổi','Giá trị','Lý do',receiving?'Kiểm tra hàng':'Tình trạng'],r.lines.map(l=>'<tr><td>'+e(l.sku+' · '+l.product_name)+lots(l)+'</td><td>'+qty(l.quantity)+' '+e(l.unit_name)+'</td><td>'+qty(l.base_quantity)+' đv cơ sở</td><td>'+money(l.amount)+'</td><td>'+e(reasons[l.reason]||l.reason)+(l.reason_note?'<br><small>'+e(l.reason_note)+'</small>':'')+'</td><td>'+cond(l)+'</td></tr>'))+'<div class="rt-sum">Tổng giá trị trả: '+money(r.total_amount)+'</div></div>';
+ const recv=receiving?(data.defectWarehouses.length?ui.field('defectWarehouseId','Kho hàng lỗi (cho dòng hàng lỗi)',data.defectWarehouses[0].id,'text',false,ui.opts(data.defectWarehouses)):'<p class="form-group full rt-hint">Chưa có kho hàng lỗi đang hoạt động. Khai báo trong "Kho & vị trí" nếu cần nhận hàng lỗi.</p>')+ui.field('note','Ghi chú nhận hàng / lý do từ chối','','textarea',false)+'<p class="form-group full rt-hint">Hàng tốt nhập lại đúng lô đã xuất (ưu tiên lô hạn dùng xa nhất). Hàng lỗi nhập kho hàng lỗi, giữ số lô và hạn dùng.</p>':'';
+ const cancel=r.canCancel?ui.field('cancelNote','Lý do huỷ (bắt buộc khi huỷ)','','textarea',false):'';
+ const {form,close}=openFormDialog('Phiếu trả hàng '+r.code,head+lines+recv+cancel,receiving?'Xác nhận đã nhận hàng':null);
+ const err=form.querySelector('#s2FormError'),footer=form.querySelector('footer');
+ async function act(url,body,okMsg,btn){if(btn.disabled)return;btn.disabled=true;err.textContent='';try{await apiRequest('returns/'+id+'/'+url,jsonRequestOptions('POST',body));close();showToast(okMsg);await feature.render();}catch(x){err.textContent=x.message;}finally{if(btn.isConnected)btn.disabled=false;}}
+ if(receiving){const b=document.createElement('button');b.type='button';b.className='rt-danger';b.textContent='Từ chối nhận';footer.prepend(b);b.onclick=()=>{const note=form.querySelector('[name=note]').value.trim();if(!note){err.textContent='Nhập lý do từ chối';return;}act('reject',{note},'Đã từ chối phiếu trả hàng',b);};
+  form.onsubmit=ev=>{ev.preventDefault();const f=new FormData(form),lines=[...form.querySelectorAll('[data-cond]')].map(s=>({lineId:Number(s.dataset.cond),condition:s.value}));
+   if(lines.some(l=>l.condition==='DEFECT')&&!f.get('defectWarehouseId')){err.textContent='Chọn kho hàng lỗi cho các dòng hàng lỗi';return;}
+   act('receive',{note:f.get('note')||'',defectWarehouseId:f.get('defectWarehouseId')?Number(f.get('defectWarehouseId')):null,lines},'Đã nhận hàng trả và cập nhật tồn kho',form.querySelector('button[type=submit]'));};}
+ if(r.canCancel){const b=document.createElement('button');b.type='button';b.className='rt-danger';b.textContent='Huỷ phiếu';footer.prepend(b);b.onclick=()=>{const note=form.querySelector('[name=cancelNote]').value.trim();if(!note){err.textContent='Nhập lý do huỷ phiếu';return;}act('cancel',{note},'Đã huỷ phiếu trả hàng',b);};}
+}
+})();
+</script>

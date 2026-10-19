@@ -26,6 +26,9 @@ public final class TraHangService {
     static boolean canCreate(Collection<String> roles) {
         return PhanQuyen.allows(roles, "orders.approve") || PhanQuyen.allows(roles, "orders.own");
     }
+    static boolean canCredit(Collection<String> roles) {
+        return PhanQuyen.allows(roles, "invoices.write");
+    }
     static boolean canReceive(Collection<String> roles) {
         return PhanQuyen.allows(roles, "warehouses.manage");
     }
@@ -46,14 +49,15 @@ public final class TraHangService {
             var rows = TruyVanDB.rows(c,
                 "SELECT r.id,r.code,r.status,r.total_amount,r.note,r.created_at::text created_at,r.decided_at::text decided_at," +
                 "i.invoice_number,k.code customer_code,k.name customer_name,w.name warehouse_name,u.full_name created_by_name," +
-                "(SELECT count(*) FROM sales_return_lines l WHERE l.return_id=r.id) line_count " +
+                "(SELECT count(*) FROM sales_return_lines l WHERE l.return_id=r.id) line_count,a.adjustment_number credit_number " +
                 "FROM sales_returns r JOIN invoices i ON i.id=r.invoice_id JOIN customers k ON k.id=r.customer_id " +
-                "JOIN warehouses w ON w.id=r.warehouse_id JOIN users u ON u.id=r.created_by WHERE TRUE" +
+                "JOIN warehouses w ON w.id=r.warehouse_id JOIN users u ON u.id=r.created_by LEFT JOIN invoice_adjustments a ON a.return_id=r.id WHERE TRUE" +
                 scope(roles, "r.customer_id") + " ORDER BY r.id DESC LIMIT 300", scopeArgs(roles, user));
             Map<String, Object> out = new LinkedHashMap<>();
             out.put("returns", rows);
             out.put("canCreate", canCreate(roles));
             out.put("canReceive", canReceive(roles));
+            out.put("canCredit", canCredit(roles));
             out.put("defectWarehouses", canReceive(roles)
                 ? TruyVanDB.rows(c, "SELECT id,code,name FROM warehouses WHERE active AND is_defect ORDER BY code") : List.of());
             out.put("reasons", List.of(
@@ -106,9 +110,11 @@ public final class TraHangService {
         try (Connection c = KetNoiDB.getConnection()) {
             var head = TruyVanDB.one(c,
                 "SELECT r.*,r.created_at::text created_at_text,r.decided_at::text decided_at_text,i.invoice_number,k.code customer_code,k.name customer_name," +
-                "w.name warehouse_name,dw.name defect_warehouse_name,u.full_name created_by_name,d.full_name decided_by_name " +
+                "w.name warehouse_name,dw.name defect_warehouse_name,u.full_name created_by_name,d.full_name decided_by_name," +
+                "a.id credit_id,a.adjustment_number credit_number,a.amount credit_amount,a.created_at::text credit_at,cu.full_name credit_by_name,b.outstanding invoice_outstanding " +
                 "FROM sales_returns r JOIN invoices i ON i.id=r.invoice_id JOIN customers k ON k.id=r.customer_id JOIN warehouses w ON w.id=r.warehouse_id " +
                 "LEFT JOIN warehouses dw ON dw.id=r.defect_warehouse_id JOIN users u ON u.id=r.created_by LEFT JOIN users d ON d.id=r.decided_by " +
+                "LEFT JOIN invoice_adjustments a ON a.return_id=r.id LEFT JOIN users cu ON cu.id=a.created_by JOIN receivable_invoice_balances b ON b.id=r.invoice_id " +
                 "WHERE r.id=?" + scope(roles, "r.customer_id"), scopeArgs(roles, user, id));
             if (head == null) throw new NoSuchElementException("Không tìm thấy phiếu trả hàng");
             var lines = TruyVanDB.rows(c,
@@ -124,6 +130,7 @@ public final class TraHangService {
             }
             head.put("lines", lines);
             head.put("canReceive", canReceive(roles) && "PENDING".equals(head.get("status")));
+            head.put("canCredit", canCredit(roles) && "RECEIVED".equals(head.get("status")) && head.get("credit_id") == null);
             head.put("canCancel", "PENDING".equals(head.get("status")) && canCreate(roles)
                 && (PhanQuyen.allows(roles, "orders.approve") || Objects.equals(((Number) head.get("created_by")).longValue(), user)));
             return head;
@@ -312,6 +319,41 @@ public final class TraHangService {
         }
         if (left.signum() > 0) throw new IllegalArgumentException("Số lượng trả vượt số đã xuất theo lô; kiểm tra lại sổ kho");
         return plan;
+    }
+
+    /**
+     * S8-02: Kế toán lập chứng từ điều chỉnh giảm trừ công nợ từ phiếu trả đã nhận hàng. Số tiền lấy từ giá trị phiếu trả
+     * (giá đã bán trên hoá đơn gốc), ghi thành chứng từ DC gắn hoá đơn gốc; hoá đơn gốc không bị sửa.
+     */
+    public void credit(long id, long user, Collection<String> roles, Map<String, Object> in) throws SQLException {
+        if (!canCredit(roles)) throw new SecurityException("Chỉ Kế toán công nợ được lập chứng từ giảm trừ");
+        String note = KhoService.text(in.get("note"), "Ghi chú", 500, false);
+        try (Connection c = KetNoiDB.getConnection()) {
+            c.setAutoCommit(false);
+            try {
+                KhoService.actor(c, user);
+                var head = TruyVanDB.one(c, "SELECT r.id,r.code,r.status,r.invoice_id,r.customer_id,r.total_amount,i.invoice_number FROM sales_returns r " +
+                    "JOIN invoices i ON i.id=r.invoice_id WHERE r.id=?", id);
+                if (head == null) throw new NoSuchElementException("Không tìm thấy phiếu trả hàng");
+                ThanhToanService.lockCustomer(c, ((Number) head.get("customer_id")).longValue());
+                if (!"RECEIVED".equals(TruyVanDB.one(c, "SELECT status FROM sales_returns WHERE id=? FOR UPDATE", id).get("status")))
+                    throw new IllegalArgumentException("Chỉ lập giảm trừ cho phiếu trả đã được kho nhận hàng");
+                if (TruyVanDB.one(c, "SELECT 1 FROM invoice_adjustments WHERE return_id=?", id) != null)
+                    throw new IllegalArgumentException("Phiếu trả đã có chứng từ giảm trừ");
+                BigDecimal amount = ((BigDecimal) head.get("total_amount")).negate();
+                if (amount.signum() == 0) throw new IllegalArgumentException("Phiếu trả không có giá trị để giảm trừ");
+                long invoice = ((Number) head.get("invoice_id")).longValue();
+                BigDecimal outstanding = (BigDecimal) TruyVanDB.one(c, "SELECT outstanding FROM receivable_invoice_balances WHERE id=?", invoice).get("outstanding");
+                if (outstanding.add(amount).signum() < 0)
+                    throw new IllegalArgumentException("Hoá đơn " + head.get("invoice_number") + " chỉ còn nợ " + java.text.NumberFormat.getIntegerInstance(java.util.Locale.forLanguageTag("vi-VN")).format(outstanding) +
+                        " ₫, nhỏ hơn giá trị trả; hoàn tác khoản thu đã đối trừ trước khi giảm trừ");
+                long serial = ((Number) TruyVanDB.one(c, "UPDATE invoice_number_counters SET last_number=last_number+1 WHERE document_type='ADJUSTMENT' RETURNING last_number").get("last_number")).longValue();
+                String reason = "Giảm trừ công nợ do trả hàng " + head.get("code") + (note.isEmpty() ? "" : ": " + note);
+                TruyVanDB.update(c, "INSERT INTO invoice_adjustments(adjustment_number,invoice_id,amount,reason,created_by,return_id) VALUES(?,?,?,?,?,?)",
+                    String.format("DC-%06d", serial), invoice, amount, reason, user, id);
+                c.commit();
+            } catch (SQLException | RuntimeException e) { c.rollback(); throw e; }
+        }
     }
 
     public void reject(long id, long user, Collection<String> roles, Map<String, Object> in) throws SQLException {

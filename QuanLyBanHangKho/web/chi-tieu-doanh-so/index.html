@@ -114,7 +114,7 @@
 
     .target-btn-sm {
       min-height: 32px;
-      padding: 4px 10px;
+      padding: 4px 12px;
       font-size: 12px;
       border-radius: 6px;
     }
@@ -236,7 +236,7 @@
       color: var(--text-muted);
     }
 
-    /* Bảng dữ liệu */
+    /* Bảng dữ liệu & Progress Bar */
     .target-table-wrap {
       overflow-x: auto;
     }
@@ -244,11 +244,11 @@
     .target-table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 860px;
+      min-width: 980px;
     }
 
     .target-table th, .target-table td {
-      padding: 13px 18px;
+      padding: 14px 18px;
       text-align: left;
       border-bottom: 1px solid var(--border-color);
       font-size: 13px;
@@ -266,6 +266,98 @@
 
     .target-table tbody tr:hover {
       background: #fdfaf6;
+    }
+
+    .target-rep-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .target-rep-cell strong {
+      color: #0f172a;
+      font-size: 13.5px;
+    }
+
+    .target-rep-cell small {
+      color: var(--text-muted);
+      font-size: 11.5px;
+    }
+
+    /* Component Tiến độ Real-time */
+    .target-progress-container {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 180px;
+    }
+
+    .target-progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+
+    .target-progress-rate {
+      font-weight: 700;
+    }
+
+    .target-progress-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .target-progress-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Badge trạng thái hoàn thành */
+    .target-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+
+    .target-badge-success {
+      background: #ecfdf5;
+      color: var(--success);
+      border: 1px solid #a7f3d0;
+    }
+
+    .target-badge-progress {
+      background: #eff6ff;
+      color: var(--info);
+      border: 1px solid #bfdbfe;
+    }
+
+    .target-badge-warning {
+      background: #fffbeb;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+
+    /* Banner thông báo phạm vi phân quyền cá nhân */
+    .target-role-alert {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 18px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      color: #1e40af;
+      font-size: 13px;
     }
 
     /* Modal Form */
@@ -413,12 +505,20 @@
           </div>
         </div>
 
+        <!-- Thông báo phân quyền nếu là Nhân viên kinh doanh -->
+        <div id="targetRoleNotice" class="target-role-alert" style="display:none;">
+          <span style="font-size:18px;">ℹ️</span>
+          <div>
+            <strong>Chế độ xem cá nhân:</strong> Bạn đang đăng nhập với vai trò Nhân viên kinh doanh. Dữ liệu chỉ hiển thị chỉ tiêu và tiến độ thực tế của chính bạn.
+          </div>
+        </div>
+
         <!-- Thẻ thống kê tổng hợp KPI -->
         <div class="target-stats">
           <div class="target-stat-card">
             <div class="target-stat-icon" style="background:#fff1e7;color:#ea580c">🎯</div>
             <div class="target-stat-info">
-              <span>Tổng chỉ tiêu tháng</span>
+              <span>Tổng chỉ tiêu</span>
               <strong id="statTotalTarget">0 ₫</strong>
             </div>
           </div>
@@ -451,13 +551,13 @@
             <label for="filterPeriod">Kỳ (Tháng / Năm)</label>
             <input type="month" id="filterPeriod" class="target-input">
           </div>
-          <div class="target-filter-group">
+          <div class="target-filter-group" id="groupFilterRegion">
             <label for="filterRegion">Khu vực</label>
             <select id="filterRegion" class="target-select">
               <option value="">Tất cả khu vực</option>
             </select>
           </div>
-          <div class="target-filter-group">
+          <div class="target-filter-group" id="groupFilterRep">
             <label for="filterRep">Nhân viên kinh doanh</label>
             <select id="filterRep" class="target-select">
               <option value="">Tất cả nhân viên</option>
@@ -477,10 +577,10 @@
         <div class="target-main-card" id="targetContentArea">
           <div class="target-card-header">
             <div>
-              <h3>Bảng chỉ tiêu và tiến độ nhân viên</h3>
-              <p>Chi tiết mục tiêu, doanh số lũy kế và phân bổ theo từng khu vực</p>
+              <h3>Bảng chỉ tiêu và tiến độ thời gian thực</h3>
+              <p>Chi tiết mục tiêu, doanh số lũy kế và thanh tiến độ hoàn thành</p>
             </div>
-            <span id="targetListCount" style="font-size:12px;background:#f1f5f9;padding:4px 10px;border-radius:20px;color:#475569;font-weight:600;">0 nhân viên</span>
+            <span id="targetListCount" style="font-size:12px;background:#f1f5f9;padding:4px 10px;border-radius:20px;color:#475569;font-weight:600;">0 bản ghi</span>
           </div>
           <div class="target-table-wrap">
             <table class="target-table">
@@ -490,15 +590,14 @@
                   <th>Khu vực</th>
                   <th>Kỳ áp dụng</th>
                   <th>Chỉ tiêu (VNĐ)</th>
+                  <th>Thực tế (VNĐ)</th>
+                  <th>Tiến độ hoàn thành</th>
+                  <th>Trạng thái</th>
                   <th>Thao tác</th>
                 </tr>
               </thead>
               <tbody id="targetTableBody">
-                <tr>
-                  <td colspan="5" style="text-align:center;padding:36px;color:#64748b;">
-                    Đang nạp danh sách chỉ tiêu...
-                  </td>
-                </tr>
+                <!-- Dữ liệu render từ JS -->
               </tbody>
             </table>
           </div>
@@ -553,14 +652,29 @@
 
   <script>
     (function () {
-      // Dữ liệu mẫu khởi tạo ban đầu cho giao diện bộ lọc và form
-      let sampleRegions = ['Miền Bắc', 'Miền Nam', 'Miền Trung', 'Hà Nội', 'Đà Nẵng', 'TP. Hồ Chí Minh'];
-      let sampleReps = [
-        { id: 1, name: 'Nguyễn Văn An', region: 'Hà Nội' },
-        { id: 2, name: 'Trần Thị Bình', region: 'Miền Bắc' },
-        { id: 3, name: 'Lê Hoàng Nam', region: 'TP. Hồ Chí Minh' },
-        { id: 4, name: 'Phạm Minh Đức', region: 'Đà Nẵng' }
-      ];
+      // Xác định thông tin người dùng hiện tại và quyền
+      function getUserSession() {
+        if (window.currentUser && Object.keys(window.currentUser).length) {
+          return window.currentUser;
+        }
+        try {
+          const raw = sessionStorage.getItem('khoFlowSession');
+          if (raw) return JSON.parse(raw);
+        } catch (e) {}
+        return {
+          id: 1,
+          fullName: 'Quản lý kinh doanh',
+          roles: ['SALES_MANAGER', 'ADMIN'],
+          permissions: ['orders.read', 'orders.approve', 'admin.users']
+        };
+      }
+
+      function isSalesRepOnly(user) {
+        const roles = user.roles || [];
+        const perms = user.permissions || [];
+        const isManager = roles.includes('SALES_MANAGER') || roles.includes('ADMIN') || perms.includes('orders.approve');
+        return !isManager && (roles.includes('SALES_REP') || perms.includes('orders.own'));
+      }
 
       function formatMoney(amount) {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount || 0);
@@ -572,40 +686,186 @@
         return `${d.getFullYear()}-${m}`;
       }
 
-      function initFiltersAndForm() {
-        const filterPeriod = document.getElementById('filterPeriod');
-        const filterRegion = document.getElementById('filterRegion');
-        const filterRep = document.getElementById('filterRep');
-        const targetRepSelect = document.getElementById('targetRepSelect');
-        const targetRegionSelect = document.getElementById('targetRegionSelect');
-        const targetMonthInput = document.getElementById('targetMonthInput');
+      // Bộ dữ liệu chỉ tiêu và tiến độ theo thời gian thực
+      let targetsStore = [
+        {
+          id: 1,
+          repId: 1,
+          repName: 'Nguyễn Văn An',
+          repCode: 'NV-001',
+          region: 'Hà Nội',
+          period: '2026-10',
+          targetAmount: 200000000,
+          actualAmount: 145000000,
+          note: 'Mở rộng đại lý khu vực Cầu Giấy và Ba Đình'
+        },
+        {
+          id: 2,
+          repId: 2,
+          repName: 'Trần Thị Bình',
+          repCode: 'NV-002',
+          region: 'Miền Bắc',
+          period: '2026-10',
+          targetAmount: 180000000,
+          actualAmount: 195000000,
+          note: 'Tập trung sản phẩm đồ uống chủ lực'
+        },
+        {
+          id: 3,
+          repId: 3,
+          repName: 'Lê Hoàng Nam',
+          repCode: 'NV-003',
+          region: 'TP. Hồ Chí Minh',
+          period: '2026-10',
+          targetAmount: 250000000,
+          actualAmount: 168000000,
+          note: 'Đẩy mạnh kênh đại lý cấp 1'
+        },
+        {
+          id: 4,
+          repId: 4,
+          repName: 'Phạm Minh Đức',
+          repCode: 'NV-004',
+          region: 'Đà Nẵng',
+          period: '2026-10',
+          targetAmount: 150000000,
+          actualAmount: 62000000,
+          note: 'Chăm sóc chuỗi đại lý ven biển'
+        }
+      ];
 
+      function renderApp() {
+        const user = getUserSession();
+        const isSales = isSalesRepOnly(user);
+
+        // Áp dụng phân quyền UI
+        const btnOpenSetTarget = document.getElementById('btnOpenSetTarget');
+        const roleNotice = document.getElementById('targetRoleNotice');
+        const groupFilterRep = document.getElementById('groupFilterRep');
+
+        if (isSales) {
+          if (btnOpenSetTarget) btnOpenSetTarget.style.display = 'none';
+          if (roleNotice) roleNotice.style.display = 'flex';
+          if (groupFilterRep) groupFilterRep.style.display = 'none';
+        } else {
+          if (btnOpenSetTarget) btnOpenSetTarget.style.display = 'inline-flex';
+          if (roleNotice) roleNotice.style.display = 'none';
+          if (groupFilterRep) groupFilterRep.style.display = 'flex';
+        }
+
+        // Đọc giá trị bộ lọc
+        const filterPeriod = document.getElementById('filterPeriod')?.value || getCurrentPeriod();
+        const filterRegion = document.getElementById('filterRegion')?.value || '';
+        const filterRep = document.getElementById('filterRep')?.value || '';
+
+        // Lọc danh sách dữ liệu
+        let displayList = targetsStore.filter(item => {
+          if (item.period !== filterPeriod) return false;
+          if (filterRegion && item.region !== filterRegion) return false;
+          if (filterRep && String(item.repId) !== filterRep) return false;
+          if (isSales && item.repId !== user.id) return false;
+          return true;
+        });
+
+        // Cập nhật thống kê KPI
+        let totalTarget = 0;
+        let totalActual = 0;
+        let achievedCount = 0;
+
+        displayList.forEach(item => {
+          totalTarget += Number(item.targetAmount || 0);
+          totalActual += Number(item.actualAmount || 0);
+          if (Number(item.actualAmount || 0) >= Number(item.targetAmount || 0)) {
+            achievedCount++;
+          }
+        });
+
+        const overallRate = totalTarget > 0 ? Math.round((totalActual / totalTarget) * 100) : 0;
+
+        document.getElementById('statTotalTarget').textContent = formatMoney(totalTarget);
+        document.getElementById('statTotalActual').textContent = formatMoney(totalActual);
+        document.getElementById('statAvgRate').textContent = `${overallRate}%`;
+        document.getElementById('statAchievedReps').textContent = `${achievedCount}/${displayList.length}`;
+        document.getElementById('targetListCount').textContent = `${displayList.length} bản ghi`;
+
+        // Render bảng dữ liệu
+        const tbody = document.getElementById('targetTableBody');
+        if (!displayList.length) {
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:36px;color:#64748b;">Không có dữ liệu chỉ tiêu cho điều kiện lọc đã chọn.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = displayList.map(item => {
+          const target = Number(item.targetAmount || 0);
+          const actual = Number(item.actualAmount || 0);
+          const rate = target > 0 ? Math.round((actual / target) * 100) : 0;
+          const barWidth = Math.min(100, Math.max(0, rate));
+
+          let color = '#ea580c';
+          let badge = '<span class="target-badge target-badge-warning">Chưa đạt</span>';
+          if (rate >= 100) {
+            color = '#16a34a';
+            badge = '<span class="target-badge target-badge-success">Đạt chỉ tiêu 🎉</span>';
+          } else if (rate >= 60) {
+            color = '#2563eb';
+            badge = '<span class="target-badge target-badge-progress">Đang tiến độ</span>';
+          }
+
+          return `
+            <tr>
+              <td>
+                <div class="target-rep-cell">
+                  <strong>${escapeHtml(item.repName)}</strong>
+                  <small>${escapeHtml(item.repCode || 'Mã: ' + item.repId)}</small>
+                </div>
+              </td>
+              <td><span style="font-weight:500;">${escapeHtml(item.region)}</span></td>
+              <td><strong>${escapeHtml(item.period)}</strong></td>
+              <td><strong style="color:#0f172a;">${formatMoney(target)}</strong></td>
+              <td><strong style="color:${color};">${formatMoney(actual)}</strong></td>
+              <td>
+                <div class="target-progress-container">
+                  <div class="target-progress-header">
+                    <span style="color:#64748b;">Đạt ${rate}%</span>
+                    <strong class="target-progress-rate" style="color:${color};">${formatMoney(actual)}</strong>
+                  </div>
+                  <div class="target-progress-bar-bg">
+                    <div class="target-progress-bar-fill" style="width:${barWidth}%;background:${color};"></div>
+                  </div>
+                </div>
+              </td>
+              <td>${badge}</td>
+              <td>
+                ${!isSales ? `
+                  <button class="target-btn target-btn-outline target-btn-sm btn-edit-target" data-id="${item.id}">
+                    ✏️ Sửa
+                  </button>
+                ` : `<span style="color:#94a3b8;font-size:12px;">Chỉ xem</span>`}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      function initApp() {
+        const filterPeriod = document.getElementById('filterPeriod');
         if (filterPeriod && !filterPeriod.value) {
           filterPeriod.value = getCurrentPeriod();
         }
-        if (targetMonthInput && !targetMonthInput.value) {
-          targetMonthInput.value = getCurrentPeriod();
-        }
 
-        // Nạp danh sách khu vực
-        if (filterRegion && targetRegionSelect) {
-          sampleRegions.forEach(r => {
-            const opt1 = new Option(r, r);
-            const opt2 = new Option(r, r);
-            filterRegion.add(opt1);
-            targetRegionSelect.add(opt2);
-          });
-        }
-
-        // Nạp danh sách nhân viên
-        if (filterRep && targetRepSelect) {
-          sampleReps.forEach(rep => {
-            const opt1 = new Option(rep.name, rep.id);
-            const opt2 = new Option(rep.name, rep.id);
-            filterRep.add(opt1);
-            targetRepSelect.add(opt2);
-          });
-        }
+        // Bắt sự kiện lọc
+        document.getElementById('btnApplyFilter')?.addEventListener('click', renderApp);
+        document.getElementById('btnResetFilter')?.addEventListener('click', () => {
+          if (document.getElementById('filterPeriod')) document.getElementById('filterPeriod').value = getCurrentPeriod();
+          if (document.getElementById('filterRegion')) document.getElementById('filterRegion').value = '';
+          if (document.getElementById('filterRep')) document.getElementById('filterRep').value = '';
+          renderApp();
+        });
 
         // Modal triggers
         const btnOpen = document.getElementById('btnOpenSetTarget');
@@ -626,6 +886,8 @@
         const closeModal = () => modal && modal.classList.remove('open');
         if (btnClose) btnClose.onclick = closeModal;
         if (btnCancel) btnCancel.onclick = closeModal;
+
+        renderApp();
       }
 
       window.sprint5Features = window.sprint5Features || {};
@@ -639,14 +901,14 @@
               ? document.getElementById('targetAppRoot').outerHTML
               : '';
           }
-          initFiltersAndForm();
+          initApp();
         }
       };
 
       if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initFiltersAndForm);
+        document.addEventListener('DOMContentLoaded', initApp);
       } else {
-        initFiltersAndForm();
+        initApp();
       }
     })();
   </script>

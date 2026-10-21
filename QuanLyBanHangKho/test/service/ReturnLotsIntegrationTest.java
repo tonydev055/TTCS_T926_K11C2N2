@@ -8,7 +8,7 @@ public class ReturnLotsIntegrationTest {
  if(!Objects.toString(System.getenv("DB_URL"),"").matches("jdbc:postgresql://localhost:5432/khoflow_s7_test_[0-9]{14}"))throw new IllegalStateException("Test DB only");
  long actor,reviewer,customer,wh,product,unit,order,orderLine,invoice,invoiceLine,bin,bin2,defect;
  try(Connection c=KetNoiDB.getConnection();Statement s=c.createStatement()){
-  for(String m:List.of("sprint8-returns.sql"))s.execute(Files.readString(Path.of("database",m)));
+  for(String m:List.of("sprint8-returns.sql","sprint8-return-credits.sql"))s.execute(Files.readString(Path.of("database",m)));
   s.execute("INSERT INTO invoice_number_counters(document_type,last_number) VALUES('ADJUSTMENT',0) ON CONFLICT DO NOTHING");c.setAutoCommit(false);s.execute("SET LOCAL session_replication_role='replica'");
   actor=insert(c,"INSERT INTO users(username,email,full_name,password_hash) VALUES('audit1','audit1@test.local','Actor test','x') RETURNING id");reviewer=insert(c,"INSERT INTO users(username,email,full_name,password_hash) VALUES('audit2','audit2@test.local','Reviewer test','x') RETURNING id");
   long group=insert(c,"INSERT INTO customer_groups(code,name) VALUES('AUDIT','Audit') RETURNING id");customer=insert(c,"INSERT INTO customers(code,name,customer_group_id,region,sales_rep_id) VALUES('AUDIT','Audit',?,'Test',?) RETURNING id",group,actor);

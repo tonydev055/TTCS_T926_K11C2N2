@@ -13,7 +13,7 @@ window.sprint5Features['Báo cáo doanh số']={path:'bao-cao-doanh-so',permissi
   function draw(d,params){const margin=d.canViewMargin,s=d.summary;const headers=[groups[d.groupBy],'Doanh số','Kỳ trước','Tăng trưởng','Sản lượng','Sản lượng kỳ trước','Tăng trưởng SL'];if(margin)headers.push('Giá vốn ước tính','Biên LN ước tính');
    const cells=r=>[e(r.group_key),m(r.revenue),m(r.prev_revenue),pct(r.revenue_growth_pct),n(r.quantity),n(r.prev_quantity),pct(r.quantity_growth_pct),...(margin?[m(r.cogs),pct(r.gross_margin_pct)]:[])];
    const total={...s,group_key:'Tổng cộng'};
-   const max=Math.max(1,...d.items.flatMap(r=>[Number(r.revenue),Number(r.prev_revenue)]));
+   const max=d.items.reduce((max,r)=>Math.max(max,Number(r.revenue),Number(r.prev_revenue)),1);
    result.innerHTML='<p>Kỳ '+e(d.from)+' – '+e(d.to)+(d.prevFrom?' · So sánh '+e(d.prevFrom)+' – '+e(d.prevTo):' · Không so sánh')+' · '+d.items.length+' nhóm</p>'+ui.table(headers,[...d.items.map(cells),cells(total)])+(d.items.length?'<h3>So sánh doanh số · 20 nhóm đầu</h3>'+d.items.slice(0,20).map(r=>'<div class="sales-chart-row"><strong>'+e(r.group_key)+'</strong><div class="sales-chart-values"><div><small>Kỳ này: '+m(r.revenue)+'</small><div class="sales-bar" style="width:'+Math.max(0,Number(r.revenue)/max*100)+'%"></div></div>'+(d.prevFrom?'<div><small>Kỳ trước: '+m(r.prev_revenue)+'</small><div class="sales-bar previous" style="width:'+Math.max(0,Number(r.prev_revenue)/max*100)+'%"></div></div>':'')+'</div></div>').join(''):'<p>Không có đơn hàng phù hợp kỳ báo cáo.</p>');
    applied=new URLSearchParams(params);button.disabled=false;status.textContent='Đã tải dữ liệu từ hệ thống.';
   }

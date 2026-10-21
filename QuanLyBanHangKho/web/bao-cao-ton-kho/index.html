@@ -1,0 +1,24 @@
+<style>
+#irFilters{margin-bottom:16px}#irFilters label{min-width:0;max-width:100%}#irResult{display:flex;flex-direction:column;gap:16px;min-width:0}#irResult h3,#irResult p{margin:0}
+</style>
+<script>
+window.sprint5Features=window.sprint5Features||{};
+window.sprint5Features['Báo cáo tồn kho & vòng quay']={path:'bao-cao-ton-kho',permission:'reports.inventory',render:()=>warehouseUi.screen('Báo cáo tồn kho & vòng quay','Giá trị tồn ước tính theo giá vốn danh mục hiện tại. Tồn bình quân gia quyền theo thời gian; xuất ròng trừ hàng giao trả và hàng đại lý trả về, quy về kho đã xuất, không tính chuyển kho.',()=>apiRequest('inventory-report/masters'),(host,masters,revision)=>{
+ const ui=warehouseUi,e=ui.esc,n=v=>v==null?'—':new Intl.NumberFormat('vi-VN',{maximumFractionDigits:2}).format(v);
+ const date=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+ const today=new Date(),start=new Date();start.setDate(start.getDate()-29);let generation=0,applied=null;
+ host.innerHTML='<form class="wh-toolbar" id="irFilters"><label>Từ ngày<input name="from" type="date" required value="'+date(start)+'"></label><label>Đến ngày<input name="to" type="date" required max="'+date(today)+'" value="'+date(today)+'"></label><label>Kho<select name="warehouseId"><option value="">Mọi kho được cấp</option>'+masters.warehouses.map(w=>'<option value="'+w.id+'">'+e(w.code+' · '+w.name)+'</option>').join('')+'</select></label><label>Nhóm hàng<select name="categoryId"><option value="">Mọi nhóm</option>'+masters.categories.map(c=>'<option value="'+c.id+'">'+e(c.name)+'</option>').join('')+'</select></label><label>SKU / tên<input name="q" maxlength="100" type="search"></label><label>Ngưỡng chậm (ngày)<input name="slowDays" type="number" min="1" max="3650" value="90" required></label><button class="orange-button" type="submit">Xem báo cáo</button><button type="button" id="irExport" disabled>Xuất Excel</button></form><div id="irResult" aria-live="polite"></div>';
+ const form=host.querySelector('#irFilters'),result=host.querySelector('#irResult'),button=host.querySelector('#irExport');
+ const table=(headers,rows)=>ui.table(headers,rows.map(cells=>'<tr>'+cells.map(v=>'<td>'+v+'</td>').join('')+'</tr>'));
+ async function load(){const current=++generation,params=new URLSearchParams(new FormData(form));applied=null;button.disabled=true;result.textContent='Đang tải…';
+  try{const d=await apiRequest('inventory-report?'+params);if(current!==generation||revision!==viewRevision)return;
+   result.innerHTML='<p>Chụp lúc '+e(d.asOf.replace('T',' '))+' · '+d.items.length+' dòng. Dấu —: không đủ cơ sở tính vòng quay / ngày tồn.</p><h3>Giá trị tồn theo kho</h3>'+table(['Kho','Giá trị cuối kỳ','Giá trị bình quân'],d.byWarehouse.map(r=>[e(r.name),formatMoney(r.stock_value),formatMoney(r.average_value)]))+'<h3>Giá trị tồn theo nhóm hàng</h3>'+table(['Nhóm hàng','Giá trị cuối kỳ','Giá trị bình quân'],d.byCategory.map(r=>[e(r.name),formatMoney(r.stock_value),formatMoney(r.average_value)]))+'<h3>Chi tiết SKU</h3>'+table(['Kho','SKU / sản phẩm','ĐVT','Đầu kỳ','Cuối kỳ','Bình quân','Xuất ròng','Giá trị cuối kỳ','Vòng quay','Ngày tồn','Đánh giá'],d.items.map(r=>[e(r.warehouse_name),e(r.sku+' · '+r.name),e(r.base_unit),n(r.opening),n(r.closing),n(r.average_stock),n(r.shipped),formatMoney(r.stock_value),n(r.turnover),n(r.inventory_days),r.slow?'Chậm luân chuyển':'—']));
+   applied=params;button.disabled=false;
+  }catch(error){if(current===generation&&revision===viewRevision)result.innerHTML='<p class="wh-error" role="alert">'+e(error.message)+'</p>';}
+ }
+ form.onsubmit=event=>{event.preventDefault();load();};
+ form.oninput=()=>{generation++;applied=null;button.disabled=true;};
+ button.onclick=async()=>{if(!applied)return;const params=applied.toString();button.disabled=true;try{const response=await apiFetch('api/inventory-report/export?'+params);if(!response.ok){const error=await response.json();throw new Error(error.message||'Không xuất được báo cáo');}const blob=await response.blob();if(revision!==viewRevision)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='bao-cao-ton-kho-'+date(new Date())+'.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(error){if(revision===viewRevision)showRequestError(error);}finally{if(revision===viewRevision)button.disabled=!applied;}};
+ load();
+})};
+</script>

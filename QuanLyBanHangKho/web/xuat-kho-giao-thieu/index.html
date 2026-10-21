@@ -1,0 +1,447 @@
+<!-- Loaded by the application shell: ../index.html -->
+<style>
+  #xkgtFeature{display:flex;flex-direction:column;gap:18px}
+  #xkgtFeature .xk-card{overflow:hidden;border:1px solid #e4e9ef;border-radius:16px;background:#fff;box-shadow:0 8px 24px rgba(15,23,42,.04)}
+  #xkgtFeature .xk-tabs{display:flex;gap:6px;padding:4px;border-radius:12px;background:#eef2f6}
+  #xkgtFeature .xk-tab{flex:1 1 0;min-height:42px;border:0;border-radius:9px;background:transparent;color:#475569;font:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}
+  #xkgtFeature .xk-tab[aria-selected="true"]{background:#fff;color:#172033;box-shadow:0 1px 3px rgba(15,23,42,.12)}
+  #xkgtFeature .xk-tab:focus-visible{outline:3px solid rgba(244,122,0,.3)}
+  #xkgtFeature .xk-tab .xk-badge{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:99px;background:#f47a00;color:#fff;font-size:11px;font-weight:700;vertical-align:middle}
+  #xkgtFeature .xk-tab .xk-badge.warn{background:#e53935}
+  #xkgtFeature .xk-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid #edf1f5}
+  #xkgtFeature .xk-search{display:flex;align-items:center;gap:6px;border:1px solid #dce3ea;border-radius:8px;padding:0 10px;background:#fafafa;flex:1;min-width:200px;transition:border-color .2s}
+  #xkgtFeature .xk-search:focus-within{border-color:#f47a00;background:#fff}
+  #xkgtFeature .xk-search span{color:#786d64;font-size:16px}
+  #xkgtFeature .xk-search input{border:none;outline:none;height:38px;width:100%;background:transparent;font:inherit}
+  #xkgtFeature .xk-select{min-height:40px;border:1px solid #dce3ea;border-radius:8px;padding:8px 12px;background:#fff;font:inherit;transition:border-color .2s}
+  #xkgtFeature .xk-select:focus{border-color:#f47a00;outline:none}
+  #xkgtFeature .xk-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 16px;border:1px solid #dce3ea;border-radius:9px;background:#fff;color:#334155;font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+  #xkgtFeature .xk-btn:hover:not(:disabled){border-color:#c4ceda;background:#f8fafc}
+  #xkgtFeature .xk-btn.primary{border-color:#f47a00;background:#f47a00;color:#fff}
+  #xkgtFeature .xk-btn.primary:hover:not(:disabled){background:#d96500}
+  #xkgtFeature .xk-btn.danger{border-color:#f3c4c0;color:#b42318}
+  #xkgtFeature .xk-btn.danger:hover:not(:disabled){background:#fef3f2}
+  #xkgtFeature .xk-btn:disabled{opacity:.5;cursor:not-allowed}
+  #xkgtFeature .xk-table-wrap{overflow-x:auto}
+  #xkgtFeature .xk-table{width:100%;min-width:780px;border-collapse:collapse}
+  #xkgtFeature .xk-table th{padding:10px 14px;background:#f4f7fa;color:#455468;text-align:left;font-size:12px;font-weight:700;white-space:nowrap}
+  #xkgtFeature .xk-table td{padding:12px 14px;border-top:1px solid #edf1f5;color:#334155;font-size:13px;vertical-align:middle}
+  #xkgtFeature .xk-table tbody tr:hover td{background:#fffaf6;cursor:pointer}
+  #xkgtFeature .xk-table small{display:block;margin-top:2px;color:#8490a2;font-size:11px}
+  #xkgtFeature .xk-status{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+  #xkgtFeature .xk-status.pending{background:#eff8ff;color:#175cd3}
+  #xkgtFeature .xk-status.shipped{background:#ecfdf3;color:#067647}
+  #xkgtFeature .xk-status.short{background:#fff3e0;color:#e65100}
+  #xkgtFeature .xk-status.locked{background:#f2f4f7;color:#475467}
+  #xkgtFeature .xk-status.debt{background:#ffebee;color:#b71c1c;animation:xk-pulse 2s ease-in-out infinite}
+  @keyframes xk-pulse{0%,100%{opacity:1}50%{opacity:.65}}
+  #xkgtFeature .xk-empty{padding:48px 20px;text-align:center;color:#7a8699}
+  #xkgtFeature .xk-empty strong{display:block;margin-bottom:5px;color:#334155}
+  #xkgtFeature .xk-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-top:1px solid #edf1f5;color:#64748b;font-size:12px}
+  #xkgtFeature .xk-summary{display:flex;flex-wrap:wrap;gap:8px 24px;padding:12px 20px;border-bottom:1px solid #edf1f5;background:#fbfcfd;color:#475569;font-size:13px}
+  #xkgtFeature .xk-summary strong{color:#172033}
+  /* Dialog so luong xuat & chi tiet */
+  .xk-lines-table{width:100%;border-collapse:collapse;font-size:13px}
+  .xk-lines-table th{padding:8px 10px;background:#f4f7fa;color:#455468;font-size:12px;font-weight:700;text-align:left}
+  .xk-lines-table td{padding:8px 10px;border-top:1px solid #edf1f5;vertical-align:middle}
+  .xk-qty-input{width:90px;min-height:36px;padding:4px 8px;border:1px solid #dce3ea;border-radius:7px;font:inherit;font-size:13px;text-align:right}
+  .xk-qty-input:focus{border-color:#f47a00;outline:none}
+  .xk-qty-input.short{border-color:#e53935;background:#fff8f8}
+  .xk-diff{font-size:12px;color:#e53935;font-weight:600}
+  @media(max-width:720px){#xkgtFeature .xk-toolbar{flex-direction:column;align-items:stretch}}
+</style>
+<script>
+window.sprint5Features = window.sprint5Features || {};
+
+/* ===================================================================
+   S6-05: Xác nhận xuất kho và xử lý giao thiếu
+   User Story: Nhân viên kho xác nhận xuất, phần thiếu ghi nợ hàng.
+   Tiêu chí chấp nhận:
+     1. Xác nhận xuất -> chuyển tồn giữ chỗ thành xuất thực
+     2. Giao thiếu -> ghi nhận nợ hàng tự động
+     3. Phiếu đã xác nhận: khoá, chỉ xem
+     4. Tab riêng cho đơn còn nợ hàng
+   =================================================================== */
+
+// Dữ liệu được nạp và ghi qua API shipments.
+window.sprint5Features['Xuất kho & giao thiếu'] = {
+  path: 'xuat-kho-giao-thieu',
+  permission: 'inventory.write',
+  render: () => warehouseUi.screen(
+    'Xuất kho & giao thiếu',
+    'Xác nhận chuyển tồn giữ chỗ thành xuất thực. Giao thiếu sẽ ghi nhận nợ hàng để xử lý ở lượt giao sau.',
+    () => apiRequest('shipments'),
+    (host, data, revision) => {
+      const ui = warehouseUi, esc = ui.esc;
+      const vnd = (v) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(v || 0);
+      let activeTab = 'pending';
+
+      // Trạng thái nghiệp vụ lấy từ database.
+
+
+      // Khoi tao shell
+      host.innerHTML = `
+        <div id="xkgtFeature">
+          <div class="xk-card">
+            <div style="padding:14px 20px;border-bottom:1px solid #edf1f5">
+              <div class="xk-tabs" role="tablist">
+                <button class="xk-tab" role="tab" id="xkTabPending" aria-selected="true" aria-controls="xkPanel">
+                  Đơn chờ xuất <span class="xk-badge" id="xkCntPending">${data.pending.length}</span>
+                </button>
+                <button class="xk-tab" role="tab" id="xkTabShipped" aria-selected="false" aria-controls="xkPanel">
+                  Đã xuất kho <span class="xk-badge" id="xkCntShipped">${data.shipped.length}</span>
+                </button>
+                <button class="xk-tab" role="tab" id="xkTabDebt" aria-selected="false" aria-controls="xkPanel">
+                  Nợ hàng <span class="xk-badge warn" id="xkCntDebt">${data.shortfall.length}</span>
+                </button>
+              </div>
+            </div>
+            <div id="xkPanel" role="tabpanel"></div>
+          </div>
+        </div>`;
+
+      function switchTab(tab) {
+        activeTab = tab;
+        ['Pending','Shipped','Debt'].forEach(t => {
+          const btn = document.getElementById('xkTab' + t);
+          if (btn) btn.setAttribute('aria-selected', tab === t.toLowerCase() ? 'true' : 'false');
+        });
+        renderPanel();
+      }
+
+      document.getElementById('xkTabPending').onclick = () => switchTab('pending');
+      document.getElementById('xkTabShipped').onclick = () => switchTab('shipped');
+      document.getElementById('xkTabDebt').onclick    = () => switchTab('debt');
+
+      // ─── TAB 1: DON CHO XUAT
+      function renderPending(q = '', wh = '') {
+        const panel = document.getElementById('xkPanel');
+        const rows = data.pending.filter(o => {
+          const matchQ = !q || [o.orderCode, o.customer, o.warehouse].some(v => v.toLowerCase().includes(q.toLowerCase()));
+          const matchWh = !wh || o.warehouse === wh;
+          return matchQ && matchWh;
+        });
+        const totalVal = rows.reduce((s, o) => s + o.payable, 0);
+        panel.innerHTML = `
+          <div class="xk-toolbar">
+            <label class="xk-search"><span>⌕</span><input id="xkSearchPending" type="search" placeholder="Tìm mã đơn, đại lý, kho..." value="${esc(q)}"></label>
+            <select class="xk-select" id="xkFilterWh">
+              <option value="">Tất cả kho</option>
+              ${[...new Set(data.pending.map(o=>o.warehouse))].map(w=>`<option value="${esc(w)}" ${wh===w?'selected':''}>${esc(w)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="xk-summary">
+            <span><strong>${rows.length}</strong> đơn chờ xuất</span>
+            <span>Tổng giá trị: <strong style="color:#f47a00">${vnd(totalVal)}</strong></span>
+          </div>
+          <div class="xk-table-wrap">
+            <table class="xk-table">
+              <thead><tr>
+                <th>Mã đơn</th><th>Đại lý</th><th>Kho</th><th>Ngày giao</th>
+                <th>Số dòng</th><th style="text-align:right">Giá trị</th><th>Trạng thái</th><th>Thao tác</th>
+              </tr></thead>
+              <tbody>
+                ${rows.length ? rows.map(o => `
+                  <tr class="xk-row" data-id="${o.id}">
+                    <td><strong>${esc(o.orderCode)}</strong></td>
+                    <td>${esc(o.customer)}<small>${esc(o.address)}</small></td>
+                    <td>${esc(o.warehouse)}</td>
+                    <td>${esc(o.desiredDate)}</td>
+                    <td>${o.lines.length} dong</td>
+                    <td style="text-align:right;font-weight:700;color:#f47a00">${vnd(o.payable)}</td>
+                    <td><span class="xk-status pending">Đã soạn xong</span></td>
+                    <td><button class="xk-btn primary xk-confirm-btn" data-id="${o.id}">Xác nhận xuất</button></td>
+                  </tr>`).join('') : `
+                  <tr><td colspan="8"><div class="xk-empty"><strong>Không có đơn nào chờ xuất.</strong>Các đơn có phiếu soạn hoàn tất sẽ xuất hiện ở đây.</div></td></tr>`}
+              </tbody>
+            </table>
+          </div>
+          <div class="xk-footer"><span id="xkCountPending">${rows.length} đơn hàng</span></div>`;
+
+        document.getElementById('xkSearchPending').addEventListener('input', e => renderPending(e.target.value, document.getElementById('xkFilterWh').value));
+        document.getElementById('xkFilterWh').addEventListener('change', e => renderPending(document.getElementById('xkSearchPending').value, e.target.value));
+
+        panel.querySelectorAll('.xk-confirm-btn').forEach(btn => {
+          btn.onclick = (e) => {
+            e.stopPropagation();
+            openConfirmDialog(data.pending.find(o => o.id === Number(btn.dataset.id)));
+          };
+        });
+      }
+
+      // ─── TAB 2: DA XUAT KHO
+      function renderShipped(q = '') {
+        const panel = document.getElementById('xkPanel');
+        const all = data.shipped;
+        const rows = all.filter(o => !q || [o.orderCode, o.customer, o.warehouse].some(v => v.toLowerCase().includes(q.toLowerCase())));
+        panel.innerHTML = `
+          <div class="xk-toolbar">
+            <label class="xk-search"><span>⌕</span><input id="xkSearchShipped" type="search" placeholder="Tìm mã đơn, đại lý..." value="${esc(q)}"></label>
+          </div>
+          <div class="xk-summary">
+            <span><strong>${rows.length}</strong> đơn đã xuất</span>
+            <span>Có giao thiếu: <strong style="color:#e53935">${rows.filter(o=>o.hasShortfall).length} đơn</strong></span>
+          </div>
+          <div class="xk-table-wrap">
+            <table class="xk-table">
+              <thead><tr>
+                <th>Mã đơn</th><th>Đại lý</th><th>Kho</th><th>Thời gian xuất</th>
+                <th>Trạng thái giao</th><th style="text-align:right">Giá trị</th><th>Thao tác</th>
+              </tr></thead>
+              <tbody>
+                ${rows.length ? rows.map(o => `
+                  <tr data-id="${o.id}">
+                    <td><strong>${esc(o.orderCode)}</strong></td>
+                    <td>${esc(o.customer)}<small>${esc(o.address)}</small></td>
+                    <td>${esc(o.warehouse)}</td>
+                    <td><small>${esc(o.confirmedAt)}</small></td>
+                    <td><span class="xk-status ${o.hasShortfall ? 'short' : 'shipped'}">${o.hasShortfall ? 'Có giao thiếu' : 'Giao đủ'}</span></td>
+                    <td style="text-align:right;font-weight:700">${vnd(o.payable)}</td>
+                    <td><button class="xk-btn" data-view="${o.id}">Xem phiếu (đã khoá)</button></td>
+                  </tr>`).join('') : `
+                  <tr><td colspan="7"><div class="xk-empty"><strong>Chưa có đơn đã xuất.</strong></div></td></tr>`}
+              </tbody>
+            </table>
+          </div>`;
+
+        document.getElementById('xkSearchShipped').addEventListener('input', e => renderShipped(e.target.value));
+        panel.querySelectorAll('[data-view]').forEach(btn => {
+          btn.onclick = () => {
+            const id = Number(btn.dataset.view);
+            const o = all.find(x => x.id === id);
+            if (o) showOrderDetail(o, true);
+          };
+        });
+      }
+
+      // ─── TAB 3: NO HANG (DANH SACH DON CON NO)
+      function renderDebt(q = '') {
+        const panel = document.getElementById('xkPanel');
+        const all = data.shortfall;
+        const rows = all.filter(o => !q || [o.orderCode, o.customer, o.warehouse].some(v => v.toLowerCase().includes(q.toLowerCase())));
+        const totalDebt = rows.reduce((s, o) => s + o.debtValue, 0);
+
+        panel.innerHTML = `
+          <div class="xk-toolbar">
+            <label class="xk-search"><span>⌕</span><input id="xkSearchDebt" type="search" placeholder="Tìm mã đơn, đại lý nợ hàng..." value="${esc(q)}"></label>
+          </div>
+          <div class="xk-summary">
+            <span><strong>${rows.length}</strong> đơn còn nợ hàng</span>
+            <span>Tổng giá trị nợ: <strong style="color:#e53935">${vnd(totalDebt)}</strong></span>
+          </div>
+          <div class="xk-table-wrap">
+            <table class="xk-table">
+              <thead><tr>
+                <th>Mã đơn</th><th>Đại lý</th><th>Kho</th><th>Thời gian xuất</th>
+                <th>Số kiện còn nợ</th><th style="text-align:right">Giá trị nợ</th><th>Trạng thái</th><th>Thao tác</th>
+              </tr></thead>
+              <tbody>
+                ${rows.length ? rows.map(o => `
+                  <tr>
+                    <td><strong>${esc(o.orderCode)}</strong></td>
+                    <td>${esc(o.customer)}<small>${esc(o.address)}</small></td>
+                    <td>${esc(o.warehouse)}</td>
+                    <td><small>${esc(o.confirmedAt)}</small></td>
+                    <td style="color:#e53935;font-weight:700">${o.debtItems} sản phẩm</td>
+                    <td style="text-align:right;font-weight:700;color:#e53935">${vnd(o.debtValue)}</td>
+                    <td>${o.backorderCode ? `<span class="xk-status">Đã lập đơn bù ${esc(o.backorderCode)}</span>` : '<span class="xk-status debt">Nợ hàng · chờ lập đơn bù</span>'}</td>
+                    <td><button class="xk-btn" data-debt="${o.id}">Chi tiết nợ</button></td>
+                  </tr>`).join('') : `
+                  <tr><td colspan="8"><div class="xk-empty"><strong>Không có đơn nào còn nợ hàng.</strong>Tất cả đơn đều đã được xuất đủ!</div></td></tr>`}
+              </tbody>
+            </table>
+          </div>`;
+
+        document.getElementById('xkSearchDebt').addEventListener('input', e => renderDebt(e.target.value));
+        panel.querySelectorAll('[data-debt]').forEach(btn => {
+          btn.onclick = () => {
+            const o = all.find(x => x.id === Number(btn.dataset.debt));
+            if (o) showDebtDetail(o);
+          };
+        });
+      }
+
+      // ─── DIALOG: XAC NHAN XUAT KHO (NHAP SO LUONG THUC)
+      function openConfirmDialog(order) {
+        if (!order) return;
+        const linesHtml = order.lines.map(l => `
+          <tr>
+            <td><strong>${esc(l.sku)}</strong><small>${esc(l.name)}</small></td>
+            <td style="text-align:center">${l.orderedQty} ${esc(l.unit)}</td>
+            <td style="text-align:center"><strong style="color:#175cd3">${l.reservedQty}</strong></td>
+            <td style="text-align:center">
+              <input class="xk-qty-input" type="number" name="qty_${l.id}"
+                min="0" max="${l.reservedQty}" step="0.000001" value="${l.reservedQty}"
+                data-ordered="${l.orderedQty}" data-line="${l.id}" data-unit="${esc(l.unit)}" data-price="${l.unitPrice||0}">
+            </td>
+            <td class="xk-diff" id="diff_${l.id}">—</td>
+          </tr>`).join('');
+
+        const body = `
+          <div class="form-group full">
+            <div style="padding:10px 14px;background:#eff8ff;border-radius:10px;border:1px solid #b2ddff;color:#175cd3;font-size:13px;margin-bottom:14px">
+              <strong>Hướng dẫn:</strong> Hệ thống mặc định xuất theo <em>Tồn giữ chỗ</em>. Nếu thực tế giao thiếu, hãy nhập đúng số lượng thực xuất. Phần chênh lệch sẽ được tự động ghi nhận thành <strong>Nợ hàng</strong>.
+            </div>
+            <div class="xk-table-wrap">
+              <table class="xk-lines-table">
+                <thead><tr>
+                  <th>Sản phẩm</th>
+                  <th style="text-align:center">Đặt hàng</th>
+                  <th style="text-align:center">Giữ chỗ</th>
+                  <th style="text-align:center">Thực xuất *</th>
+                  <th>Giao thiếu</th>
+                </tr></thead>
+                <tbody id="xkConfirmLines">${linesHtml}</tbody>
+              </table>
+            </div>
+            <label for="xkReason">Lý do giao thiếu (bắt buộc nếu xuất thiếu)</label><textarea id="xkReason" maxlength="1000"></textarea>${data.canOverrideExpired ? '<label><input type="checkbox" id="xkExpiredOverride"> Cho phép xuất lô hết hạn</label><label for="xkExpiryReason">Lý do ghi đè hạn dùng</label><textarea id="xkExpiryReason" maxlength="1000"></textarea>' : ''}<p id="xkSubmitError" role="alert"></p>
+            <div id="xkConfirmSummary" style="margin-top:14px;padding:12px 14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;font-size:13px"></div>
+          </div>`;
+
+        const { form, close } = openFormDialog(`Xác nhận xuất kho — ${order.orderCode}`, body, 'Xác nhận xuất kho');
+
+        function updateDiff() {
+          let totalShort = 0, totalShortVal = 0;
+          form.querySelectorAll('.xk-qty-input').forEach(input => {
+            const lineId = input.dataset.line;
+            const ordered = Number(input.dataset.ordered);
+            const actual = Math.max(0, Math.min(ordered, Number(input.value) || 0));
+            const short = ordered - actual;
+            const diffEl = document.getElementById('diff_' + lineId);
+            if (diffEl) diffEl.textContent = short > 0 ? `−${short} ${input.dataset.unit}` : '—';
+            input.classList.toggle('short', short > 0);
+            totalShort += short;
+            totalShortVal += short * Number(input.dataset.price);
+          });
+          const sumEl = document.getElementById('xkConfirmSummary');
+          if (totalShort > 0) {
+            sumEl.innerHTML = `<span style="color:#e53935;font-weight:600">⚠ Phát hiện giao thiếu ${totalShort} sản phẩm — Sẽ tự động ghi nhận nợ hàng: <strong>${vnd(totalShortVal)}</strong></span>`;
+          } else {
+            sumEl.innerHTML = `<span style="color:#067647;font-weight:600">✓ Giao đủ toàn bộ — Chuyển toàn bộ tồn giữ chỗ thành xuất thực</span>`;
+          }
+        }
+
+        form.querySelectorAll('.xk-qty-input').forEach(inp => {
+          inp.addEventListener('input', updateDiff);
+        });
+        updateDiff();
+
+        form.onsubmit = async (e) => {
+          e.preventDefault();
+          const button = form.querySelector('button[type="submit"]');
+          if (button.disabled) return;
+          const error = form.querySelector('#xkSubmitError');
+          const lines = [];
+          for (const line of order.lines) {
+            const input = form.querySelector('[name="qty_'+line.id+'"]');
+            const quantity = Number(input.value);
+            if (input.value === '' || !Number.isFinite(quantity) || quantity < 0 || quantity > line.orderedQty) {
+              error.textContent = 'Nhập số lượng hợp lệ, không vượt số lượng đặt.'; return;
+            }
+            lines.push({lineId: line.id, actualQuantity: quantity});
+          }
+          button.disabled = true; error.textContent = '';
+          try {
+            await apiRequest('shipments/'+order.id, jsonRequestOptions('POST', {lines, reason: form.querySelector('#xkReason').value.trim(), expiredOverride: form.querySelector('#xkExpiredOverride')?.checked === true, expiryReason: form.querySelector('#xkExpiryReason')?.value.trim() || ''}));
+            close(); showToast('Đã xác nhận xuất kho '+order.orderCode);
+            await window.sprint5Features['Xuất kho & giao thiếu'].render();
+          } catch (err) { error.textContent = err.message || 'Không thể xác nhận xuất kho'; }
+          finally { if (button.isConnected) button.disabled = false; }
+        };
+      }
+
+      // ─── DIALOG: XEM PHIEU XUAT (KHOA / READ-ONLY)
+      function showOrderDetail(order, locked) {
+        const linesHtml = (order.lines || []).map(l => {
+          const delivered = l.deliveredQty ?? l.actualQty ?? l.orderedQty;
+          const short = l.shortQty ?? Math.max(0, l.orderedQty - delivered);
+          return `
+            <tr>
+              <td><strong>${esc(l.sku||'')}</strong><small>${esc(l.name||'')}</small></td>
+              <td style="text-align:right">${vnd(l.unitPrice||0)}</td>
+              <td style="text-align:center">${l.orderedQty}</td>
+              <td style="text-align:center;color:#067647;font-weight:700">${delivered}</td>
+              <td style="text-align:center;color:#e53935;font-weight:700">${short > 0 ? short : '—'}</td>
+              <td style="text-align:right;font-weight:700">${vnd(delivered * (l.unitPrice||0))}</td>
+            </tr>`;
+        }).join('');
+
+        const body = `
+          <div class="form-group full">
+            ${locked ? `
+              <div style="padding:10px 14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;color:#475569;font-size:12px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+                <span style="font-size:16px">🔒</span>
+                <span><strong>Phiếu xuất đã hoàn tất và khoá chỉnh sửa:</strong> Toàn bộ tồn giữ chỗ đã được chuyển thành xuất thực tế khỏi kho. Đơn hàng ở chế độ chỉ xem.</span>
+              </div>` : ''}
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;font-size:13px">
+              <div><strong>Đại lý:</strong> ${esc(order.customer)}</div>
+              <div><strong>Kho xuất:</strong> ${esc(order.warehouse)}</div>
+              <div><strong>Thời gian xuất:</strong> ${esc(order.confirmedAt || '—')}</div>
+              <div><strong>Tổng giá trị xuất:</strong> <span style="color:#067647;font-weight:700">${vnd(order.payable)}</span></div>
+            </div>
+            <div class="xk-table-wrap">
+              <table class="xk-lines-table">
+                <thead><tr>
+                  <th>Sản phẩm</th>
+                  <th style="text-align:right">Đơn giá</th>
+                  <th style="text-align:center">Đã đặt</th>
+                  <th style="text-align:center">Thực xuất</th>
+                  <th style="text-align:center">Giao thiếu</th>
+                  <th style="text-align:right">Thành tiền</th>
+                </tr></thead>
+                <tbody>${linesHtml}</tbody>
+              </table>
+            </div>
+          </div>`;
+        openFormDialog(`Phiếu xuất — ${order.orderCode}`, body, null);
+      }
+
+      // ─── DIALOG: CHI TIET NO HANG
+      function showDebtDetail(order) {
+        const linesHtml = (order.lines || []).map(l => `
+          <tr>
+            <td><strong>${esc(l.sku||'')}</strong><small>${esc(l.name||'')}</small></td>
+            <td style="text-align:center">${l.orderedQty}</td>
+            <td style="text-align:center;color:#067647;font-weight:600">${l.deliveredQty}</td>
+            <td style="text-align:center;color:#e53935;font-weight:700">${l.shortQty}</td>
+            <td style="text-align:right;color:#e53935;font-weight:700">${vnd(l.shortQty * (l.unitPrice||0))}</td>
+          </tr>`).join('');
+
+        const body = `
+          <div class="form-group full">
+            <div style="padding:12px 14px;background:#fef3f2;border-radius:10px;border:1px solid #fee4e2;color:#b42318;font-size:13px;margin-bottom:12px">
+              <strong>Danh sách mặt hàng còn thiếu:</strong> Các mặt hàng dưới đây cần được ưu tiên xuất bổ sung trong đợt giao hàng tiếp theo. Tổng giá trị còn nợ: <strong>${vnd(order.debtValue)}</strong>.
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;font-size:13px">
+              <div><strong>Đại lý nhận:</strong> ${esc(order.customer)}</div>
+              <div><strong>Kho xuất:</strong> ${esc(order.warehouse)}</div>
+              <div><strong>Địa chỉ giao:</strong> ${esc(order.address || '—')}</div>
+              <div><strong>Ngày xuất lần 1:</strong> ${esc(order.confirmedAt || '—')}</div>
+            </div>
+            <div class="xk-table-wrap">
+              <table class="xk-lines-table">
+                <thead><tr>
+                  <th>Sản phẩm</th>
+                  <th style="text-align:center">Đã đặt</th>
+                  <th style="text-align:center">Đã giao</th>
+                  <th style="text-align:center">Còn nợ</th>
+                  <th style="text-align:right">Giá trị nợ</th>
+                </tr></thead>
+                <tbody>${linesHtml}</tbody>
+              </table>
+            </div>
+          </div>`;
+        openFormDialog(`Chi tiết nợ hàng — ${order.orderCode}`, body, null);
+      }
+
+      function renderPanel() {
+        if (activeTab === 'pending') renderPending();
+        else if (activeTab === 'shipped') renderShipped();
+        else renderDebt();
+      }
+
+      renderPanel();
+    }
+  )
+};
+</script>

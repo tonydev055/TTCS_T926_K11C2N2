@@ -1,0 +1,9 @@
+<script>
+window.sprint5Features=window.sprint5Features||{};
+window.sprint5Features['Giữ chỗ đơn hàng']={path:'giu-cho',permission:'orders.own',render:()=>warehouseUi.screen('Giữ chỗ đơn hàng','Đơn được duyệt giữ tồn ngay. Hết hạn sẽ tự nhả tồn và chuyển về Chờ duyệt; đơn đang soạn không tự nhả.',()=>apiRequest('reservations'),(host,rows)=>{
+ const ui=warehouseUi,e=ui.esc;host.innerHTML=ui.table(['Đơn','Đại lý','Kho','SKU','Sản phẩm','Giữ chỗ (đơn vị cơ sở)','Hết hạn'],rows.map(r=>'<tr><td>'+e(r.code)+'</td><td>'+e(r.customer_name)+'</td><td>'+e(r.warehouse_name)+'</td><td>'+e(r.sku)+'</td><td>'+e(r.name)+'</td><td>'+r.quantity+'</td><td>'+e(r.expires_at)+'</td></tr>'));
+})};
+window.sprint5Features['Thời hạn giữ chỗ']={path:'giu-cho',permission:'warehouses.manage',render:()=>warehouseUi.screen('Thời hạn giữ chỗ','Áp dụng cho lần giữ chỗ mới. Đơn hết hạn trở về Chờ duyệt và nhả tồn tự động mỗi phút.',()=>apiRequest('reservations/settings'),(host,data)=>{
+ host.innerHTML='<form id="gcSettings"><label>Số giờ giữ chỗ *<input type="number" name="hours" min="1" max="168" value="'+data.hold_hours+'" required></label><p id="gcError" class="wh-error" role="alert"></p><button class="orange-button" type="submit">Lưu thời hạn</button></form>';const form=host.querySelector('form');form.onsubmit=async e=>{e.preventDefault();const b=form.querySelector('button');if(b.disabled)return;b.disabled=true;try{await apiRequest('reservations/settings',jsonRequestOptions('PUT',{holdHours:Number(form.hours.value)}));showToast('Đã lưu thời hạn giữ chỗ');}catch(err){host.querySelector('#gcError').textContent=err.message;}finally{if(b.isConnected)b.disabled=false;}};
+})};
+</script>

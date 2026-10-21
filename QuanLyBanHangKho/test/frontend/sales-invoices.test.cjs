@@ -11,7 +11,12 @@ const servlet = fs.readFileSync(path.join(root, 'src/java/controller/HoaDonServl
 const migration = fs.readFileSync(path.join(root, 'database/sprint7-sales-invoices.sql'), 'utf8');
 
 test('S7-01 is loaded and restricted to invoice permission', () => {
-  assert.match(index, /hoa-don\/index\.html\?v=s7-01/);
+  const moduleLinks = [...index.matchAll(/<link\b[^>]*\bdata-feature\b[^>]*>/g)];
+  const invoiceLink = moduleLinks.find(([tag]) => {
+    const href = tag.match(/\bhref="([^"]+)"/);
+    return href && new URL(href[1], 'https://khoflow.test/').pathname === '/hoa-don/index.html';
+  });
+  assert.ok(invoiceLink, 'Invoice module must be registered with the feature loader');
   assert.match(page, /permission:'invoices\.write'/);
   assert.match(servlet, /@WebServlet\("\/api\/invoices\/\*"\)/);
 });

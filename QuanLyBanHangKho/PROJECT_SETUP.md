@@ -1,5 +1,7 @@
 # KhoFlow — Hướng dẫn chạy dự án
 
+Bàn giao cho giảng viên với dữ liệu có sẵn S3–S8: xem [LECTURER_DEMO.md](LECTURER_DEMO.md). Bộ này khởi tạo database demo riêng bằng một lệnh, kèm tài khoản từng vai trò.
+
 Gửi email thật qua Gmail SMTP: xem [SMTP_SETUP.md](SMTP_SETUP.md). Chạy thêm `database/smtp.sql` trước khi build/test. Mặc định môi trường phát triển vẫn dùng KhoMail; bật `MAIL_MODE=smtp` cùng thông tin Gmail để chuyển sang gửi thật.
 
 ## Thành phần đã hoàn thiện

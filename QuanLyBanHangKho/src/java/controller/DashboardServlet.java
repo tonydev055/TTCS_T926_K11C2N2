@@ -11,7 +11,14 @@ import util.XuLyJson;
 
 /**
  * S8-05: Dashboard điều hành bán hàng và kho.
- * BƯỚC 4: Thêm bảng danh sách đại lý quá hạn công nợ.
+ * BƯỚC 5: Tối ưu hiệu năng truy vấn DB dưới 2 giây và hoàn thiện bảo mật.
+ *
+ * GET /api/dashboard/summary — 6 thẻ chỉ số tổng hợp (1 CTE query tối ưu)
+ * GET /api/dashboard/daily   — doanh số theo ngày trong tháng hiện tại
+ * GET /api/dashboard/region  — doanh số theo khu vực trong tháng hiện tại
+ * GET /api/dashboard/overdue — đại lý quá hạn công nợ, sắp xếp giảm dần theo số tiền
+ *
+ * Quyền: reports.sales (quản lý kinh doanh). Toàn bộ dữ liệu lấy từ PostgreSQL thực tế.
  */
 @WebServlet("/api/dashboard/*")
 public final class DashboardServlet extends NghiepVuKhoServlet {
@@ -30,7 +37,7 @@ public final class DashboardServlet extends NghiepVuKhoServlet {
         } catch (Exception e) { fail(r, e); }
     }
 
-    /** 6 thẻ chỉ số: tất cả trong một connection, thực thi song song bằng CTE tối ưu. */
+    /** 6 thẻ chỉ số: thực thi trong 1 kết nối duy nhất với CTE tối ưu để < 2 giây. */
     private Map<String, Object> summary() throws SQLException {
         String sql =
             "WITH " +

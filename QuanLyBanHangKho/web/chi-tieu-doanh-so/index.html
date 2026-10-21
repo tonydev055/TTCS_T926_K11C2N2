@@ -1,0 +1,38 @@
+<style>
+.target-feature .target-filters{justify-content:flex-start;align-items:flex-end;margin-bottom:18px}.target-feature label{display:flex;flex-direction:column;gap:6px;min-width:0;max-width:100%}.target-feature progress{width:130px;max-width:100%;accent-color:var(--orange)}.target-feature .target-actions{display:flex;gap:8px;flex-wrap:wrap}.target-feature .target-status{margin:12px 0}.target-feature .target-locked{font-weight:600;color:#9a3412}
+</style>
+<script>
+window.sprint5Features=window.sprint5Features||{};
+window.sprint5Features['Chỉ tiêu doanh số']={path:'chi-tieu-doanh-so',permission:['reports.sales','targets.own'],render(){
+ const ui=financeUi,e=ui.e,m=ui.m;
+ ui.screen('Chỉ tiêu doanh số','Chỉ tiêu theo tháng, nhân viên và khu vực. Tiến độ tính từ đơn đã xác nhận theo nhân viên phụ trách và khu vực hiện tại của đại lý; tự cập nhật mỗi 30 giây.','sales-targets',(initial,body,revision)=>{
+  body.classList.add('target-feature');let data=initial,generation=0,pending=0,applied=new URLSearchParams({month:initial.month});
+  const staffOptions=(rows)=>rows.map(s=>'<option value="'+s.id+'">'+e(s.full_name)+'</option>').join('');
+  const regionOptions=(rows)=>rows.map(r=>'<option>'+e(r.region)+'</option>').join('');
+  body.innerHTML='<form id="targetFilters" class="finance-toolbar target-filters"><label>Tháng<input type="month" name="month" required value="'+e(initial.month)+'"></label>'+(initial.canManage?'<label>Nhân viên<select name="staffId"><option value="">Tất cả</option>'+staffOptions(initial.staff)+'</select></label>':'')+'<label>Khu vực<select name="region"><option value="">Tất cả</option>'+regionOptions(initial.regions)+'</select></label><button type="submit" class="primary">Lọc / Làm mới</button>'+(initial.canManage?'<button type="button" id="targetCreate">Giao chỉ tiêu</button>':'')+'</form><p id="targetStatus" class="target-status" role="status"></p><div id="targetRows"></div>';
+  const form=body.querySelector('#targetFilters'),result=body.querySelector('#targetRows'),status=body.querySelector('#targetStatus');
+  function draw(){result.innerHTML=ui.table(['Nhân viên','Khu vực','Tháng','Chỉ tiêu','Doanh số thực tế','Tiến độ','Trạng thái','Thao tác'],data.items.map(t=>{
+   const percent=Number(t.actual_amount)/Number(t.target_amount)*100;
+   return [e(t.staff_name),e(t.region),e(t.period_month),m(t.target_amount),m(t.actual_amount),'<progress max="100" value="'+Math.min(100,Math.max(0,percent))+'" aria-label="Tiến độ '+e(t.staff_name)+'"></progress> '+e(percent.toFixed(1))+'%',t.locked?'<span class="target-locked">Kỳ đã khoá</span>':'Đang theo dõi','<div class="target-actions"><button type="button" data-history="'+t.id+'">Lịch sử</button>'+(data.canManage?'<button type="button" data-edit="'+t.id+'">'+(t.locked?'Sửa có lý do':'Sửa')+'</button>':'')+'</div>'];
+  }));status.textContent='Cập nhật lúc '+new Date().toLocaleTimeString('vi-VN');}
+  async function reload(params=applied){pending++;const current=++generation;status.textContent='Đang tải…';try{const next=await apiRequest('sales-targets?'+params);if(current!==generation||revision!==viewRevision)return;data=next;applied=new URLSearchParams(params);draw();}catch(error){if(current===generation&&revision===viewRevision){status.textContent='Không tải được chỉ tiêu: '+error.message;result.innerHTML='';}}finally{pending--;}}
+  form.onsubmit=event=>{event.preventDefault();reload(new URLSearchParams(new FormData(form)));};draw();
+  function edit(target){
+   const locked=Boolean(target?.locked);let html='';
+   if(target)html='<p class="form-group full">'+e(target.staff_name+' · '+target.region+' · '+target.period_month)+'</p>';
+   else html='<div class="form-group"><label>Tháng *<input name="month" type="month" required min="'+ui.date().slice(0,7)+'" value="'+e(form.elements.month.value)+'"></label></div><div class="form-group"><label>Nhân viên *<select name="staffId" required><option value="">Chọn nhân viên</option>'+staffOptions(data.staff)+'</select></label></div><div class="form-group"><label>Khu vực *<select name="region" required><option value="">Chọn khu vực</option>'+regionOptions(data.regions)+'</select></label></div>';
+   html+='<div class="form-group"><label>Chỉ tiêu (₫) *<input name="targetAmount" type="number" min="0.01" step="0.01" required value="'+e(target?.target_amount??'')+'"></label></div><div class="form-group full"><label>Ghi chú<textarea name="note" maxlength="500">'+e(target?.note||'')+'</textarea></label></div><div class="form-group full"><label>Lý do chỉnh sửa'+(locked?' *':'')+'<textarea name="reason" maxlength="1000" '+(locked?'required':'')+'></textarea></label>'+(locked?'<small>Kỳ đã khoá. Thay đổi được ghi lịch sử cùng người sửa và lý do.</small>':'')+'</div>';
+   const dialog=openFormDialog(target?'Sửa chỉ tiêu':'Giao chỉ tiêu',html,'Lưu chỉ tiêu');let busy=false;
+   dialog.form.onsubmit=async event=>{event.preventDefault();if(busy)return;busy=true;const button=dialog.form.querySelector('[type=submit]');button.disabled=true;
+    try{const payload=Object.fromEntries(new FormData(dialog.form));if(target)payload.version=target.version;await apiRequest('sales-targets'+(target?'/'+target.id:''),jsonRequestOptions(target?'PUT':'POST',payload));dialog.close();if(revision===viewRevision){showToast('Đã lưu chỉ tiêu');await reload();}}
+    catch(error){const field=dialog.form.querySelector('#s2FormError');if(field)field.textContent=error.message;else showRequestError(error);}finally{busy=false;if(button.isConnected)button.disabled=false;}
+   };
+  }
+  if(initial.canManage)body.querySelector('#targetCreate').onclick=()=>edit(null);
+  result.onclick=async event=>{const button=event.target.closest('[data-edit],[data-history]');if(!button)return;const t=data.items.find(x=>String(x.id)===(button.dataset.edit||button.dataset.history));if(!t)return;if(button.dataset.edit){edit(t);return;}
+   button.disabled=true;try{const h=await apiRequest('sales-targets/'+t.id+'/history');if(revision!==viewRevision)return;ui.dialog('Lịch sử chỉ tiêu '+t.staff_name,ui.table(['Thời gian','Người sửa','Trước','Sau','Ghi chú trước','Ghi chú sau','Lý do'],h.items.map(x=>[e(x.created_at),e(x.actor_name),m(x.old_amount),m(x.new_amount),e(x.old_note),e(x.new_note),e(x.reason||'Khởi tạo / cập nhật trong kỳ')])));}catch(error){if(revision===viewRevision)showRequestError(error);}finally{if(button.isConnected)button.disabled=false;}
+  };
+  async function poll(){if(revision!==viewRevision||!body.isConnected)return;if(!pending)await reload();if(revision===viewRevision&&body.isConnected)setTimeout(poll,30000);}setTimeout(poll,30000);
+ });
+}};
+</script>

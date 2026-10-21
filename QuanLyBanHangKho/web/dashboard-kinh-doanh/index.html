@@ -443,7 +443,7 @@ function markErr(id){
   if(!el) return;
   el.classList.remove('loading');
   el.classList.add('error');
-  el.textContent = '0';
+  el.textContent = 'Không tải được';
 }
 
 var COLORS = ['#f47a00','#3b82f6','#22c55e','#8b5cf6','#f59e0b','#06b6d4','#ec4899','#10b981','#ef4444','#64748b'];
@@ -619,12 +619,12 @@ async function renderDashboard(){
     if(dayR.status === 'fulfilled' && dayR.value) drawDaily(dayR.value);
     else {
       var ph = document.getElementById('db05DailyPH');
-      if(ph) ph.textContent = 'Chưa có dữ liệu biểu đồ ngày.';
+      if(ph) ph.textContent = 'Không tải được doanh số theo ngày. Vui lòng thử lại.';
     }
     if(regR.status === 'fulfilled' && regR.value) drawRegion(regR.value);
     else {
       var rph = document.getElementById('db05RegionPH');
-      if(rph) rph.textContent = 'Chưa có dữ liệu biểu đồ khu vực.';
+      if(rph) rph.textContent = 'Không tải được doanh số theo khu vực. Vui lòng thử lại.';
     }
   } catch(e) {
     var p1 = document.getElementById('db05DailyPH'), p2 = document.getElementById('db05RegionPH');
@@ -637,8 +637,8 @@ async function renderDashboard(){
     renderOverdue(ovdR.value);
   } else {
     var b = document.getElementById('db05Badge'), ob = document.getElementById('db05OverdueBody');
-    if(b) b.textContent = '0 đại lý';
-    if(ob) ob.innerHTML = '<p class="db05-empty">✓ Không có đại lý nào quá hạn công nợ.</p>';
+    if(b) b.textContent = 'Tải thất bại';
+    if(ob) ob.innerHTML = '<p class="db05-error-row" role="alert">Không tải được công nợ quá hạn. Vui lòng làm mới để thử lại.</p>';
   }
 
   // Timestamp & refresh button

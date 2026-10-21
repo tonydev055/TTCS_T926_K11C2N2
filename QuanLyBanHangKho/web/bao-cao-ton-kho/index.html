@@ -1,3 +1,6 @@
+<style>
+#irFilters{margin-bottom:16px}#irFilters label{min-width:0;max-width:100%}#irResult{display:flex;flex-direction:column;gap:16px;min-width:0}#irResult h3,#irResult p{margin:0}
+</style>
 <script>
 window.sprint5Features=window.sprint5Features||{};
 window.sprint5Features['Báo cáo tồn kho & vòng quay']={path:'bao-cao-ton-kho',permission:'reports.inventory',render:()=>warehouseUi.screen('Báo cáo tồn kho & vòng quay','Giá trị tồn ước tính theo giá vốn danh mục hiện tại. Tồn bình quân gia quyền theo thời gian; xuất ròng chỉ tính giao hàng trừ hàng giao trả, không tính chuyển kho.',()=>apiRequest('inventory-report/masters'),(host,masters,revision)=>{

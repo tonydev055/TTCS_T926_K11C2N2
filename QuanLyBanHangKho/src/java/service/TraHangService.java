@@ -266,22 +266,27 @@ public final class TraHangService {
                     StockLedgerDB.lockStock(c, warehouse, product);
                     var lots = shippedLots(c, ((Number) line.get("order_line_id")).longValue());
                     Map<Long, BigDecimal> plan = allocation(lots, (BigDecimal) line.get("base_quantity"), decision.get("allocations"));
+                    long targetWarehouse = condition.equals("GOOD") ? warehouse : defectWarehouse;
+                    Map<Long, BigDecimal> targetQuantities = new LinkedHashMap<>();
                     for (var lot : lots) {
                         long sourceBin = ((Number) lot.get("bin_id")).longValue();
                         BigDecimal qty = plan.getOrDefault(sourceBin, BigDecimal.ZERO);
                         if (qty.signum() == 0) continue;
-                        long targetWarehouse = condition.equals("GOOD") ? warehouse : defectWarehouse;
                         long targetBin = sourceBin;
                         if (condition.equals("DEFECT")) {
                             var src = TruyVanDB.one(c, "SELECT lot_number,expiry_date FROM stock_bins WHERE id=?", sourceBin);
                             StockLedgerDB.lockStock(c, targetWarehouse, product);
                             targetBin = StockLedgerDB.bin(c, targetWarehouse, product, null, (String) src.get("lot_number"), src.get("expiry_date"));
                         }
-                        StockLedgerDB.change(c, targetWarehouse, product, targetBin, qty, "SALES_RETURN", id, lineId, user,
-                            condition.equals("GOOD") ? reason : reason + " (hàng lỗi)");
+                        targetQuantities.merge(targetBin, qty, BigDecimal::add);
                         TruyVanDB.update(c, "INSERT INTO sales_return_allocations(return_line_id,source_bin_id,target_bin_id,warehouse_id,base_quantity) VALUES(?,?,?,?,?)",
                             lineId, sourceBin, targetBin, targetWarehouse, qty);
                     }
+                    // Nhiều vị trí nguồn của cùng lô có thể về chung một vị trí kho lỗi.
+                    // Giữ từng phân bổ nguồn nhưng chỉ ghi một bút toán cho mỗi vị trí đích.
+                    for (var target : targetQuantities.entrySet())
+                        StockLedgerDB.change(c, targetWarehouse, product, target.getKey(), target.getValue(), "SALES_RETURN", id, lineId, user,
+                            condition.equals("GOOD") ? reason : reason + " (hàng lỗi)");
                 }
                 TruyVanDB.update(c, "UPDATE sales_returns SET status='RECEIVED',defect_warehouse_id=?,decided_by=?,decided_at=CURRENT_TIMESTAMP,decision_note=? WHERE id=?",
                     defectWarehouse, user, note, id);

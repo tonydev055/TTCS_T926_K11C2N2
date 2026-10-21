@@ -312,6 +312,7 @@ public final class PhanQuyen {
         if (under(path, "/api/payments")) return "payments.write";
         if (under(path, "/api/reminders")) return "receivables.read";
         if (under(path, "/api/dealer-reminders")) return "invoices.self";
+        if (under(path, "/api/debt-statement")) return read ? "receivables.read" : null;
         if (under(path, "/api/receivables")) return "receivables.read";
         if (under(path, "/api/credit-alerts")) return "customers.credit";
         if (under(path, "/api/route-collections")) return "orders.own";

@@ -44,7 +44,6 @@
             }
         }
     }
-    // Mặc định cho phép xem nếu tham số role=manager hoặc chế độ dev/test auditor
     String devRole = request.getParameter("role");
     if ("manager".equalsIgnoreCase(devRole) || "admin".equalsIgnoreCase(devRole)) {
         isManager = true;
@@ -359,23 +358,205 @@
       color: var(--muted);
       margin-top: 2px;
     }
-    .s806-panel {
-      background: var(--panel);
-      border-radius: var(--radius);
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow);
-      padding: 20px;
-    }
     .s806-role-badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 4px 10px;
+      padding: 5px 12px;
       border-radius: 20px;
       font-size: 12px;
       font-weight: 600;
       background: <%= isManager ? "var(--green-soft)" : "var(--orange-soft)" %>;
       color: <%= isManager ? "var(--green)" : "var(--orange)" %>;
+      border: 1px solid <%= isManager ? "#bbf7d0" : "#fed7aa" %>;
+    }
+
+    /* Filters Toolbar */
+    .s806-filter-card {
+      background: var(--panel);
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .s806-group-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 12px;
+    }
+    .s806-tab-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #faf7f2;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .15s;
+    }
+    .s806-tab-btn:hover {
+      background: var(--orange-soft);
+      border-color: var(--orange);
+      color: var(--orange-dark);
+    }
+    .s806-tab-btn.active {
+      background: var(--orange);
+      border-color: var(--orange);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(244,122,0,.3);
+    }
+
+    .s806-controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .s806-date-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .s806-input-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .s806-input {
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--ink);
+      background: #fff;
+      font-family: inherit;
+    }
+    .s806-input:focus {
+      outline: none;
+      border-color: var(--orange);
+    }
+    .s806-presets {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .s806-preset-btn {
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .s806-preset-btn:hover {
+      border-color: var(--orange);
+      color: var(--orange-dark);
+    }
+
+    .s806-btn-primary {
+      padding: 9px 18px;
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .15s;
+    }
+    .s806-btn-primary:hover {
+      background: var(--orange-dark);
+      transform: translateY(-1px);
+    }
+
+    /* Summary Cards */
+    .s806-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .s806-metric-card {
+      background: var(--panel);
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+    .s806-metric-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 3px;
+      background: var(--card-bar, var(--orange));
+    }
+    .s806-metric-card.accent-blue::before { --card-bar: var(--blue); }
+    .s806-metric-card.accent-green::before { --card-bar: var(--green); }
+    .s806-metric-card.accent-red::before { --card-bar: var(--red); }
+
+    .s806-metric-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .s806-metric-val {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .s806-growth-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 12px;
+    }
+    .s806-growth-badge.positive {
+      background: var(--green-soft);
+      color: var(--green);
+    }
+    .s806-growth-badge.negative {
+      background: var(--red-soft);
+      color: var(--red);
+    }
+    .s806-growth-badge.neutral {
+      background: #f3f4f6;
+      color: var(--muted);
+    }
+    .s806-blur-val {
+      filter: blur(4px);
+      user-select: none;
+      opacity: .6;
     }
   </style>
 </head>
@@ -394,12 +575,154 @@
       </div>
     </header>
 
-    <main class="s806-panel" id="s806Content">
-      <div style="text-align:center; padding: 40px 0; color:var(--muted);">
-        <p style="font-size:16px; font-weight:600; color:var(--ink);">Backend API sẵn sàng tại <code>?action=data</code></p>
-        <p style="font-size:13px; margin-top:8px;">Đã hoàn thành cấu trúc truy vấn DB gom nhóm theo 5 tiêu chí: Nhân viên, Khu vực, Đại lý, Nhóm hàng, SKU.</p>
+    <!-- Bộ lọc đa chiều (Grouping & Comparison Filter Bar) -->
+    <section class="s806-filter-card">
+      <div>
+        <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--muted); letter-spacing:.05em; margin-bottom:8px; display:block;">
+          1. CHỌN CHIỀU PHÂN TÍCH (GOM NHÓM)
+        </span>
+        <div class="s806-group-tabs" id="groupTabs">
+          <button type="button" class="s806-tab-btn active" data-grp="employee">👤 Theo Nhân viên</button>
+          <button type="button" class="s806-tab-btn" data-grp="region">📍 Theo Khu vực</button>
+          <button type="button" class="s806-tab-btn" data-grp="dealer">🏢 Theo Đại lý</button>
+          <button type="button" class="s806-tab-btn" data-grp="category">🏷️ Theo Nhóm hàng</button>
+          <button type="button" class="s806-tab-btn" data-grp="sku">📦 Theo Sản phẩm / SKU</button>
+        </div>
+      </div>
+
+      <div class="s806-controls-row">
+        <div class="s806-date-group">
+          <label class="s806-input-label">
+            <span>Từ ngày:</span>
+            <input type="date" class="s806-input" id="inputFromDate">
+          </label>
+          <label class="s806-input-label">
+            <span>Đến ngày:</span>
+            <input type="date" class="s806-input" id="inputToDate">
+          </label>
+          <div class="s806-presets">
+            <button type="button" class="s806-preset-btn" data-preset="this_month">Tháng này</button>
+            <button type="button" class="s806-preset-btn" data-preset="last_month">Tháng trước</button>
+            <button type="button" class="s806-preset-btn" data-preset="last_30_days">30 ngày qua</button>
+            <button type="button" class="s806-preset-btn" data-preset="this_year">Năm nay</button>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:12px;">
+          <label class="s806-input-label">
+            <span>So sánh:</span>
+            <select class="s806-input" id="selectCompare">
+              <option value="previous_period">Cùng kỳ trước</option>
+              <option value="previous_month">Tháng trước</option>
+              <option value="previous_year">Cùng kỳ năm ngoái</option>
+              <option value="none">Không so sánh</option>
+            </select>
+          </label>
+          <button type="button" class="s806-btn-primary" id="btnFilter">
+            🔍 Xem báo cáo
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Thẻ chỉ số tổng hợp (Summary Metric Cards) -->
+    <section class="s806-metrics-grid" id="metricsGrid">
+      <div class="s806-metric-card">
+        <div class="s806-metric-label">
+          <span>Tổng doanh số</span>
+          <span class="s806-growth-badge neutral" id="badgeRevGrowth">—</span>
+        </div>
+        <div class="s806-metric-val" id="valTotalRevenue">0 ₫</div>
+        <small style="font-size:11px; color:var(--muted);" id="subPrevRevenue">Kỳ trước: 0 ₫</small>
+      </div>
+
+      <div class="s806-metric-card accent-blue">
+        <div class="s806-metric-label">
+          <span>Tổng sản lượng</span>
+          <span class="s806-growth-badge neutral" id="badgeQtyGrowth">—</span>
+        </div>
+        <div class="s806-metric-val" id="valTotalQty">0</div>
+        <small style="font-size:11px; color:var(--muted);" id="subPrevQty">Kỳ trước: 0</small>
+      </div>
+
+      <div class="s806-metric-card accent-red">
+        <div class="s806-metric-label">
+          <span>Giá vốn hàng bán (COGS)</span>
+          <% if (!isManager) { %><span style="font-size:10px; background:#fee2e2; color:#dc2626; padding:2px 6px; border-radius:10px;">Bảo mật</span><% } %>
+        </div>
+        <div class="s806-metric-val <%= !isManager ? "s806-blur-val" : "" %>" id="valTotalCogs">
+          <%= isManager ? "0 ₫" : "****** ₫" %>
+        </div>
+        <small style="font-size:11px; color:var(--muted);">
+          <%= isManager ? "Tổng giá trị vốn xuất bán" : "Chỉ Quản lý kinh doanh xem được" %>
+        </small>
+      </div>
+
+      <div class="s806-metric-card accent-green">
+        <div class="s806-metric-label">
+          <span>Biên lợi nhuận gộp</span>
+          <% if (!isManager) { %><span style="font-size:10px; background:#fee2e2; color:#dc2626; padding:2px 6px; border-radius:10px;">Bảo mật</span><% } %>
+        </div>
+        <div class="s806-metric-val <%= !isManager ? "s806-blur-val" : "" %>" id="valAvgMargin">
+          <%= isManager ? "0%" : "****** %" %>
+        </div>
+        <small style="font-size:11px; color:var(--muted);">
+          <%= isManager ? "(Doanh thu - Giá vốn) / Doanh thu" : "Chỉ Quản lý kinh doanh xem được" %>
+        </small>
+      </div>
+    </section>
+
+    <!-- Placeholder cho Bảng dữ liệu & Export Excel (Bước 4) -->
+    <main class="s806-panel" id="s806TablePanel">
+      <div style="text-align:center; padding:30px 0; color:var(--muted);" id="tablePlaceholder">
+        <p style="font-size:14px; font-weight:600; color:var(--ink);">Đã hoàn thành cấu hình Bộ lọc đa chiều & phân quyền Quản lý kinh doanh</p>
+        <p style="font-size:13px; margin-top:6px;">Sẵn sàng tích hợp bảng dữ liệu chi tiết và tính năng xuất Excel ở Bước 4.</p>
       </div>
     </main>
   </div>
+
+  <script>
+    (function(){
+      'use strict';
+      var currentGroupBy = 'employee';
+      var today = new Date();
+
+      function formatIsoDate(d){
+        return d.toISOString().split('T')[0];
+      }
+
+      function initDates(){
+        var y = today.getFullYear(), m = today.getMonth();
+        var firstDay = new Date(y, m, 1);
+        document.getElementById('inputFromDate').value = formatIsoDate(firstDay);
+        document.getElementById('inputToDate').value = formatIsoDate(today);
+      }
+      initDates();
+
+      // Tab chuyển chiều phân tích
+      document.querySelectorAll('.s806-tab-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          document.querySelectorAll('.s806-tab-btn').forEach(function(b){ b.classList.remove('active'); });
+          btn.classList.add('active');
+          currentGroupBy = btn.getAttribute('data-grp');
+        });
+      });
+
+      // Nút presets ngày
+      document.querySelectorAll('.s806-preset-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var p = btn.getAttribute('data-preset');
+          var y = today.getFullYear(), m = today.getMonth();
+          var fromD, toD = today;
+          if(p === 'this_month'){ fromD = new Date(y, m, 1); }
+          else if(p === 'last_month'){ fromD = new Date(y, m - 1, 1); toD = new Date(y, m, 0); }
+          else if(p === 'last_30_days'){ fromD = new Date(); fromD.setDate(today.getDate() - 30); }
+          else if(p === 'this_year'){ fromD = new Date(y, 0, 1); }
+          document.getElementById('inputFromDate').value = formatIsoDate(fromD);
+          document.getElementById('inputToDate').value = formatIsoDate(toD);
+        });
+      });
+    })();
+  </script>
 </body>
 </html>

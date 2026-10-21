@@ -10,15 +10,30 @@
 #db05 .db05-refresh button:hover { background: var(--orange-dark, #d96500); }
 #db05 .db05-refresh button:disabled { opacity: .6; cursor: default; }
 
-/* Metric Cards Layout */
+/* Metric Cards */
 #db05 .db05-metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
 #db05 .db05-card { background: var(--panel, #fff); border: 1px solid var(--line, #eee4da); border-radius: 14px; padding: 20px 20px 16px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 2px 8px rgba(83,48,17,.05); transition: box-shadow .2s, transform .2s; position: relative; overflow: hidden; }
+#db05 .db05-card:hover { box-shadow: 0 6px 20px rgba(83,48,17,.10); transform: translateY(-2px); }
 #db05 .db05-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--card-accent, var(--orange, #f47a00)); border-radius: 14px 14px 0 0; }
+#db05 .db05-card.accent-green::before  { --card-accent: #22c55e; }
+#db05 .db05-card.accent-blue::before   { --card-accent: #3b82f6; }
+#db05 .db05-card.accent-amber::before  { --card-accent: #f59e0b; }
+#db05 .db05-card.accent-red::before    { --card-accent: #ef4444; }
+#db05 .db05-card.accent-violet::before { --card-accent: #8b5cf6; }
 #db05 .db05-card-icon { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; font-size: 18px; background: var(--orange-soft, #fff1df); color: var(--orange, #f47a00); flex-shrink: 0; }
+#db05 .db05-card.accent-green  .db05-card-icon { background: #dcfce7; color: #16a34a; }
+#db05 .db05-card.accent-blue   .db05-card-icon { background: #dbeafe; color: #2563eb; }
+#db05 .db05-card.accent-amber  .db05-card-icon { background: #fef3c7; color: #d97706; }
+#db05 .db05-card.accent-red    .db05-card-icon { background: #fee2e2; color: #dc2626; }
+#db05 .db05-card.accent-violet .db05-card-icon { background: #ede9fe; color: #7c3aed; }
 #db05 .db05-card-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted, #786d64); }
 #db05 .db05-card-value { font-size: 22px; font-weight: 700; color: var(--ink, #17120e); min-height: 32px; display: flex; align-items: center; }
+#db05 .db05-card-value.loading { background: linear-gradient(90deg, #eee4da 25%, #fff1df 50%, #eee4da 75%); background-size: 200% 100%; animation: db05-shimmer 1.4s infinite; border-radius: 6px; width: 80%; height: 28px; color: transparent; }
+@keyframes db05-shimmer { 0%{background-position: 200% 0} 100%{background-position: -200% 0} }
+#db05 .db05-card-sub { font-size: 11px; color: var(--muted, #786d64); }
+#db05 .db05-card-value.error { font-size: 13px; color: #dc2626; font-weight: 500; }
 
-/* Charts Layout */
+/* Placeholder Layout for remaining parts */
 #db05 .db05-charts { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; }
 @media (max-width: 900px) { #db05 .db05-charts { grid-template-columns: 1fr; } }
 #db05 .db05-chart-box { background: var(--panel, #fff); border: 1px solid var(--line, #eee4da); border-radius: 14px; padding: 20px; box-shadow: 0 2px 8px rgba(83,48,17,.05); }
@@ -26,8 +41,6 @@
 #db05 .db05-chart-title span { font-size: 11px; font-weight: 500; color: var(--muted, #786d64); margin-left: auto; }
 #db05 .db05-chart-sub { font-size: 11px; color: var(--muted, #786d64); margin: 0 0 16px; }
 #db05 .db05-chart-wrap { position: relative; height: 220px; }
-
-/* Table Layout */
 #db05 .db05-section { background: var(--panel, #fff); border: 1px solid var(--line, #eee4da); border-radius: 14px; padding: 20px; box-shadow: 0 2px 8px rgba(83,48,17,.05); }
 #db05 .db05-section-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
 #db05 .db05-section-header h3 { margin: 0; font-size: 14px; font-weight: 700; color: var(--ink, #17120e); }
@@ -40,26 +53,109 @@
 'use strict';
 window.sprint5Features = window.sprint5Features || {};
 
-function renderLayout(host) {
+function esc(s){
+  if(s==null)return '\u2014';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function money(v){
+  if(v==null)return '\u2014';
+  return new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND'}).format(Number(v));
+}
+function num(v){
+  if(v==null)return '\u2014';
+  return new Intl.NumberFormat('vi-VN').format(Number(v));
+}
+
+function renderSkeleton(host){
   var today = new Date();
   var dateLabel = today.toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric'});
+  var CARDS = [
+    {id:'db05-today',        labelVI:'Doanh số hôm nay',        icon:'₫',  accent:''},
+    {id:'db05-month',        labelVI:'Doanh số tháng này',      icon:'📈', accent:'accent-green'},
+    {id:'db05-pend-approve', labelVI:'Đơn chờ duyệt',           icon:'⏳', accent:'accent-amber'},
+    {id:'db05-pend-ship',    labelVI:'Đơn chờ xuất kho',        icon:'📦', accent:'accent-blue'},
+    {id:'db05-overdue-amt',  labelVI:'Công nợ quá hạn',         icon:'⚠️', accent:'accent-red'},
+    {id:'db05-low-sku',      labelVI:'SKU dưới tồn tối thiểu',  icon:'📉', accent:'accent-violet'},
+  ];
+  var cardsHtml = CARDS.map(function(c){
+    return '<article class="db05-card ' + c.accent + '" aria-label="' + esc(c.labelVI) + '">' +
+      '<div class="db05-card-icon">' + c.icon + '</div>' +
+      '<div class="db05-card-label">' + esc(c.labelVI) + '</div>' +
+      '<div class="db05-card-value loading" id="' + c.id + '">&#8203;</div>' +
+      '<div class="db05-card-sub" id="' + c.id + '-sub"></div>' +
+      '</article>';
+  }).join('');
+
   host.innerHTML =
     '<div id="db05">' +
       '<div class="db05-toolbar">' +
-        '<div><h2>Dashboard điều hành bán hàng &amp; kho</h2><small>Khởi tạo khung làm việc · ' + dateLabel + '</small></div>' +
-        '<div class="db05-refresh"><button id="db05BtnRefresh">↻ Làm mới</button></div>' +
+        '<div><h2>Dashboard điều hành bán hàng &amp; kho</h2><small>Cập nhật tự động · ' + dateLabel + '</small></div>' +
+        '<div class="db05-refresh"><span id="db05LastUpdate">Đang tải...</span><button id="db05BtnRefresh">↻ Làm mới</button></div>' +
       '</div>' +
-      '<div class="db05-metrics" id="db05Metrics"></div>' +
-      '<div class="db05-charts" id="db05Charts"></div>' +
-      '<div class="db05-section" id="db05Overdue"></div>' +
+      '<div class="db05-metrics" id="db05Metrics">' + cardsHtml + '</div>' +
+      '<div class="db05-charts" id="db05Charts">' +
+        '<div class="db05-chart-box"><p class="db05-chart-title">Doanh số theo ngày</p><div class="db05-chart-wrap" id="db05ChartDailyWrap"></div></div>' +
+        '<div class="db05-chart-box"><p class="db05-chart-title">Doanh số theo khu vực</p><div class="db05-chart-wrap" id="db05ChartRegionWrap"></div></div>' +
+      '</div>' +
+      '<div class="db05-section" id="db05OverdueSection">' +
+        '<div class="db05-section-header"><div><h3>Đại lý quá hạn công nợ</h3><p>Sắp xếp giảm dần theo số nợ quá hạn</p></div></div>' +
+        '<div class="db05-table-wrap" id="db05OverdueWrap"></div>' +
+      '</div>' +
     '</div>';
+
+  document.getElementById('db05BtnRefresh').addEventListener('click', function(){
+    window.sprint5Features['Dashboard kinh doanh'].render();
+  });
+}
+
+function fillSummary(data){
+  function set(id, val, sub){
+    var el = document.getElementById(id);
+    if(!el) return;
+    el.classList.remove('loading', 'error');
+    el.textContent = val;
+    var se = document.getElementById(id + '-sub');
+    if(se && sub) se.textContent = sub;
+  }
+  set('db05-today',        money(data.todayRevenue),  'Tính đến hiện tại hôm nay');
+  set('db05-month',        money(data.monthRevenue),  'Đơn đã xác nhận trong tháng');
+  set('db05-pend-approve', num(data.pendingApprove),  'Chờ nhân viên/quản lý duyệt');
+  set('db05-pend-ship',    num(data.pendingShip),     'Đã duyệt, chưa xuất kho');
+  set('db05-overdue-amt',  money(data.overdueAmount), 'Tổng nợ vượt ngày đến hạn');
+  set('db05-low-sku',      num(data.lowSkuCount),     'Sản phẩm dưới ngưỡng tối thiểu');
+}
+
+function markErr(id){
+  var el = document.getElementById(id);
+  if(!el) return;
+  el.classList.remove('loading');
+  el.classList.add('error');
+  el.textContent = 'Không tải được';
+}
+
+async function renderDashboard(){
+  var host = moduleContent;
+  renderSkeleton(host);
+  var revision = viewRevision;
+  try {
+    var sum = await apiRequest('dashboard/summary');
+    if(revision !== viewRevision || !host.isConnected) return;
+    fillSummary(sum);
+    var ts = document.getElementById('db05LastUpdate');
+    if(ts) {
+      var now = new Date();
+      ts.textContent = 'Cập nhật lúc ' + now.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    }
+  } catch(e) {
+    ['db05-today','db05-month','db05-pend-approve','db05-pend-ship','db05-overdue-amt','db05-low-sku'].forEach(markErr);
+  }
 }
 
 window.sprint5Features['Dashboard kinh doanh'] = {
   path: 'dashboard-kinh-doanh',
   permission: 'reports.sales',
-  render: function() {
-    renderLayout(moduleContent);
+  render: function(){
+    renderDashboard();
   }
 };
 })();

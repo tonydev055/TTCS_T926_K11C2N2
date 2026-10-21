@@ -44,18 +44,19 @@
             }
         }
     }
-    String devRole = request.getParameter("role");
-    if ("manager".equalsIgnoreCase(devRole) || "admin".equalsIgnoreCase(devRole)) {
-        isManager = true;
-    }
+    // KHÔNG có bypass phân quyền qua URL param — xóa backdoor dev
 
     String action = request.getParameter("action");
     if ("data".equalsIgnoreCase(action)) {
         response.setContentType("application/json;charset=UTF-8");
         response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
 
-        String groupBy = request.getParameter("groupBy");
-        if (groupBy == null || groupBy.isBlank()) groupBy = "employee";
+        // Whitelist validate groupBy để tránh SQL Injection
+        String groupByRaw = request.getParameter("groupBy");
+        final java.util.Set<String> ALLOWED_GROUP_BY = new java.util.HashSet<>(
+            java.util.Arrays.asList("employee", "region", "dealer", "category", "sku"));
+        String groupBy = (groupByRaw != null && ALLOWED_GROUP_BY.contains(groupByRaw.toLowerCase().trim()))
+            ? groupByRaw.toLowerCase().trim() : "employee";
 
         LocalDate today = LocalDate.now();
         LocalDate fromDate, toDate;
@@ -985,15 +986,23 @@
           '&to=' + encodeURIComponent(toStr) +
           '&compare=' + encodeURIComponent(compare);
 
+        // AbortController timeout 8 giây
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function(){ controller.abort(); }, 8000);
+
         try {
-          var res = await fetch(url);
+          var res = await fetch(url, {signal: controller.signal});
+          clearTimeout(timeoutId);
           if(!res.ok) throw new Error('Mã phản hồi lỗi: ' + res.status);
           var data = await res.json();
+          if(data.error) throw new Error(data.error);
           currentData = data;
           renderData(data);
           updateChart(data);
         } catch(e) {
-          tbody.innerHTML = '<tr><td colspan="10" class="text-center" style="padding:40px 0; color:var(--red);">Có lỗi khi tải dữ liệu: ' + (e.message || 'Lỗi kết nối') + '</td></tr>';
+          clearTimeout(timeoutId);
+          var msg = e.name === 'AbortError' ? 'Yêu cầu vượt quá thời gian (timeout 8s). Vui lòng thử lại.' : (e.message || 'Lỗi kết nối');
+          tbody.innerHTML = '<tr><td colspan="10" class="text-center" style="padding:40px 0; color:var(--red);">Có lỗi khi tải dữ liệu: ' + msg + '</td></tr>';
         } finally {
           if(btn) btn.disabled = false;
         }
@@ -1097,10 +1106,19 @@
       document.getElementById('tableSearch').addEventListener('input', function(e){
         var q = e.target.value.toLowerCase().trim();
         if(!currentData || !currentData.items) return;
+        if(!q){
+          // Xoá filter: render lại toàn bộ và hiện tfoot
+          renderTableRows(currentData.items);
+          document.getElementById('tableFoot').style.display = currentData.items.length > 0 ? '' : 'none';
+          document.getElementById('recordCount').textContent = currentData.items.length + ' bản ghi';
+          return;
+        }
         var filtered = currentData.items.filter(function(it){
           return (it.groupKey || '').toLowerCase().includes(q);
         });
         renderTableRows(filtered);
+        document.getElementById('tableFoot').style.display = 'none'; // Ẩn tfoot khi đang lọc
+        document.getElementById('recordCount').textContent = filtered.length + '/' + currentData.items.length + ' bản ghi';
       });
 
       // Vẽ biểu đồ Bar Chart so sánh

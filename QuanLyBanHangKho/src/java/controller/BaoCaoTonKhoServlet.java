@@ -23,7 +23,7 @@ public final class BaoCaoTonKhoServlet extends NghiepVuKhoServlet {
             rows.add(List.of("Giá trị ước tính theo giá vốn danh mục hiện tại; số ngày tồn = tồn bình quân / xuất ròng × số ngày trong kỳ"));
             rows.add(new ArrayList<>(List.of("Kho","SKU","Sản phẩm","Nhóm hàng","ĐVT","Đầu kỳ","Cuối kỳ","Bình quân","Xuất ròng","Giá trị cuối kỳ","Vòng quay","Số ngày tồn","Chậm luân chuyển")));
             for(var row:(List<Map<String,Object>>)data.get("items")){
-                var values=new ArrayList<Object>();for(String key:List.of("warehouse_name","sku","name","category_name","base_unit","opening","closing","average_stock","shipped","stock_value","turnover","inventory_days"))values.add(row.getOrDefault(key,"")==null?"Không phát sinh xuất":row.get(key));
+                var values=new ArrayList<Object>();for(String key:List.of("warehouse_name","sku","name","category_name","base_unit","opening","closing","average_stock","shipped","stock_value","turnover","inventory_days"))values.add(row.get(key)==null?"Không đủ cơ sở tính":row.get(key));
                 values.add(Boolean.TRUE.equals(row.get("slow"))?"Có":"Không");rows.add(values);
             }
             for(String group:List.of("byWarehouse","byCategory")){

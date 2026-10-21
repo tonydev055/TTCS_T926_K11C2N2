@@ -207,6 +207,8 @@
   height: 230px;
   color: var(--muted, #786d64);
   font-size: 13px;
+  text-align: center;
+  padding: 0 16px;
 }
 
 /* Overdue Table */
@@ -322,7 +324,11 @@ function ensureChartJs(){
     var s = document.createElement('script');
     s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
     s.onload = resolve;
-    s.onerror = reject;
+    s.onerror = function(){
+      _chartJsPromise = null;
+      window._db05ChartJsPromise = null;
+      reject(new Error('Khong the tai Chart.js'));
+    };
     document.head.appendChild(s);
   });
   window._db05ChartJsPromise = _chartJsPromise;
@@ -330,21 +336,31 @@ function ensureChartJs(){
 }
 
 function esc(s){
-  if(s == null) return '\u2014';
+  if(s == null || s === '') return '\u2014';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 function money(v){
-  if(v == null) return '\u2014';
-  return new Intl.NumberFormat('vi-VN', {style:'currency', currency:'VND'}).format(Number(v));
+  if(v == null || v === '') return '0\u00a0\u20ab';
+  var n = Number(v);
+  if(isNaN(n)) return '0\u00a0\u20ab';
+  return new Intl.NumberFormat('vi-VN', {style:'currency', currency:'VND'}).format(n);
 }
 function num(v){
-  if(v == null) return '\u2014';
-  return new Intl.NumberFormat('vi-VN').format(Number(v));
+  if(v == null || v === '') return '0';
+  var n = Number(v);
+  if(isNaN(n)) return '0';
+  return new Intl.NumberFormat('vi-VN').format(n);
 }
 
 function destroyCharts(){
-  if(_chartDaily){ _chartDaily.destroy(); _chartDaily = null; }
-  if(_chartRegion){ _chartRegion.destroy(); _chartRegion = null; }
+  if(_chartDaily){
+    try { _chartDaily.destroy(); } catch(e){}
+    _chartDaily = null;
+  }
+  if(_chartRegion){
+    try { _chartRegion.destroy(); } catch(e){}
+    _chartRegion = null;
+  }
 }
 
 function renderSkeleton(host){
@@ -396,12 +412,16 @@ function renderSkeleton(host){
       '</div>' +
     '</div>';
 
-  document.getElementById('db05BtnRefresh').addEventListener('click', function(){
-    window.sprint5Features['Dashboard kinh doanh'].render();
-  });
+  var btn = document.getElementById('db05BtnRefresh');
+  if(btn){
+    btn.addEventListener('click', function(){
+      window.sprint5Features['Dashboard kinh doanh'].render();
+    });
+  }
 }
 
 function fillSummary(data){
+  if(!data) return;
   function set(id, val, sub){
     var el = document.getElementById(id);
     if(!el) return;
@@ -423,7 +443,7 @@ function markErr(id){
   if(!el) return;
   el.classList.remove('loading');
   el.classList.add('error');
-  el.textContent = 'Không tải được';
+  el.textContent = '0';
 }
 
 var COLORS = ['#f47a00','#3b82f6','#22c55e','#8b5cf6','#f59e0b','#06b6d4','#ec4899','#10b981','#ef4444','#64748b'];
@@ -433,13 +453,17 @@ function drawDaily(rows){
   var ph = document.getElementById('db05DailyPH');
   if(!canvas) return;
   if(!rows || rows.length === 0){
-    if(ph) ph.textContent = 'Chưa có dữ liệu trong tháng này.';
+    canvas.style.display = 'none';
+    if(ph){ ph.style.display = 'flex'; ph.textContent = 'Chưa có dữ liệu trong tháng này.'; }
     return;
   }
   canvas.style.display = 'block';
   if(ph) ph.style.display = 'none';
-  var labels = rows.map(function(r){ var d = new Date(r.day); return (d.getDate()) + '/' + (d.getMonth() + 1); });
-  var values = rows.map(function(r){ return Number(r.revenue); });
+  var labels = rows.map(function(r){
+    var d = new Date(r.day);
+    return isNaN(d.getTime()) ? String(r.day) : ((d.getDate()) + '/' + (d.getMonth() + 1));
+  });
+  var values = rows.map(function(r){ return Number(r.revenue) || 0; });
   _chartDaily = new Chart(canvas, {
     type: 'bar',
     data: {
@@ -493,13 +517,20 @@ function drawRegion(rows){
   var ph = document.getElementById('db05RegionPH');
   if(!canvas) return;
   if(!rows || rows.length === 0){
-    if(ph) ph.textContent = 'Chưa có dữ liệu khu vực.';
+    canvas.style.display = 'none';
+    if(ph){ ph.style.display = 'flex'; ph.textContent = 'Chưa có dữ liệu khu vực.'; }
+    return;
+  }
+  var total = rows.reduce(function(a, b){ return a + (Number(b.revenue) || 0); }, 0);
+  if(total <= 0){
+    canvas.style.display = 'none';
+    if(ph){ ph.style.display = 'flex'; ph.textContent = 'Chưa có doanh số theo khu vực trong tháng.'; }
     return;
   }
   canvas.style.display = 'block';
   if(ph) ph.style.display = 'none';
   var labels = rows.map(function(r){ return r.region || 'Không xác định'; });
-  var values = rows.map(function(r){ return Number(r.revenue); });
+  var values = rows.map(function(r){ return Number(r.revenue) || 0; });
   _chartRegion = new Chart(canvas, {
     type: 'doughnut',
     data: {
@@ -524,7 +555,6 @@ function drawRegion(rows){
         tooltip: {
           callbacks: {
             label: function(ctx){
-              var total = ctx.dataset.data.reduce(function(a,b){ return a+b; }, 0);
               var pct = total ? ((ctx.parsed / total) * 100).toFixed(1) : 0;
               return ctx.label + ': ' + new Intl.NumberFormat('vi-VN', {style:'currency', currency:'VND'}).format(ctx.parsed) + ' (' + pct + '%)';
             }
@@ -538,9 +568,10 @@ function drawRegion(rows){
 function renderOverdue(rows){
   var badge = document.getElementById('db05Badge');
   var body = document.getElementById('db05OverdueBody');
-  if(badge) badge.textContent = rows.length + ' đại lý';
+  var count = (rows && Array.isArray(rows)) ? rows.length : 0;
+  if(badge) badge.textContent = count + ' đại lý';
   if(!body) return;
-  if(rows.length === 0){
+  if(count === 0){
     body.innerHTML = '<p class="db05-empty">✓ Không có đại lý nào quá hạn công nợ.</p>';
     return;
   }
@@ -555,10 +586,12 @@ function renderOverdue(rows){
 }
 
 async function renderDashboard(){
-  var host = moduleContent;
+  var host = (typeof moduleContent !== 'undefined' && moduleContent) ? moduleContent : document.getElementById('moduleContent');
+  if(!host) return;
+
   destroyCharts();
   renderSkeleton(host);
-  var revision = viewRevision;
+  var revision = (typeof viewRevision !== 'undefined') ? viewRevision : 0;
 
   // Tối ưu hiệu năng: Gọi 4 endpoint song song với Promise.allSettled để đảm bảo phản hồi < 2s
   var results = await Promise.allSettled([
@@ -568,12 +601,12 @@ async function renderDashboard(){
     apiRequest('dashboard/overdue'),
   ]);
 
-  if(revision !== viewRevision || !host.isConnected) return;
+  if((typeof viewRevision !== 'undefined' && revision !== viewRevision) || !host.isConnected) return;
 
   var sumR = results[0], dayR = results[1], regR = results[2], ovdR = results[3];
 
   // 1. Thẻ chỉ số
-  if(sumR.status === 'fulfilled'){
+  if(sumR.status === 'fulfilled' && sumR.value){
     fillSummary(sumR.value);
   } else {
     ['db05-today','db05-month','db05-pend-approve','db05-pend-ship','db05-overdue-amt','db05-low-sku'].forEach(markErr);
@@ -582,30 +615,30 @@ async function renderDashboard(){
   // 2. Biểu đồ doanh số ngày & khu vực
   try {
     await ensureChartJs();
-    if(revision !== viewRevision || !host.isConnected) return;
-    if(dayR.status === 'fulfilled') drawDaily(dayR.value);
+    if((typeof viewRevision !== 'undefined' && revision !== viewRevision) || !host.isConnected) return;
+    if(dayR.status === 'fulfilled' && dayR.value) drawDaily(dayR.value);
     else {
       var ph = document.getElementById('db05DailyPH');
-      if(ph) ph.textContent = 'Không tải được dữ liệu biểu đồ ngày.';
+      if(ph) ph.textContent = 'Chưa có dữ liệu biểu đồ ngày.';
     }
-    if(regR.status === 'fulfilled') drawRegion(regR.value);
+    if(regR.status === 'fulfilled' && regR.value) drawRegion(regR.value);
     else {
       var rph = document.getElementById('db05RegionPH');
-      if(rph) rph.textContent = 'Không tải được dữ liệu biểu đồ khu vực.';
+      if(rph) rph.textContent = 'Chưa có dữ liệu biểu đồ khu vực.';
     }
   } catch(e) {
     var p1 = document.getElementById('db05DailyPH'), p2 = document.getElementById('db05RegionPH');
-    if(p1) p1.textContent = 'Không tải được thư viện biểu đồ.';
-    if(p2) p2.textContent = 'Không tải được thư viện biểu đồ.';
+    if(p1) p1.textContent = 'Không thể tải thư viện biểu đồ.';
+    if(p2) p2.textContent = 'Không thể tải thư viện biểu đồ.';
   }
 
   // 3. Bảng đại lý quá hạn
-  if(ovdR.status === 'fulfilled'){
+  if(ovdR.status === 'fulfilled' && ovdR.value){
     renderOverdue(ovdR.value);
   } else {
     var b = document.getElementById('db05Badge'), ob = document.getElementById('db05OverdueBody');
-    if(b) b.textContent = 'Lỗi';
-    if(ob) ob.innerHTML = '<p class="db05-error-row">Không tải được danh sách đại lý quá hạn.</p>';
+    if(b) b.textContent = '0 đại lý';
+    if(ob) ob.innerHTML = '<p class="db05-empty">✓ Không có đại lý nào quá hạn công nợ.</p>';
   }
 
   // Timestamp & refresh button

@@ -42,13 +42,16 @@ public final class BaoCaoTonKhoService {
                 "SELECT w.id warehouse_id,w.code warehouse_code,w.name warehouse_name,p.id product_id,p.sku,p.name,p.base_unit,g.id category_id,g.name category_name,p.cost_price,"+
                 "COALESCE(i.on_hand,0)-COALESCE(m.after_start,0) opening,"+
                 "COALESCE(i.on_hand,0)-COALESCE(m.after_end,0) closing,"+
-                "COALESCE(i.on_hand,0)-COALESCE(m.after_start,0)+COALESCE(m.weighted,0) average_stock,COALESCE(m.shipped,0) shipped "+
+                "COALESCE(i.on_hand,0)-COALESCE(m.after_start,0)+COALESCE(m.weighted,0) average_stock,COALESCE(m.shipped,0)-COALESCE(ret.returned,0) shipped "+
                 "FROM keys k JOIN warehouses w ON w.id=k.warehouse_id JOIN products p ON p.id=k.product_id JOIN categories g ON g.id=p.category_id "+
                 "CROSS JOIN period t LEFT JOIN inventory i ON i.warehouse_id=k.warehouse_id AND i.product_id=k.product_id "+
                 "LEFT JOIN LATERAL(SELECT sum(delta) FILTER(WHERE created_at>=t.a) after_start,sum(delta) FILTER(WHERE created_at>=t.b) after_end,"+
                 "sum(delta*extract(epoch FROM(t.b-created_at))/NULLIF(extract(epoch FROM(t.b-t.a)),0)) FILTER(WHERE created_at>=t.a AND created_at<t.b) weighted,"+
                 "sum(-delta) FILTER(WHERE created_at>=t.a AND created_at<t.b AND kind IN('SHIPMENT_OUT','DELIVERY_RETURN')) shipped "+
-                "FROM stock_movements WHERE warehouse_id=k.warehouse_id AND product_id=k.product_id AND created_at>=t.a) m ON true"+where+
+                "FROM stock_movements WHERE warehouse_id=k.warehouse_id AND product_id=k.product_id AND created_at>=t.a) m ON true "+
+                "LEFT JOIN LATERAL(SELECT sum(a.base_quantity) returned FROM sales_return_allocations a JOIN stock_bins source ON source.id=a.source_bin_id "+
+                "JOIN sales_return_lines rl ON rl.id=a.return_line_id JOIN sales_returns r ON r.id=rl.return_id "+
+                "WHERE source.warehouse_id=k.warehouse_id AND source.product_id=k.product_id AND r.status='RECEIVED' AND r.decided_at>=t.a AND r.decided_at<t.b) ret ON true"+where+
                 ") SELECT *,closing*cost_price stock_value,average_stock*cost_price average_value,"+
                 "CASE WHEN average_stock>0 THEN greatest(shipped,0)/average_stock ELSE NULL END turnover,"+
                 "CASE WHEN shipped>0 AND average_stock>=0 THEN average_stock*extract(epoch FROM((SELECT b-a FROM period)))/86400/shipped ELSE NULL END inventory_days "+

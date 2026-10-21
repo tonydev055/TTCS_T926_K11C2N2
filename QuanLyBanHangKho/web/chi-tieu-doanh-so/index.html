@@ -6,7 +6,7 @@ window.sprint5Features=window.sprint5Features||{};
 window.sprint5Features['Chỉ tiêu doanh số']={path:'chi-tieu-doanh-so',permission:['reports.sales','targets.own'],render(){
  const ui=financeUi,e=ui.e,m=ui.m;
  ui.screen('Chỉ tiêu doanh số','Chỉ tiêu theo tháng, nhân viên và khu vực. Tiến độ tính từ đơn đã xác nhận theo nhân viên phụ trách và khu vực hiện tại của đại lý; tự cập nhật mỗi 30 giây.','sales-targets',(initial,body,revision)=>{
-  body.classList.add('target-feature');let data=initial,generation=0,applied=new URLSearchParams({month:initial.month});
+  body.classList.add('target-feature');let data=initial,generation=0,pending=0,applied=new URLSearchParams({month:initial.month});
   const staffOptions=(rows)=>rows.map(s=>'<option value="'+s.id+'">'+e(s.full_name)+'</option>').join('');
   const regionOptions=(rows)=>rows.map(r=>'<option>'+e(r.region)+'</option>').join('');
   body.innerHTML='<form id="targetFilters" class="finance-toolbar target-filters"><label>Tháng<input type="month" name="month" required value="'+e(initial.month)+'"></label>'+(initial.canManage?'<label>Nhân viên<select name="staffId"><option value="">Tất cả</option>'+staffOptions(initial.staff)+'</select></label>':'')+'<label>Khu vực<select name="region"><option value="">Tất cả</option>'+regionOptions(initial.regions)+'</select></label><button type="submit" class="primary">Lọc / Làm mới</button>'+(initial.canManage?'<button type="button" id="targetCreate">Giao chỉ tiêu</button>':'')+'</form><p id="targetStatus" class="target-status" role="status"></p><div id="targetRows"></div>';
@@ -15,7 +15,7 @@ window.sprint5Features['Chỉ tiêu doanh số']={path:'chi-tieu-doanh-so',permi
    const percent=Number(t.actual_amount)/Number(t.target_amount)*100;
    return [e(t.staff_name),e(t.region),e(t.period_month),m(t.target_amount),m(t.actual_amount),'<progress max="100" value="'+Math.min(100,Math.max(0,percent))+'" aria-label="Tiến độ '+e(t.staff_name)+'"></progress> '+e(percent.toFixed(1))+'%',t.locked?'<span class="target-locked">Kỳ đã khoá</span>':'Đang theo dõi','<div class="target-actions"><button type="button" data-history="'+t.id+'">Lịch sử</button>'+(data.canManage?'<button type="button" data-edit="'+t.id+'">'+(t.locked?'Sửa có lý do':'Sửa')+'</button>':'')+'</div>'];
   }));status.textContent='Cập nhật lúc '+new Date().toLocaleTimeString('vi-VN');}
-  async function reload(params=applied){const current=++generation;status.textContent='Đang tải…';try{const next=await apiRequest('sales-targets?'+params);if(current!==generation||revision!==viewRevision)return;data=next;applied=new URLSearchParams(params);draw();}catch(error){if(current===generation&&revision===viewRevision){status.textContent='Không tải được chỉ tiêu: '+error.message;result.innerHTML='';}}}
+  async function reload(params=applied){pending++;const current=++generation;status.textContent='Đang tải…';try{const next=await apiRequest('sales-targets?'+params);if(current!==generation||revision!==viewRevision)return;data=next;applied=new URLSearchParams(params);draw();}catch(error){if(current===generation&&revision===viewRevision){status.textContent='Không tải được chỉ tiêu: '+error.message;result.innerHTML='';}}finally{pending--;}}
   form.onsubmit=event=>{event.preventDefault();reload(new URLSearchParams(new FormData(form)));};draw();
   function edit(target){
    const locked=Boolean(target?.locked);let html='';
@@ -32,7 +32,7 @@ window.sprint5Features['Chỉ tiêu doanh số']={path:'chi-tieu-doanh-so',permi
   result.onclick=async event=>{const button=event.target.closest('[data-edit],[data-history]');if(!button)return;const t=data.items.find(x=>String(x.id)===(button.dataset.edit||button.dataset.history));if(!t)return;if(button.dataset.edit){edit(t);return;}
    button.disabled=true;try{const h=await apiRequest('sales-targets/'+t.id+'/history');if(revision!==viewRevision)return;ui.dialog('Lịch sử chỉ tiêu '+t.staff_name,ui.table(['Thời gian','Người sửa','Trước','Sau','Ghi chú trước','Ghi chú sau','Lý do'],h.items.map(x=>[e(x.created_at),e(x.actor_name),m(x.old_amount),m(x.new_amount),e(x.old_note),e(x.new_note),e(x.reason||'Khởi tạo / cập nhật trong kỳ')])));}catch(error){if(revision===viewRevision)showRequestError(error);}finally{if(button.isConnected)button.disabled=false;}
   };
-  async function poll(){if(revision!==viewRevision||!body.isConnected)return;await reload();if(revision===viewRevision&&body.isConnected)setTimeout(poll,30000);}setTimeout(poll,30000);
+  async function poll(){if(revision!==viewRevision||!body.isConnected)return;if(!pending)await reload();if(revision===viewRevision&&body.isConnected)setTimeout(poll,30000);}setTimeout(poll,30000);
  });
 }};
 </script>

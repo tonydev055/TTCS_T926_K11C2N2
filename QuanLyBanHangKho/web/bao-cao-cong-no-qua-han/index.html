@@ -1,0 +1,24 @@
+<style>
+#odFilters{justify-content:flex-start;align-items:flex-end;margin-bottom:16px}#odFilters label{display:flex;flex-direction:column;gap:6px;min-width:0;max-width:100%}#odResult{min-width:0}
+</style>
+<script>
+window.sprint5Features=window.sprint5Features||{};
+window.sprint5Features['Báo cáo công nợ quá hạn']={path:'bao-cao-cong-no-qua-han',permission:'receivables.read',render(){
+ const ui=financeUi,e=ui.e,m=ui.m,fields=['d1','d31','d61','d91','overdue'];
+ ui.screen('Báo cáo công nợ quá hạn','Tuổi quá hạn tính từ hạn thanh toán. Ưu tiên đại lý có dư nợ trên 90 ngày lớn nhất, sau đó tổng quá hạn và số ngày quá hạn.','overdue-report/masters',(masters,body,revision)=>{
+  let generation=0,applied=null;
+  body.innerHTML='<form class="finance-toolbar" id="odFilters"><label>Tìm đại lý<input name="q" type="search" maxlength="150" placeholder="Mã hoặc tên"></label><label>Khu vực<select name="region"><option value="">Mọi khu vực</option>'+masters.regions.map(r=>'<option>'+e(r.region)+'</option>').join('')+'</select></label><label>Nhân viên phụ trách<select name="staffId"><option value="">Mọi nhân viên</option><option value="unassigned">Chưa phân công</option>'+masters.staff.map(s=>'<option value="'+s.id+'">'+e(s.full_name)+'</option>').join('')+'</select></label><label>Có nợ trong nhóm<select name="bucket"><option value="">Mọi nhóm quá hạn</option><option value="d1">1–30 ngày</option><option value="d31">31–60 ngày</option><option value="d61">61–90 ngày</option><option value="d91">Trên 90 ngày</option></select></label><button class="primary" type="submit">Xem báo cáo</button><button type="button" id="odExport" disabled>Xuất Excel</button></form><div id="odResult" aria-live="polite"></div>';
+  const form=body.querySelector('#odFilters'),result=body.querySelector('#odResult'),button=body.querySelector('#odExport');
+  async function load(){const current=++generation,params=new URLSearchParams(new FormData(form));applied=null;button.disabled=true;result.textContent='Đang tải…';
+   try{const d=await apiRequest('overdue-report?'+params);if(current!==generation||revision!==viewRevision)return;
+    const top=d.items[0];
+    result.innerHTML='<p>Tính đến '+e(d.asOf)+' · '+d.items.length+' đại lý. Bộ lọc nhóm chọn đại lý có nợ trong nhóm đó; bảng vẫn hiển thị toàn bộ các nhóm nợ của đại lý.</p>'+(top?'<p class="finance-summary">Ưu tiên xử lý: '+e(top.code+' · '+top.name)+' · Quá hạn '+m(top.overdue)+' · Lâu nhất '+e(top.max_days)+' ngày</p>':'<p>Không có công nợ quá hạn phù hợp bộ lọc.</p>')+'<h3>Tổng hợp theo tuổi quá hạn</h3>'+ui.table(['1–30 ngày','31–60 ngày','61–90 ngày','Trên 90 ngày','Tổng quá hạn'],[fields.map(f=>m(d.summary[f]))])+'<h3>Theo nhân viên phụ trách</h3>'+ui.table(['Nhân viên','Số đại lý','1–30 ngày','31–60 ngày','61–90 ngày','Trên 90 ngày','Tổng quá hạn'],d.byStaff.map(r=>[e(r.staff_name),e(r.dealer_count),...fields.map(f=>m(r[f]))]))+'<h3>Đại lý theo thứ tự ưu tiên</h3>'+ui.table(['Đại lý','Khu vực','Nhân viên','1–30 ngày','31–60 ngày','61–90 ngày','Trên 90 ngày','Tổng quá hạn','Quá hạn lâu nhất'],d.items.map(r=>[e(r.code+' · '+r.name),e(r.region),e(r.staff_name),...fields.map(f=>m(r[f])),e(r.max_days)+' ngày']));
+    applied=params;button.disabled=false;
+   }catch(error){if(current===generation&&revision===viewRevision)result.innerHTML='<p class="finance-error" role="alert">'+e(error.message)+'</p>';}
+  }
+  form.onsubmit=event=>{event.preventDefault();load();};form.oninput=()=>{generation++;applied=null;button.disabled=true;};
+  button.onclick=async()=>{if(!applied)return;const params=applied.toString();button.disabled=true;try{const response=await apiFetch('api/overdue-report/export?'+params);if(!response.ok){const d=await response.json();throw new Error(d.message||'Không xuất được báo cáo');}const blob=await response.blob();if(revision!==viewRevision)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=response.headers.get('Content-Disposition')?.match(/filename=([^;]+)/)?.[1]||'cong-no-qua-han.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(error){if(revision===viewRevision)showRequestError(error);}finally{if(revision===viewRevision)button.disabled=!applied;}};
+  load();
+ });
+}};
+</script>

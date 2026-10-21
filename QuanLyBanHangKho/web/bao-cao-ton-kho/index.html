@@ -3,7 +3,7 @@
 </style>
 <script>
 window.sprint5Features=window.sprint5Features||{};
-window.sprint5Features['Báo cáo tồn kho & vòng quay']={path:'bao-cao-ton-kho',permission:'reports.inventory',render:()=>warehouseUi.screen('Báo cáo tồn kho & vòng quay','Giá trị tồn ước tính theo giá vốn danh mục hiện tại. Tồn bình quân gia quyền theo thời gian; xuất ròng chỉ tính giao hàng trừ hàng giao trả, không tính chuyển kho.',()=>apiRequest('inventory-report/masters'),(host,masters,revision)=>{
+window.sprint5Features['Báo cáo tồn kho & vòng quay']={path:'bao-cao-ton-kho',permission:'reports.inventory',render:()=>warehouseUi.screen('Báo cáo tồn kho & vòng quay','Giá trị tồn ước tính theo giá vốn danh mục hiện tại. Tồn bình quân gia quyền theo thời gian; xuất ròng trừ hàng giao trả và hàng đại lý trả về, quy về kho đã xuất, không tính chuyển kho.',()=>apiRequest('inventory-report/masters'),(host,masters,revision)=>{
  const ui=warehouseUi,e=ui.esc,n=v=>v==null?'—':new Intl.NumberFormat('vi-VN',{maximumFractionDigits:2}).format(v);
  const date=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
  const today=new Date(),start=new Date();start.setDate(start.getDate()-29);let generation=0,applied=null;

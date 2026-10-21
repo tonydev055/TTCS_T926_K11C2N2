@@ -1,0 +1,30 @@
+<style>
+#dsFilters{justify-content:flex-start;align-items:flex-end;margin-bottom:16px}#dsFilters label{display:flex;flex-direction:column;gap:6px;min-width:0;max-width:100%}#dsResult{min-width:0}
+</style>
+<script>
+window.sprint5Features=window.sprint5Features||{};
+window.sprint5Features['Sổ chi tiết công nợ đại lý']={path:'so-chi-tiet-cong-no',permission:'receivables.read',render(){
+ const ui=financeUi,e=ui.e,m=ui.m;
+ ui.screen('Sổ chi tiết công nợ đại lý','Tra cứu đầy đủ phát sinh tăng, giảm và số dư lũy kế trong kỳ. Xuất Excel hoặc chọn Lưu dưới dạng PDF trong hộp thoại in.','debt-statement/masters',(masters,body,revision)=>{
+  let generation=0,applied=null,printHtml='';const today=ui.date();
+  body.innerHTML='<form class="finance-toolbar" id="dsFilters"><label>Tìm đại lý<input id="dsSearch" type="search" maxlength="150" placeholder="Mã hoặc tên đại lý"></label><button type="button" id="dsSearchButton">Tìm</button><label>Đại lý<select name="customerId" required id="dsCustomer"></select></label><label>Từ ngày<input name="from" type="date" required max="'+today+'" value="'+today.slice(0,8)+'01"></label><label>Đến ngày<input name="to" type="date" required max="'+today+'" value="'+today+'"></label><button class="primary" type="submit">Xem sổ</button><button type="button" id="dsExport" disabled>Xuất Excel</button><button type="button" id="dsPrint" disabled>In / Lưu PDF</button></form><p id="dsSearchInfo" role="status"></p><div id="dsResult" aria-live="polite">Chọn đại lý và khoảng ngày để xem sổ.</div>';
+  const form=body.querySelector('#dsFilters'),result=body.querySelector('#dsResult'),download=body.querySelector('#dsExport'),print=body.querySelector('#dsPrint'),customer=body.querySelector('#dsCustomer');
+  function choices(data){customer.innerHTML='<option value="">Chọn đại lý</option>'+data.customers.map(c=>'<option value="'+c.id+'">'+e(c.code+' · '+c.name)+'</option>').join('');body.querySelector('#dsSearchInfo').textContent=data.hasMore?'Hiển thị 100 đại lý đầu tiên. Tìm theo mã hoặc tên để thu hẹp.':data.customers.length+' đại lý phù hợp.';}
+  function invalidate(){generation++;applied=null;printHtml='';download.disabled=print.disabled=true;}
+  choices(masters);form.oninput=invalidate;
+  const search=body.querySelector('#dsSearchButton');
+  async function searchCustomers(){invalidate();const current=generation;search.disabled=true;try{const data=await apiRequest('debt-statement/masters?q='+encodeURIComponent(body.querySelector('#dsSearch').value));if(current!==generation||revision!==viewRevision)return;choices(data);result.textContent='Chọn đại lý và khoảng ngày để xem sổ.';}catch(error){if(current===generation&&revision===viewRevision)body.querySelector('#dsSearchInfo').textContent=error.message;}finally{if(revision===viewRevision)search.disabled=false;}}
+  search.onclick=searchCustomers;body.querySelector('#dsSearch').onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();searchCustomers();}};
+  form.onsubmit=async event=>{event.preventDefault();invalidate();const current=generation,params=new URLSearchParams(new FormData(form));result.textContent='Đang tải…';
+   try{const d=await apiRequest('debt-statement?'+params);if(current!==generation||revision!==viewRevision)return;
+    const kinds={INVOICE:'Hóa đơn',ADJUSTMENT:'Điều chỉnh',PAYMENT:'Thu tiền',REVERSAL:'Hoàn tác thu tiền'};
+    const rows=[['','<strong>Số dư đầu kỳ</strong>','','','',m(d.openingBalance)],...d.items.map(r=>[e(r.event_date),e(r.reference),e(kinds[r.kind]||r.kind),m(r.debit),m(r.credit),m(r.balance)]),['','<strong>Tổng phát sinh / Số dư cuối kỳ</strong>','',m(d.debit),m(d.credit),m(d.closingBalance)]];
+    printHtml='<p>Đại lý: '+e(d.customer.code+' · '+d.customer.name)+'</p><p>Kỳ: '+e(d.from)+' – '+e(d.to)+'</p>'+(!d.items.length?'<p>Không có phát sinh trong kỳ.</p>':'')+ui.table(['Ngày phát sinh','Chứng từ','Nghiệp vụ','Tăng phải thu','Giảm phải thu','Số dư lũy kế'],rows);
+    result.innerHTML=printHtml;applied=params;download.disabled=print.disabled=false;
+   }catch(error){if(current===generation&&revision===viewRevision)result.innerHTML='<p class="finance-error" role="alert">'+e(error.message)+'</p>';}
+  };
+  print.onclick=()=>{if(printHtml&&applied)ui.print('Sổ chi tiết công nợ đại lý',printHtml);};
+  download.onclick=async()=>{if(!applied)return;const params=applied.toString();download.disabled=true;try{const response=await apiFetch('api/debt-statement/export?'+params);if(!response.ok){const data=await response.json();throw new Error(data.message||'Không xuất được sổ công nợ');}const blob=await response.blob();if(revision!==viewRevision)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=response.headers.get('Content-Disposition')?.match(/filename=([^;]+)/)?.[1]||'so-chi-tiet-cong-no.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(error){if(revision===viewRevision)showRequestError(error);}finally{if(revision===viewRevision)download.disabled=!applied;}};
+ });
+}};
+</script>

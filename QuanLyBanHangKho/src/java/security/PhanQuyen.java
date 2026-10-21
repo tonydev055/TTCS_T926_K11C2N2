@@ -268,6 +268,7 @@ public final class PhanQuyen {
         if (path == null || method == null) return null;
         boolean read = method.equals("GET");
         if (under(path, "/api/profile")) return "profile.self";
+        if (under(path, "/api/sales-report")) return read ? "reports.sales" : null;
         if (under(path, "/api/role-permissions")) return "admin.roles";
         if (under(path, "/api/audit")) return "admin.audit";
         if (under(path, "/api/imports/users") || under(path, "/api/templates/users")) return "admin.users";

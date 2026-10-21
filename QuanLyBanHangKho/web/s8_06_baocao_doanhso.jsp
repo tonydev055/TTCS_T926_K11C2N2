@@ -470,6 +470,11 @@
       color: var(--orange-dark);
     }
 
+    .s806-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
     .s806-btn-primary {
       padding: 9px 18px;
       background: var(--orange);
@@ -486,6 +491,24 @@
     }
     .s806-btn-primary:hover {
       background: var(--orange-dark);
+      transform: translateY(-1px);
+    }
+    .s806-btn-excel {
+      padding: 9px 16px;
+      background: #107c41;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .15s;
+    }
+    .s806-btn-excel:hover {
+      background: #0b5e31;
       transform: translateY(-1px);
     }
 
@@ -558,6 +581,89 @@
       user-select: none;
       opacity: .6;
     }
+
+    /* Data Table */
+    .s806-table-card {
+      background: var(--panel);
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .s806-table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .s806-table-header h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .s806-table-wrap {
+      overflow-x: auto;
+    }
+    .s806-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .s806-table th {
+      text-align: left;
+      padding: 10px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--muted);
+      border-bottom: 2px solid var(--line);
+      white-space: nowrap;
+      background: #faf7f2;
+    }
+    .s806-table td {
+      padding: 12px;
+      color: var(--ink);
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+    .s806-table tr:hover td {
+      background: var(--orange-soft);
+    }
+    .s806-table tfoot td {
+      font-weight: 700;
+      background: #fcfbfa;
+      border-top: 2px solid var(--line);
+      border-bottom: none;
+    }
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
+
+    .s806-margin-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .s806-progress-track {
+      width: 60px;
+      height: 8px;
+      background: #eee4da;
+      border-radius: 4px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .s806-progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: var(--green);
+    }
+    .s806-progress-fill.warning { background: var(--orange); }
+    .s806-progress-fill.danger { background: var(--red); }
   </style>
 </head>
 <body>
@@ -608,7 +714,7 @@
           </div>
         </div>
 
-        <div style="display:flex; align-items:center; gap:12px;">
+        <div class="s806-actions">
           <label class="s806-input-label">
             <span>So sánh:</span>
             <select class="s806-input" id="selectCompare">
@@ -620,6 +726,9 @@
           </label>
           <button type="button" class="s806-btn-primary" id="btnFilter">
             🔍 Xem báo cáo
+          </button>
+          <button type="button" class="s806-btn-excel" id="btnExportExcel" title="Xuất dữ liệu ra file Excel">
+            📥 Xuất Excel
           </button>
         </div>
       </div>
@@ -672,11 +781,51 @@
       </div>
     </section>
 
-    <!-- Placeholder cho Bảng dữ liệu & Export Excel (Bước 4) -->
-    <main class="s806-panel" id="s806TablePanel">
-      <div style="text-align:center; padding:30px 0; color:var(--muted);" id="tablePlaceholder">
-        <p style="font-size:14px; font-weight:600; color:var(--ink);">Đã hoàn thành cấu hình Bộ lọc đa chiều & phân quyền Quản lý kinh doanh</p>
-        <p style="font-size:13px; margin-top:6px;">Sẵn sàng tích hợp bảng dữ liệu chi tiết và tính năng xuất Excel ở Bước 4.</p>
+    <!-- Bảng dữ liệu chi tiết (Detailed Data Table) -->
+    <main class="s806-table-card">
+      <div class="s806-table-header">
+        <h2 id="tableTitle">Bảng chi tiết báo cáo doanh số theo Nhân viên</h2>
+        <span id="recordCount" style="font-size:12px; color:var(--muted);">0 bản ghi</span>
+      </div>
+
+      <div class="s806-table-wrap">
+        <table class="s806-table" id="reportTable">
+          <thead>
+            <tr>
+              <th class="text-center" style="width:50px;">#</th>
+              <th id="thGroupKey">Nhân viên</th>
+              <th class="text-right">Doanh số kỳ này</th>
+              <th class="text-right">Doanh số kỳ trước</th>
+              <th class="text-center">Tăng trưởng DS</th>
+              <th class="text-right">Sản lượng kỳ này</th>
+              <th class="text-right">Sản lượng kỳ trước</th>
+              <th class="text-center">Tăng trưởng SL</th>
+              <th class="text-right">Giá vốn (VND)</th>
+              <th class="text-right" style="min-width:140px;">Biên LN gộp (%)</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr>
+              <td colspan="10" class="text-center" style="padding:40px 0; color:var(--muted);">
+                Đang tải dữ liệu báo cáo...
+              </td>
+            </tr>
+          </tbody>
+          <tfoot id="tableFoot" style="display:none;">
+            <tr>
+              <td class="text-center">Σ</td>
+              <td><strong>TỔNG CỘNG</strong></td>
+              <td class="text-right" id="footRevenue">0 ₫</td>
+              <td class="text-right" id="footPrevRevenue">0 ₫</td>
+              <td class="text-center" id="footRevGrowth">—</td>
+              <td class="text-right" id="footQty">0</td>
+              <td class="text-right" id="footPrevQty">0</td>
+              <td class="text-center" id="footQtyGrowth">—</td>
+              <td class="text-right" id="footCogs">—</td>
+              <td class="text-right" id="footMargin">—</td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
     </main>
   </div>
@@ -685,10 +834,37 @@
     (function(){
       'use strict';
       var currentGroupBy = 'employee';
+      var currentData = null;
+      var canViewMargin = <%= isManager %>;
       var today = new Date();
+
+      var GROUP_NAMES = {
+        'employee': 'Nhân viên',
+        'region': 'Khu vực',
+        'dealer': 'Đại lý',
+        'category': 'Nhóm hàng',
+        'sku': 'Sản phẩm / SKU'
+      };
 
       function formatIsoDate(d){
         return d.toISOString().split('T')[0];
+      }
+
+      function money(v){
+        if(v == null) return '—';
+        return new Intl.NumberFormat('vi-VN', {style:'currency', currency:'VND'}).format(Number(v));
+      }
+      function num(v){
+        if(v == null) return '—';
+        return new Intl.NumberFormat('vi-VN').format(Number(v));
+      }
+
+      function growthBadge(growth){
+        if(growth == null) return '<span class="s806-growth-badge neutral">—</span>';
+        var n = Number(growth);
+        if(n > 0) return '<span class="s806-growth-badge positive">▲ +' + n.toFixed(1) + '%</span>';
+        if(n < 0) return '<span class="s806-growth-badge negative">▼ ' + n.toFixed(1) + '%</span>';
+        return '<span class="s806-growth-badge neutral">0.0%</span>';
       }
 
       function initDates(){
@@ -705,6 +881,9 @@
           document.querySelectorAll('.s806-tab-btn').forEach(function(b){ b.classList.remove('active'); });
           btn.classList.add('active');
           currentGroupBy = btn.getAttribute('data-grp');
+          document.getElementById('thGroupKey').textContent = GROUP_NAMES[currentGroupBy] || 'Tiêu chí';
+          document.getElementById('tableTitle').textContent = 'Bảng chi tiết báo cáo doanh số theo ' + (GROUP_NAMES[currentGroupBy] || '');
+          loadReport();
         });
       });
 
@@ -720,8 +899,202 @@
           else if(p === 'this_year'){ fromD = new Date(y, 0, 1); }
           document.getElementById('inputFromDate').value = formatIsoDate(fromD);
           document.getElementById('inputToDate').value = formatIsoDate(toD);
+          loadReport();
         });
       });
+
+      async function loadReport(){
+        var tbody = document.getElementById('tableBody');
+        var tfoot = document.getElementById('tableFoot');
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center" style="padding:40px 0; color:var(--muted);">Đang tải dữ liệu báo cáo...</td></tr>';
+        tfoot.style.display = 'none';
+
+        var fromStr = document.getElementById('inputFromDate').value;
+        var toStr = document.getElementById('inputToDate').value;
+        var compare = document.getElementById('selectCompare').value;
+
+        var url = 's8_06_baocao_doanhso.jsp?action=data' +
+          '&groupBy=' + encodeURIComponent(currentGroupBy) +
+          '&from=' + encodeURIComponent(fromStr) +
+          '&to=' + encodeURIComponent(toStr) +
+          '&compare=' + encodeURIComponent(compare);
+
+        try {
+          var res = await fetch(url);
+          if(!res.ok) throw new Error('Mã phản hồi lỗi: ' + res.status);
+          var data = await res.json();
+          currentData = data;
+          renderData(data);
+        } catch(e) {
+          tbody.innerHTML = '<tr><td colspan="10" class="text-center" style="padding:40px 0; color:var(--red);">Có lỗi khi tải dữ liệu: ' + (e.message || 'Lỗi kết nối') + '</td></tr>';
+        }
+      }
+
+      function renderData(data){
+        var tbody = document.getElementById('tableBody');
+        var tfoot = document.getElementById('tableFoot');
+        canViewMargin = Boolean(data.canViewMargin);
+
+        // 1. Cập nhật metric cards
+        var s = data.summary || {};
+        document.getElementById('valTotalRevenue').textContent = money(s.totalRevenue);
+        document.getElementById('subPrevRevenue').textContent = 'Kỳ trước: ' + money(s.totalPrevRevenue);
+        document.getElementById('badgeRevGrowth').innerHTML = growthBadge(s.revenueGrowthPct);
+
+        document.getElementById('valTotalQty').textContent = num(s.totalQuantity);
+        document.getElementById('subPrevQty').textContent = 'Kỳ trước: ' + num(s.totalPrevQuantity);
+        document.getElementById('badgeQtyGrowth').innerHTML = growthBadge(s.quantityGrowthPct);
+
+        if(canViewMargin){
+          document.getElementById('valTotalCogs').textContent = money(s.totalCogs);
+          document.getElementById('valTotalCogs').classList.remove('s806-blur-val');
+          document.getElementById('valAvgMargin').textContent = (s.avgGrossMarginPct != null ? Number(s.avgGrossMarginPct).toFixed(1) : '0.0') + '%';
+          document.getElementById('valAvgMargin').classList.remove('s806-blur-val');
+        } else {
+          document.getElementById('valTotalCogs').textContent = '****** ₫';
+          document.getElementById('valTotalCogs').classList.add('s806-blur-val');
+          document.getElementById('valAvgMargin').textContent = '****** %';
+          document.getElementById('valAvgMargin').classList.add('s806-blur-val');
+        }
+
+        // 2. Render table rows
+        var items = data.items || [];
+        document.getElementById('recordCount').textContent = items.length + ' bản ghi';
+
+        if(items.length === 0){
+          tbody.innerHTML = '<tr><td colspan="10" class="text-center" style="padding:40px 0; color:var(--muted);">Không có đơn hàng nào trong khoảng thời gian này.</td></tr>';
+          tfoot.style.display = 'none';
+          return;
+        }
+
+        var html = items.map(function(item, idx){
+          var cogsTd, marginTd;
+          if(canViewMargin){
+            cogsTd = '<td class="text-right">' + money(item.cogs) + '</td>';
+            var m = Number(item.grossMarginPct) || 0;
+            var barCls = m < 10 ? 'danger' : (m < 25 ? 'warning' : '');
+            var barW = Math.min(Math.max(m, 0), 100);
+            marginTd = '<td class="text-right">' +
+              '<div class="s806-margin-bar">' +
+                '<span>' + m.toFixed(1) + '%</span>' +
+                '<div class="s806-progress-track"><div class="s806-progress-fill ' + barCls + '" style="width:' + barW + '%;"></div></div>' +
+              '</div>' +
+            '</td>';
+          } else {
+            cogsTd = '<td class="text-right" style="color:var(--muted); font-size:11px;"><em>Bảo mật</em></td>';
+            marginTd = '<td class="text-right" style="color:var(--muted); font-size:11px;"><em>Bảo mật</em></td>';
+          }
+
+          return '<tr>' +
+            '<td class="text-center">' + (idx + 1) + '</td>' +
+            '<td><strong>' + (item.groupKey || '—') + '</strong></td>' +
+            '<td class="text-right" style="font-weight:600;">' + money(item.revenue) + '</td>' +
+            '<td class="text-right" style="color:var(--muted);">' + money(item.prevRevenue) + '</td>' +
+            '<td class="text-center">' + growthBadge(item.revenueGrowthPct) + '</td>' +
+            '<td class="text-right" style="font-weight:600;">' + num(item.quantity) + '</td>' +
+            '<td class="text-right" style="color:var(--muted);">' + num(item.prevQuantity) + '</td>' +
+            '<td class="text-center">' + growthBadge(item.quantityGrowthPct) + '</td>' +
+            cogsTd +
+            marginTd +
+          '</tr>';
+        }).join('');
+
+        tbody.innerHTML = html;
+
+        // 3. Render footer tổng cộng
+        tfoot.style.display = '';
+        document.getElementById('footRevenue').textContent = money(s.totalRevenue);
+        document.getElementById('footPrevRevenue').textContent = money(s.totalPrevRevenue);
+        document.getElementById('footRevGrowth').innerHTML = growthBadge(s.revenueGrowthPct);
+        document.getElementById('footQty').textContent = num(s.totalQuantity);
+        document.getElementById('footPrevQty').textContent = num(s.totalPrevQuantity);
+        document.getElementById('footQtyGrowth').innerHTML = growthBadge(s.quantityGrowthPct);
+
+        if(canViewMargin){
+          document.getElementById('footCogs').textContent = money(s.totalCogs);
+          document.getElementById('footMargin').textContent = (s.avgGrossMarginPct != null ? Number(s.avgGrossMarginPct).toFixed(1) : '0.0') + '%';
+        } else {
+          document.getElementById('footCogs').innerHTML = '<em>Bảo mật</em>';
+          document.getElementById('footMargin').innerHTML = '<em>Bảo mật</em>';
+        }
+      }
+
+      // Xuất Excel dạng CSV UTF-8 với BOM tương thích 100% Excel tiếng Việt
+      document.getElementById('btnExportExcel').addEventListener('click', function(){
+        if(!currentData || !currentData.items || currentData.items.length === 0){
+          alert('Không có dữ liệu để xuất file.');
+          return;
+        }
+        var groupColName = GROUP_NAMES[currentGroupBy] || 'Tieu chi';
+        var headers = [
+          'STT',
+          groupColName,
+          'Doanh so ky nay (VND)',
+          'Doanh so ky truoc (VND)',
+          'Tang truong DS (%)',
+          'San luong ky nay',
+          'San luong ky truoc',
+          'Tang truong SL (%)'
+        ];
+        if(canViewMargin){
+          headers.push('Gia von COGS (VND)');
+          headers.push('Bien loi nhuan gop (%)');
+        }
+
+        var csvRows = [headers.join(',')];
+
+        currentData.items.forEach(function(item, idx){
+          var row = [
+            idx + 1,
+            '"' + String(item.groupKey || '').replace(/"/g, '""') + '"',
+            Number(item.revenue) || 0,
+            Number(item.prevRevenue) || 0,
+            item.revenueGrowthPct != null ? Number(item.revenueGrowthPct) : '',
+            Number(item.quantity) || 0,
+            Number(item.prevQuantity) || 0,
+            item.quantityGrowthPct != null ? Number(item.quantityGrowthPct) : ''
+          ];
+          if(canViewMargin){
+            row.push(Number(item.cogs) || 0);
+            row.push(item.grossMarginPct != null ? Number(item.grossMarginPct) : '');
+          }
+          csvRows.push(row.join(','));
+        });
+
+        // Dòng tổng cộng
+        var s = currentData.summary || {};
+        var sumRow = [
+          '',
+          '"TONG CONG"',
+          Number(s.totalRevenue) || 0,
+          Number(s.totalPrevRevenue) || 0,
+          s.revenueGrowthPct != null ? Number(s.revenueGrowthPct) : '',
+          Number(s.totalQuantity) || 0,
+          Number(s.totalPrevQuantity) || 0,
+          s.quantityGrowthPct != null ? Number(s.quantityGrowthPct) : ''
+        ];
+        if(canViewMargin){
+          sumRow.push(Number(s.totalCogs) || 0);
+          sumRow.push(s.avgGrossMarginPct != null ? Number(s.avgGrossMarginPct) : '');
+        }
+        csvRows.push(sumRow.join(','));
+
+        var csvContent = '\uFEFF' + csvRows.join('\r\n');
+        var blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+        var link = document.createElement('a');
+        var fileName = 'BaoCaoDoanhSo_' + currentGroupBy + '_' + document.getElementById('inputFromDate').value + '_' + document.getElementById('inputToDate').value + '.csv';
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+
+      document.getElementById('btnFilter').addEventListener('click', loadReport);
+      document.getElementById('selectCompare').addEventListener('change', loadReport);
+
+      // Khởi động load báo cáo lần đầu
+      loadReport();
     })();
   </script>
 </body>

@@ -170,7 +170,7 @@ public final class DashboardServlet extends NghiepVuKhoServlet {
                 ? "SELECT k.code, k.name, COALESCE(NULLIF(TRIM(k.region),''),'Khác') AS region, " +
                   "       COALESCE(SUM(b.outstanding),0) AS overdue_amount, " +
                   "       MAX(b.due_date)::text AS latest_due, " +
-                  "       EXTRACT(DAY FROM CURRENT_DATE - MIN(b.due_date))::int AS max_days_late " +
+                  "       (CURRENT_DATE - MIN(b.due_date))::int AS max_days_late " +
                   "FROM receivable_invoice_balances b " +
                   "JOIN customers k ON k.id = b.customer_id " +
                   "WHERE b.due_date < CURRENT_DATE AND b.outstanding > 0 " +

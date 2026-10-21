@@ -44,12 +44,23 @@
 #db05 .db05-chart-wrap canvas { width: 100% !important; height: 100% !important; }
 #db05 .db05-chart-placeholder { display: flex; align-items: center; justify-content: center; height: 220px; color: var(--muted, #786d64); font-size: 13px; }
 
-/* Table placeholder */
+/* Overdue Table */
 #db05 .db05-section { background: var(--panel, #fff); border: 1px solid var(--line, #eee4da); border-radius: 14px; padding: 20px; box-shadow: 0 2px 8px rgba(83,48,17,.05); }
 #db05 .db05-section-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
 #db05 .db05-section-header h3 { margin: 0; font-size: 14px; font-weight: 700; color: var(--ink, #17120e); }
 #db05 .db05-section-header p { margin: 4px 0 0; font-size: 11px; color: var(--muted, #786d64); }
+#db05 .db05-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; background: #fee2e2; color: #dc2626; }
 #db05 .db05-table-wrap { overflow-x: auto; }
+#db05 .db05-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+#db05 .db05-table th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted, #786d64); border-bottom: 2px solid var(--line, #eee4da); white-space: nowrap; }
+#db05 .db05-table td { padding: 10px 12px; color: var(--ink, #17120e); border-bottom: 1px solid var(--line, #eee4da); }
+#db05 .db05-table tr:last-child td { border-bottom: none; }
+#db05 .db05-table tr:hover td { background: var(--orange-soft, #fff1df); }
+#db05 .db05-table .amount { font-weight: 700; color: #dc2626; text-align: right; }
+#db05 .db05-table .days-late { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; background: #fef3c7; color: #d97706; }
+#db05 .db05-table .days-late.critical { background: #fee2e2; color: #dc2626; }
+#db05 .db05-empty { text-align: center; padding: 32px 0; color: var(--muted, #786d64); font-size: 13px; }
+#db05 .db05-error-row { text-align: center; padding: 24px 0; color: #dc2626; font-size: 13px; }
 </style>
 
 <script>
@@ -131,9 +142,12 @@ function renderSkeleton(host){
           '<div class="db05-chart-wrap"><div class="db05-chart-placeholder" id="db05RegionPH">Đang tải biểu đồ...</div><canvas id="db05ChartRegion" style="display:none"></canvas></div>' +
         '</div>' +
       '</div>' +
-      '<div class="db05-section" id="db05OverdueSection">' +
-        '<div class="db05-section-header"><div><h3>Đại lý quá hạn công nợ</h3><p>Sắp xếp giảm dần theo số nợ quá hạn</p></div></div>' +
-        '<div class="db05-table-wrap" id="db05OverdueWrap"></div>' +
+      '<div class="db05-section">' +
+        '<div class="db05-section-header">' +
+          '<div><h3>Đại lý quá hạn công nợ</h3><p>Sắp xếp giảm dần theo số tiền còn nợ quá hạn · tối đa 50 đại lý</p></div>' +
+          '<span class="db05-badge" id="db05Badge">Đang tải...</span>' +
+        '</div>' +
+        '<div class="db05-table-wrap"><div id="db05OverdueBody"><p class="db05-empty">Đang tải dữ liệu...</p></div></div>' +
       '</div>' +
     '</div>';
 
@@ -221,6 +235,22 @@ function drawRegion(rows){
   });
 }
 
+function renderOverdue(rows){
+  var badge = document.getElementById('db05Badge');
+  var body = document.getElementById('db05OverdueBody');
+  if(badge) badge.textContent = rows.length + ' đại lý';
+  if(!body) return;
+  if(rows.length === 0){ body.innerHTML = '<p class="db05-empty">✓ Không có đại lý nào quá hạn công nợ.</p>'; return; }
+  var html = rows.map(function(r, i){
+    var days = Number(r.maxDaysLate) || 0;
+    var cls = days > 60 ? ' critical' : '';
+    return '<tr><td>' + (i + 1) + '</td><td><strong>' + esc(r.code) + '</strong></td><td>' + esc(r.name) + '</td><td>' + (esc(r.region) || '\u2014') + '</td><td class="amount">' + money(r.overdueAmount) + '</td><td>' + (esc(r.latestDue) || '\u2014') + '</td><td><span class="days-late' + cls + '">' + days + ' ngày</span></td></tr>';
+  }).join('');
+  body.innerHTML = '<table class="db05-table" aria-label="Đại lý quá hạn công nợ">' +
+    '<thead><tr><th>#</th><th>Mã ĐL</th><th>Tên đại lý</th><th>Khu vực</th><th style="text-align:right">Số tiền quá hạn</th><th>Hạn cuối</th><th>Số ngày trễ</th></tr></thead>' +
+    '<tbody>' + html + '</tbody></table>';
+}
+
 async function renderDashboard(){
   var host = moduleContent;
   destroyCharts();
@@ -247,6 +277,16 @@ async function renderDashboard(){
     var p1 = document.getElementById('db05DailyPH'), p2 = document.getElementById('db05RegionPH');
     if(p1) p1.textContent = 'Không tải được biểu đồ.';
     if(p2) p2.textContent = 'Không tải được biểu đồ.';
+  }
+
+  try {
+    var overdue = await apiRequest('dashboard/overdue');
+    if(revision !== viewRevision || !host.isConnected) return;
+    renderOverdue(overdue);
+  } catch(e) {
+    var b = document.getElementById('db05Badge'), ob = document.getElementById('db05OverdueBody');
+    if(b) b.textContent = 'Lỗi';
+    if(ob) ob.innerHTML = '<p class="db05-error-row">Không tải được danh sách đại lý quá hạn.</p>';
   }
 
   var ts = document.getElementById('db05LastUpdate');

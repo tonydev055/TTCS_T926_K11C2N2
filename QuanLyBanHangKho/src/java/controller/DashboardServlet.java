@@ -11,7 +11,7 @@ import util.XuLyJson;
 
 /**
  * S8-05: Dashboard điều hành bán hàng và kho.
- * BƯỚC 3: Tích hợp dữ liệu biểu đồ doanh số theo ngày và theo khu vực.
+ * BƯỚC 4: Thêm bảng danh sách đại lý quá hạn công nợ.
  */
 @WebServlet("/api/dashboard/*")
 public final class DashboardServlet extends NghiepVuKhoServlet {
@@ -24,7 +24,7 @@ public final class DashboardServlet extends NghiepVuKhoServlet {
                 case "/summary" -> send(r, summary());
                 case "/daily"   -> send(r, daily());
                 case "/region"  -> send(r, region());
-                case "/overdue" -> send(r, List.of());
+                case "/overdue" -> send(r, overdue());
                 default -> throw new NoSuchElementException("Không tìm thấy chức năng dashboard");
             }
         } catch (Exception e) { fail(r, e); }
@@ -122,6 +122,37 @@ public final class DashboardServlet extends NghiepVuKhoServlet {
                 Map<String, Object> row = new LinkedHashMap<>();
                 row.put("region",  rs.getString("region"));
                 row.put("revenue", rs.getBigDecimal("revenue"));
+                out.add(row);
+            }
+            return out;
+        }
+    }
+
+    /** Danh sách đại lý quá hạn công nợ, sắp xếp giảm dần theo số tiền còn nợ quá hạn. */
+    private List<Map<String, Object>> overdue() throws SQLException {
+        String sql =
+            "SELECT k.code, k.name, k.region, " +
+            "       COALESCE(SUM(b.outstanding),0) AS overdue_amount, " +
+            "       MAX(b.due_date)::text AS latest_due, " +
+            "       EXTRACT(DAY FROM CURRENT_DATE - MIN(b.due_date))::int AS max_days_late " +
+            "FROM receivable_invoice_balances b " +
+            "JOIN customers k ON k.id = b.customer_id " +
+            "WHERE b.due_date < CURRENT_DATE AND b.outstanding > 0 " +
+            "GROUP BY k.id, k.code, k.name, k.region " +
+            "ORDER BY overdue_amount DESC " +
+            "LIMIT 50";
+        try (Connection c = KetNoiDB.getConnection();
+             PreparedStatement p = c.prepareStatement(sql);
+             ResultSet rs = p.executeQuery()) {
+            List<Map<String, Object>> out = new ArrayList<>();
+            while (rs.next()) {
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("code",          rs.getString("code"));
+                row.put("name",          rs.getString("name"));
+                row.put("region",        rs.getString("region"));
+                row.put("overdueAmount", rs.getBigDecimal("overdue_amount"));
+                row.put("latestDue",     rs.getString("latest_due"));
+                row.put("maxDaysLate",   rs.getInt("max_days_late"));
                 out.add(row);
             }
             return out;

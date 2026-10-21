@@ -11,7 +11,7 @@ import util.XuLyJson;
 
 /**
  * S8-05: Dashboard điều hành bán hàng và kho.
- * BƯỚC 2: Hoàn thiện 6 thẻ chỉ số với dữ liệu real-time.
+ * BƯỚC 3: Tích hợp dữ liệu biểu đồ doanh số theo ngày và theo khu vực.
  */
 @WebServlet("/api/dashboard/*")
 public final class DashboardServlet extends NghiepVuKhoServlet {
@@ -22,8 +22,8 @@ public final class DashboardServlet extends NghiepVuKhoServlet {
             String p = path(q);
             switch (p) {
                 case "/summary" -> send(r, summary());
-                case "/daily"   -> send(r, List.of());
-                case "/region"  -> send(r, List.of());
+                case "/daily"   -> send(r, daily());
+                case "/region"  -> send(r, region());
                 case "/overdue" -> send(r, List.of());
                 default -> throw new NoSuchElementException("Không tìm thấy chức năng dashboard");
             }
@@ -76,6 +76,53 @@ public final class DashboardServlet extends NghiepVuKhoServlet {
                 out.put("pendingShip",     rs.getLong("pending_ship"));
                 out.put("overdueAmount",   rs.getBigDecimal("overdue_amount"));
                 out.put("lowSkuCount",     rs.getLong("low_sku_count"));
+            }
+            return out;
+        }
+    }
+
+    /** Doanh số theo ngày trong tháng hiện tại. */
+    private List<Map<String, Object>> daily() throws SQLException {
+        String sql =
+            "SELECT d::date AS day, COALESCE(SUM(o.payable),0) AS revenue " +
+            "FROM generate_series(date_trunc('month',CURRENT_DATE), CURRENT_DATE, '1 day') AS d " +
+            "LEFT JOIN orders o ON o.created_at::date = d::date " +
+            "  AND o.status IN ('APPROVED','PICKING','SHIPPED','DELIVERED','CLOSED') " +
+            "GROUP BY d ORDER BY d";
+        try (Connection c = KetNoiDB.getConnection();
+             PreparedStatement p = c.prepareStatement(sql);
+             ResultSet rs = p.executeQuery()) {
+            List<Map<String, Object>> out = new ArrayList<>();
+            while (rs.next()) {
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("day",     rs.getString("day"));
+                row.put("revenue", rs.getBigDecimal("revenue"));
+                out.add(row);
+            }
+            return out;
+        }
+    }
+
+    /** Doanh số theo khu vực trong tháng hiện tại. */
+    private List<Map<String, Object>> region() throws SQLException {
+        String sql =
+            "SELECT COALESCE(k.region, 'Không xác định') AS region, " +
+            "       COALESCE(SUM(o.payable),0) AS revenue " +
+            "FROM orders o " +
+            "LEFT JOIN customers k ON k.id = o.agent_id " +
+            "WHERE o.status IN ('APPROVED','PICKING','SHIPPED','DELIVERED','CLOSED') " +
+            "  AND date_trunc('month', o.created_at) = date_trunc('month', CURRENT_DATE) " +
+            "GROUP BY COALESCE(k.region,'Không xác định') " +
+            "ORDER BY revenue DESC";
+        try (Connection c = KetNoiDB.getConnection();
+             PreparedStatement p = c.prepareStatement(sql);
+             ResultSet rs = p.executeQuery()) {
+            List<Map<String, Object>> out = new ArrayList<>();
+            while (rs.next()) {
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("region",  rs.getString("region"));
+                row.put("revenue", rs.getBigDecimal("revenue"));
+                out.add(row);
             }
             return out;
         }

@@ -33,7 +33,7 @@
 #db05 .db05-card-sub { font-size: 11px; color: var(--muted, #786d64); }
 #db05 .db05-card-value.error { font-size: 13px; color: #dc2626; font-weight: 500; }
 
-/* Placeholder Layout for remaining parts */
+/* Charts */
 #db05 .db05-charts { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; }
 @media (max-width: 900px) { #db05 .db05-charts { grid-template-columns: 1fr; } }
 #db05 .db05-chart-box { background: var(--panel, #fff); border: 1px solid var(--line, #eee4da); border-radius: 14px; padding: 20px; box-shadow: 0 2px 8px rgba(83,48,17,.05); }
@@ -41,6 +41,10 @@
 #db05 .db05-chart-title span { font-size: 11px; font-weight: 500; color: var(--muted, #786d64); margin-left: auto; }
 #db05 .db05-chart-sub { font-size: 11px; color: var(--muted, #786d64); margin: 0 0 16px; }
 #db05 .db05-chart-wrap { position: relative; height: 220px; }
+#db05 .db05-chart-wrap canvas { width: 100% !important; height: 100% !important; }
+#db05 .db05-chart-placeholder { display: flex; align-items: center; justify-content: center; height: 220px; color: var(--muted, #786d64); font-size: 13px; }
+
+/* Table placeholder */
 #db05 .db05-section { background: var(--panel, #fff); border: 1px solid var(--line, #eee4da); border-radius: 14px; padding: 20px; box-shadow: 0 2px 8px rgba(83,48,17,.05); }
 #db05 .db05-section-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
 #db05 .db05-section-header h3 { margin: 0; font-size: 14px; font-weight: 700; color: var(--ink, #17120e); }
@@ -52,6 +56,22 @@
 (function(){
 'use strict';
 window.sprint5Features = window.sprint5Features || {};
+
+var _chartDaily = null, _chartRegion = null;
+var _chartJsPromise = window._db05ChartJsPromise || null;
+
+function ensureChartJs(){
+  if(_chartJsPromise) return _chartJsPromise;
+  _chartJsPromise = new Promise(function(resolve, reject){
+    if(window.Chart){ resolve(); return; }
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+    s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+  window._db05ChartJsPromise = _chartJsPromise;
+  return _chartJsPromise;
+}
 
 function esc(s){
   if(s==null)return '\u2014';
@@ -66,8 +86,14 @@ function num(v){
   return new Intl.NumberFormat('vi-VN').format(Number(v));
 }
 
+function destroyCharts(){
+  if(_chartDaily){ _chartDaily.destroy(); _chartDaily = null; }
+  if(_chartRegion){ _chartRegion.destroy(); _chartRegion = null; }
+}
+
 function renderSkeleton(host){
   var today = new Date();
+  var monthLabel = 'Tháng ' + (today.getMonth() + 1) + '/' + today.getFullYear();
   var dateLabel = today.toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric'});
   var CARDS = [
     {id:'db05-today',        labelVI:'Doanh số hôm nay',        icon:'₫',  accent:''},
@@ -93,9 +119,17 @@ function renderSkeleton(host){
         '<div class="db05-refresh"><span id="db05LastUpdate">Đang tải...</span><button id="db05BtnRefresh">↻ Làm mới</button></div>' +
       '</div>' +
       '<div class="db05-metrics" id="db05Metrics">' + cardsHtml + '</div>' +
-      '<div class="db05-charts" id="db05Charts">' +
-        '<div class="db05-chart-box"><p class="db05-chart-title">Doanh số theo ngày</p><div class="db05-chart-wrap" id="db05ChartDailyWrap"></div></div>' +
-        '<div class="db05-chart-box"><p class="db05-chart-title">Doanh số theo khu vực</p><div class="db05-chart-wrap" id="db05ChartRegionWrap"></div></div>' +
+      '<div class="db05-charts">' +
+        '<div class="db05-chart-box">' +
+          '<p class="db05-chart-title">Doanh số theo ngày <span>' + monthLabel + '</span></p>' +
+          '<p class="db05-chart-sub">Giá trị đơn hàng đã xác nhận — đơn vị: VND</p>' +
+          '<div class="db05-chart-wrap"><div class="db05-chart-placeholder" id="db05DailyPH">Đang tải biểu đồ...</div><canvas id="db05ChartDaily" style="display:none"></canvas></div>' +
+        '</div>' +
+        '<div class="db05-chart-box">' +
+          '<p class="db05-chart-title">Doanh số theo khu vực <span>' + monthLabel + '</span></p>' +
+          '<p class="db05-chart-sub">Tổng giá trị theo khu vực — tháng hiện tại</p>' +
+          '<div class="db05-chart-wrap"><div class="db05-chart-placeholder" id="db05RegionPH">Đang tải biểu đồ...</div><canvas id="db05ChartRegion" style="display:none"></canvas></div>' +
+        '</div>' +
       '</div>' +
       '<div class="db05-section" id="db05OverdueSection">' +
         '<div class="db05-section-header"><div><h3>Đại lý quá hạn công nợ</h3><p>Sắp xếp giảm dần theo số nợ quá hạn</p></div></div>' +
@@ -133,21 +167,92 @@ function markErr(id){
   el.textContent = 'Không tải được';
 }
 
+var COLORS = ['#f47a00','#3b82f6','#22c55e','#8b5cf6','#f59e0b','#06b6d4','#ec4899','#10b981','#ef4444','#64748b'];
+
+function drawDaily(rows){
+  var canvas = document.getElementById('db05ChartDaily');
+  var ph = document.getElementById('db05DailyPH');
+  if(!canvas) return;
+  if(!rows || rows.length === 0){ if(ph) ph.textContent = 'Chưa có dữ liệu trong tháng này.'; return; }
+  canvas.style.display = 'block'; if(ph) ph.style.display = 'none';
+  var labels = rows.map(function(r){ var d = new Date(r.day); return (d.getDate()) + '/' + (d.getMonth() + 1); });
+  var values = rows.map(function(r){ return Number(r.revenue); });
+  _chartDaily = new Chart(canvas, {
+    type: 'bar',
+    data: { labels: labels, datasets: [{ label: 'Doanh số (VND)', data: values, backgroundColor: 'rgba(244,122,0,0.75)', borderColor: '#f47a00', borderWidth: 1.5, borderRadius: 5, borderSkipped: false }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(ctx){ return new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND'}).format(ctx.parsed.y); } } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#786d64' } },
+        y: { beginAtZero: true, grid: { color: '#eee4da' }, ticks: { font: { size: 11 }, color: '#786d64', callback: function(v){
+          if(v>=1000000000) return (v/1000000000).toFixed(1) + 'B';
+          if(v>=1000000) return (v/1000000).toFixed(0) + 'M';
+          if(v>=1000) return (v/1000).toFixed(0) + 'K';
+          return v;
+        }}}
+      }
+    }
+  });
+}
+
+function drawRegion(rows){
+  var canvas = document.getElementById('db05ChartRegion');
+  var ph = document.getElementById('db05RegionPH');
+  if(!canvas) return;
+  if(!rows || rows.length === 0){ if(ph) ph.textContent = 'Chưa có dữ liệu khu vực.'; return; }
+  canvas.style.display = 'block'; if(ph) ph.style.display = 'none';
+  var labels = rows.map(function(r){ return r.region || 'Không xác định'; });
+  var values = rows.map(function(r){ return Number(r.revenue); });
+  _chartRegion = new Chart(canvas, {
+    type: 'doughnut',
+    data: { labels: labels, datasets: [{ data: values, backgroundColor: rows.map(function(_,i){ return COLORS[i % COLORS.length]; }), borderWidth: 2, borderColor: '#fff', hoverOffset: 8 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '62%',
+      plugins: {
+        legend: { position: 'right', labels: { font: { size: 11 }, color: '#17120e', padding: 10, boxWidth: 12 } },
+        tooltip: { callbacks: { label: function(ctx){
+          var total = ctx.dataset.data.reduce(function(a,b){ return a+b; }, 0);
+          var pct = total ? ((ctx.parsed / total) * 100).toFixed(1) : 0;
+          return ctx.label + ': ' + new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND'}).format(ctx.parsed) + ' (' + pct + '%)';
+        }}}
+      }
+    }
+  });
+}
+
 async function renderDashboard(){
   var host = moduleContent;
+  destroyCharts();
   renderSkeleton(host);
   var revision = viewRevision;
   try {
     var sum = await apiRequest('dashboard/summary');
     if(revision !== viewRevision || !host.isConnected) return;
     fillSummary(sum);
-    var ts = document.getElementById('db05LastUpdate');
-    if(ts) {
-      var now = new Date();
-      ts.textContent = 'Cập nhật lúc ' + now.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-    }
   } catch(e) {
     ['db05-today','db05-month','db05-pend-approve','db05-pend-ship','db05-overdue-amt','db05-low-sku'].forEach(markErr);
+  }
+
+  try {
+    var [daily, region] = await Promise.all([
+      apiRequest('dashboard/daily'),
+      apiRequest('dashboard/region')
+    ]);
+    await ensureChartJs();
+    if(revision !== viewRevision || !host.isConnected) return;
+    drawDaily(daily);
+    drawRegion(region);
+  } catch(e) {
+    var p1 = document.getElementById('db05DailyPH'), p2 = document.getElementById('db05RegionPH');
+    if(p1) p1.textContent = 'Không tải được biểu đồ.';
+    if(p2) p2.textContent = 'Không tải được biểu đồ.';
+  }
+
+  var ts = document.getElementById('db05LastUpdate');
+  if(ts) {
+    var now = new Date();
+    ts.textContent = 'Cập nhật lúc ' + now.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
   }
 }
 

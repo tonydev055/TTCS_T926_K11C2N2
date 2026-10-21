@@ -322,6 +322,8 @@ public final class PhanQuyen {
         if (under(path, "/api/returns")) return RETURNS_ACCESS;
         // S4-10: cổng đặt hàng của đại lý; phạm vi luôn là đại lý gắn với tài khoản (CongDaiLyService).
         if (under(path, "/api/portal")) return "orders.self";
+        // S8-05: dashboard điều hành bán hàng và kho; chỉ quản lý kinh doanh và admin.
+        if (under(path, "/api/dashboard")) return "reports.sales";
         return null;
     }
 

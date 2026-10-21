@@ -1,0 +1,28 @@
+<style>
+.sales-report .sales-filters{justify-content:flex-start;align-items:flex-end;margin-bottom:16px}.sales-report label{display:flex;flex-direction:column;gap:6px;min-width:0;max-width:100%}.sales-report .sales-result{display:flex;flex-direction:column;gap:16px;min-width:0}.sales-report .sales-result p,.sales-report .sales-result h3{margin:0}.sales-report .sales-bar{height:8px;border-radius:4px;background:var(--orange);min-width:1px}.sales-report .sales-bar.previous{background:#94a3b8}.sales-report .sales-chart-row{display:grid;grid-template-columns:minmax(100px,180px) minmax(0,1fr);gap:12px;margin:12px 0}.sales-report .sales-chart-row small{display:block;margin-bottom:4px}.sales-report .sales-chart-values{display:flex;flex-direction:column;gap:6px;min-width:0}
+</style>
+<script>
+window.sprint5Features=window.sprint5Features||{};
+window.sprint5Features['Báo cáo doanh số']={path:'bao-cao-doanh-so',permission:'reports.sales',render(){
+ const ui=financeUi,e=ui.e,m=ui.m,n=v=>v==null?'—':new Intl.NumberFormat('vi-VN',{maximumFractionDigits:2}).format(v),pct=v=>v==null?'—':n(v)+'%';
+ ui.screen('Báo cáo doanh số','Doanh số và sản lượng từ đơn đã xác nhận. Biên lợi nhuận ước tính theo giá vốn danh mục hiện tại, chỉ Quản lý kinh doanh được xem.','sales-report',(initial,body,revision)=>{
+  body.classList.add('sales-report');let generation=0,applied=null;
+  const groups={employee:'Nhân viên',region:'Khu vực',dealer:'Đại lý',category:'Nhóm hàng',sku:'SKU'};
+  body.innerHTML='<form class="finance-toolbar sales-filters" id="salesReportFilters"><label>Từ ngày<input name="from" type="date" required value="'+e(initial.from)+'" max="'+ui.date()+'"></label><label>Đến ngày<input name="to" type="date" required value="'+e(initial.to)+'" max="'+ui.date()+'"></label><label>Nhóm theo<select name="groupBy">'+Object.entries(groups).map(([key,label])=>'<option value="'+key+'">'+e(label)+'</option>').join('')+'</select></label><label>So sánh<select name="compare"><option value="previous_period">Kỳ liền trước</option><option value="previous_month">Cùng kỳ tháng trước</option><option value="previous_year">Cùng kỳ năm trước</option><option value="none">Không so sánh</option></select></label><button class="primary" type="submit">Xem báo cáo</button><button type="button" id="salesReportExport" disabled>Xuất Excel</button></form><p id="salesReportStatus" role="status"></p><div id="salesReportResult" class="sales-result"></div>';
+  const form=body.querySelector('#salesReportFilters'),status=body.querySelector('#salesReportStatus'),result=body.querySelector('#salesReportResult'),button=body.querySelector('#salesReportExport');
+  function draw(d,params){const margin=d.canViewMargin,s=d.summary;const headers=[groups[d.groupBy],'Doanh số','Kỳ trước','Tăng trưởng','Sản lượng','Sản lượng kỳ trước','Tăng trưởng SL'];if(margin)headers.push('Giá vốn ước tính','Biên LN ước tính');
+   const cells=r=>[e(r.group_key),m(r.revenue),m(r.prev_revenue),pct(r.revenue_growth_pct),n(r.quantity),n(r.prev_quantity),pct(r.quantity_growth_pct),...(margin?[m(r.cogs),pct(r.gross_margin_pct)]:[])];
+   const total={...s,group_key:'Tổng cộng'};
+   const max=d.items.reduce((max,r)=>Math.max(max,Number(r.revenue),Number(r.prev_revenue)),1);
+   result.innerHTML='<p>Kỳ '+e(d.from)+' – '+e(d.to)+(d.prevFrom?' · So sánh '+e(d.prevFrom)+' – '+e(d.prevTo):' · Không so sánh')+' · '+d.items.length+' nhóm</p>'+ui.table(headers,[...d.items.map(cells),cells(total)])+(d.items.length?'<h3>So sánh doanh số · 20 nhóm đầu</h3>'+d.items.slice(0,20).map(r=>'<div class="sales-chart-row"><strong>'+e(r.group_key)+'</strong><div class="sales-chart-values"><div><small>Kỳ này: '+m(r.revenue)+'</small><div class="sales-bar" style="width:'+Math.max(0,Number(r.revenue)/max*100)+'%"></div></div>'+(d.prevFrom?'<div><small>Kỳ trước: '+m(r.prev_revenue)+'</small><div class="sales-bar previous" style="width:'+Math.max(0,Number(r.prev_revenue)/max*100)+'%"></div></div>':'')+'</div></div>').join(''):'<p>Không có đơn hàng phù hợp kỳ báo cáo.</p>');
+   applied=new URLSearchParams(params);button.disabled=false;status.textContent='Đã tải dữ liệu từ hệ thống.';
+  }
+  draw(initial,new URLSearchParams({from:initial.from,to:initial.to,groupBy:initial.groupBy,compare:initial.compare}));
+  form.oninput=()=>{generation++;applied=null;button.disabled=true;status.textContent='Bộ lọc đã thay đổi. Chọn Xem báo cáo trước khi xuất.';};
+  form.onsubmit=async event=>{event.preventDefault();const current=++generation,params=new URLSearchParams(new FormData(form));applied=null;button.disabled=true;status.textContent='Đang tải…';result.innerHTML='';
+   try{const d=await apiRequest('sales-report?'+params);if(current!==generation||revision!==viewRevision)return;draw(d,params);}catch(error){if(current===generation&&revision===viewRevision){status.textContent='Tải thất bại';result.innerHTML='<p class="finance-error" role="alert">'+e(error.message)+'</p>';}}
+  };
+  button.onclick=async()=>{if(!applied)return;const current=generation,params=applied.toString();button.disabled=true;try{const response=await apiFetch('api/sales-report/export?'+params);if(!response.ok){const d=await response.json();throw new Error(d.message||'Không xuất được báo cáo');}const blob=await response.blob();if(current!==generation||revision!==viewRevision)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=response.headers.get('Content-Disposition')?.match(/filename=([^;]+)/)?.[1]||'bao-cao-doanh-so.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(error){if(revision===viewRevision)showRequestError(error);}finally{if(revision===viewRevision)button.disabled=!applied;}};
+ });
+}};
+</script>

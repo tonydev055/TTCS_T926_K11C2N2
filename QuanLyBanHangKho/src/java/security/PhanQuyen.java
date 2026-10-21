@@ -291,6 +291,7 @@ public final class PhanQuyen {
         if (under(path, "/api/shipments")) return read ? "inventory.read" : "inventory.write";
         if (under(path, "/api/delivery-confirmations")) return "shipments.write";
         if (under(path, "/api/stock-alerts")) return read ? "inventory.read" : "warehouses.manage";
+        if (path.equals("/api/inventory/export")) return read ? "reports.inventory" : null;
         if (under(path, "/api/inventory") || under(path, "/api/stock-transactions"))
             return read ? "inventory.read" : "inventory.write";
         if (under(path, "/api/suppliers")) return read ? "suppliers.read" : "suppliers.write";

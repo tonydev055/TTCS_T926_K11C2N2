@@ -1,7 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="java.sql.*, java.util.*, java.math.*, java.time.*, java.time.temporal.ChronoUnit, util.KetNoiDB" %>
 <%!
-    // Helper escape JSON
+    // Helper escape JSON an toàn
     private static String escapeJson(String s) {
         if (s == null) return "";
         StringBuilder sb = new StringBuilder();
@@ -299,6 +299,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     :root {
       --bg: #f8f6f2;
@@ -489,9 +490,13 @@
       gap: 6px;
       transition: all .15s;
     }
-    .s806-btn-primary:hover {
+    .s806-btn-primary:hover:not(:disabled) {
       background: var(--orange-dark);
       transform: translateY(-1px);
+    }
+    .s806-btn-primary:disabled {
+      opacity: .6;
+      cursor: not-allowed;
     }
     .s806-btn-excel {
       padding: 9px 16px;
@@ -582,6 +587,35 @@
       opacity: .6;
     }
 
+    /* Chart Card */
+    .s806-chart-card {
+      background: var(--panel);
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .s806-chart-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .s806-chart-wrap {
+      position: relative;
+      height: 260px;
+      width: 100%;
+    }
+    .s806-chart-wrap canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
     /* Data Table */
     .s806-table-card {
       background: var(--panel);
@@ -604,6 +638,14 @@
       font-size: 16px;
       font-weight: 700;
       color: var(--ink);
+    }
+    .s806-search-input {
+      padding: 6px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 12px;
+      width: 200px;
+      font-family: inherit;
     }
     .s806-table-wrap {
       overflow-x: auto;
@@ -781,11 +823,25 @@
       </div>
     </section>
 
+    <!-- Biểu đồ so sánh trực quan (Chart Section) -->
+    <section class="s806-chart-card">
+      <div class="s806-chart-title">
+        <span id="chartHeading">Biểu đồ so sánh doanh số theo Nhân viên (Top 10)</span>
+        <span style="font-size:12px; font-weight:500; color:var(--muted);" id="chartSubheading">Kỳ này vs Kỳ trước</span>
+      </div>
+      <div class="s806-chart-wrap">
+        <canvas id="s806Chart"></canvas>
+      </div>
+    </section>
+
     <!-- Bảng dữ liệu chi tiết (Detailed Data Table) -->
     <main class="s806-table-card">
       <div class="s806-table-header">
         <h2 id="tableTitle">Bảng chi tiết báo cáo doanh số theo Nhân viên</h2>
-        <span id="recordCount" style="font-size:12px; color:var(--muted);">0 bản ghi</span>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <input type="text" class="s806-search-input" id="tableSearch" placeholder="Lọc nhanh kết quả...">
+          <span id="recordCount" style="font-size:12px; color:var(--muted); white-space:nowrap;">0 bản ghi</span>
+        </div>
       </div>
 
       <div class="s806-table-wrap">
@@ -837,6 +893,7 @@
       var currentData = null;
       var canViewMargin = <%= isManager %>;
       var today = new Date();
+      var myChart = null;
 
       var GROUP_NAMES = {
         'employee': 'Nhân viên',
@@ -851,12 +908,16 @@
       }
 
       function money(v){
-        if(v == null) return '—';
-        return new Intl.NumberFormat('vi-VN', {style:'currency', currency:'VND'}).format(Number(v));
+        if(v == null || v === '') return '0\u00a0\u20ab';
+        var n = Number(v);
+        if(isNaN(n)) return '0\u00a0\u20ab';
+        return new Intl.NumberFormat('vi-VN', {style:'currency', currency:'VND'}).format(n);
       }
       function num(v){
-        if(v == null) return '—';
-        return new Intl.NumberFormat('vi-VN').format(Number(v));
+        if(v == null || v === '') return '0';
+        var n = Number(v);
+        if(isNaN(n)) return '0';
+        return new Intl.NumberFormat('vi-VN').format(n);
       }
 
       function growthBadge(growth){
@@ -881,8 +942,10 @@
           document.querySelectorAll('.s806-tab-btn').forEach(function(b){ b.classList.remove('active'); });
           btn.classList.add('active');
           currentGroupBy = btn.getAttribute('data-grp');
-          document.getElementById('thGroupKey').textContent = GROUP_NAMES[currentGroupBy] || 'Tiêu chí';
-          document.getElementById('tableTitle').textContent = 'Bảng chi tiết báo cáo doanh số theo ' + (GROUP_NAMES[currentGroupBy] || '');
+          var groupName = GROUP_NAMES[currentGroupBy] || 'Tiêu chí';
+          document.getElementById('thGroupKey').textContent = groupName;
+          document.getElementById('tableTitle').textContent = 'Bảng chi tiết báo cáo doanh số theo ' + groupName;
+          document.getElementById('chartHeading').textContent = 'Biểu đồ so sánh doanh số theo ' + groupName + ' (Top 10)';
           loadReport();
         });
       });
@@ -904,6 +967,9 @@
       });
 
       async function loadReport(){
+        var btn = document.getElementById('btnFilter');
+        if(btn) btn.disabled = true;
+
         var tbody = document.getElementById('tableBody');
         var tfoot = document.getElementById('tableFoot');
         tbody.innerHTML = '<tr><td colspan="10" class="text-center" style="padding:40px 0; color:var(--muted);">Đang tải dữ liệu báo cáo...</td></tr>';
@@ -925,8 +991,11 @@
           var data = await res.json();
           currentData = data;
           renderData(data);
+          updateChart(data);
         } catch(e) {
           tbody.innerHTML = '<tr><td colspan="10" class="text-center" style="padding:40px 0; color:var(--red);">Có lỗi khi tải dữ liệu: ' + (e.message || 'Lỗi kết nối') + '</td></tr>';
+        } finally {
+          if(btn) btn.disabled = false;
         }
       }
 
@@ -967,6 +1036,28 @@
           return;
         }
 
+        renderTableRows(items);
+
+        // 3. Render footer tổng cộng
+        tfoot.style.display = '';
+        document.getElementById('footRevenue').textContent = money(s.totalRevenue);
+        document.getElementById('footPrevRevenue').textContent = money(s.totalPrevRevenue);
+        document.getElementById('footRevGrowth').innerHTML = growthBadge(s.revenueGrowthPct);
+        document.getElementById('footQty').textContent = num(s.totalQuantity);
+        document.getElementById('footPrevQty').textContent = num(s.totalPrevQuantity);
+        document.getElementById('footQtyGrowth').innerHTML = growthBadge(s.quantityGrowthPct);
+
+        if(canViewMargin){
+          document.getElementById('footCogs').textContent = money(s.totalCogs);
+          document.getElementById('footMargin').textContent = (s.avgGrossMarginPct != null ? Number(s.avgGrossMarginPct).toFixed(1) : '0.0') + '%';
+        } else {
+          document.getElementById('footCogs').innerHTML = '<em>Bảo mật</em>';
+          document.getElementById('footMargin').innerHTML = '<em>Bảo mật</em>';
+        }
+      }
+
+      function renderTableRows(items){
+        var tbody = document.getElementById('tableBody');
         var html = items.map(function(item, idx){
           var cogsTd, marginTd;
           if(canViewMargin){
@@ -1000,23 +1091,89 @@
         }).join('');
 
         tbody.innerHTML = html;
+      }
 
-        // 3. Render footer tổng cộng
-        tfoot.style.display = '';
-        document.getElementById('footRevenue').textContent = money(s.totalRevenue);
-        document.getElementById('footPrevRevenue').textContent = money(s.totalPrevRevenue);
-        document.getElementById('footRevGrowth').innerHTML = growthBadge(s.revenueGrowthPct);
-        document.getElementById('footQty').textContent = num(s.totalQuantity);
-        document.getElementById('footPrevQty').textContent = num(s.totalPrevQuantity);
-        document.getElementById('footQtyGrowth').innerHTML = growthBadge(s.quantityGrowthPct);
+      // Lọc nhanh trong bảng
+      document.getElementById('tableSearch').addEventListener('input', function(e){
+        var q = e.target.value.toLowerCase().trim();
+        if(!currentData || !currentData.items) return;
+        var filtered = currentData.items.filter(function(it){
+          return (it.groupKey || '').toLowerCase().includes(q);
+        });
+        renderTableRows(filtered);
+      });
 
-        if(canViewMargin){
-          document.getElementById('footCogs').textContent = money(s.totalCogs);
-          document.getElementById('footMargin').textContent = (s.avgGrossMarginPct != null ? Number(s.avgGrossMarginPct).toFixed(1) : '0.0') + '%';
-        } else {
-          document.getElementById('footCogs').innerHTML = '<em>Bảo mật</em>';
-          document.getElementById('footMargin').innerHTML = '<em>Bảo mật</em>';
+      // Vẽ biểu đồ Bar Chart so sánh
+      function updateChart(data){
+        var canvas = document.getElementById('s806Chart');
+        if(!canvas || typeof Chart === 'undefined') return;
+
+        var items = (data.items || []).slice(0, 10); // Lấy Top 10
+        var labels = items.map(function(it){
+          var k = it.groupKey || '—';
+          return k.length > 25 ? k.substring(0, 22) + '...' : k;
+        });
+        var revs = items.map(function(it){ return Number(it.revenue) || 0; });
+        var prevRevs = items.map(function(it){ return Number(it.prevRevenue) || 0; });
+
+        if(myChart){
+          myChart.destroy();
         }
+
+        myChart = new Chart(canvas, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'Doanh số kỳ này (VND)',
+                data: revs,
+                backgroundColor: 'rgba(244, 122, 0, 0.85)',
+                borderColor: '#f47a00',
+                borderWidth: 1.5,
+                borderRadius: 4
+              },
+              {
+                label: 'Doanh số kỳ trước (VND)',
+                data: prevRevs,
+                backgroundColor: 'rgba(120, 109, 100, 0.35)',
+                borderColor: '#786d64',
+                borderWidth: 1.5,
+                borderRadius: 4
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'top', labels: { font: { size: 12 }, boxWidth: 14 } },
+              tooltip: {
+                callbacks: {
+                  label: function(ctx){
+                    return ctx.dataset.label + ': ' + new Intl.NumberFormat('vi-VN', {style:'currency', currency:'VND'}).format(ctx.parsed.y);
+                  }
+                }
+              }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+              y: {
+                beginAtZero: true,
+                grid: { color: '#eee4da' },
+                ticks: {
+                  font: { size: 11 },
+                  callback: function(v){
+                    if(v >= 1000000000) return (v / 1000000000).toFixed(1) + 'B';
+                    if(v >= 1000000) return (v / 1000000).toFixed(0) + 'M';
+                    if(v >= 1000) return (v / 1000).toFixed(0) + 'K';
+                    return v;
+                  }
+                }
+              }
+            }
+          }
+        });
       }
 
       // Xuất Excel dạng CSV UTF-8 với BOM tương thích 100% Excel tiếng Việt
